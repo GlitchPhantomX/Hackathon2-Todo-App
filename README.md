@@ -1,23 +1,36 @@
-# 📝 Todo Application - Phase I: In-Memory Console App
+# 📝 Todo Application - Multi-Phase Evolution
 
 [![Python 3.13+](https://img.shields.io/badge/python-3.13+-blue.svg)](https://www.python.org/downloads/)
 [![Spec-Driven](https://img.shields.io/badge/development-spec--driven-green.svg)](https://github.com/panaversity/spec-kit-plus)
-[![Phase](https://img.shields.io/badge/phase-I-orange.svg)](./constitution.md)
+[![Phase](https://img.shields.io/badge/phase-multi-blue.svg)](./constitution.md)
 
-> A command-line todo application built using **Spec-Driven Development** with **Claude Code** and **Spec-Kit Plus**.
+> A comprehensive todo application built using **Spec-Driven Development** with **Claude Code** and **Spec-Kit Plus**, evolving from console app to full-stack web API.
 
 ---
 
 ## 🎯 **Project Overview**
 
-This is **Phase I** of the Hackathon II "Evolution of Todo" project. It implements a fully functional console-based task management system with in-memory storage.
+This is the **Multi-Phase Evolution** of the Hackathon II "Todo App" project. It includes:
 
-**Key Features:**
+**Phase I**: In-Memory Console App - A fully functional console-based task management system with in-memory storage.
+
+**Phase II**: Full-Stack Web API - A secure, production-ready REST API using FastAPI with JWT-based authentication that enables user registration, login, and protected task management operations with proper data isolation and security controls.
+
+**Phase I Key Features:**
 - ➕ Add tasks with title and description
 - 📋 View all tasks with status indicators
 - ✏️ Update task details
 - ❌ Delete tasks
 - ✅ Mark tasks as complete/incomplete
+
+**Phase II Key Features:**
+- 🔐 User registration with email, name, and password
+- 🔑 User login with JWT token authentication
+- 📱 RESTful API endpoints for task management
+- 🔒 Protected endpoints requiring valid JWT tokens
+- 👥 User isolation (users can only access their own tasks)
+- 📊 API documentation at `/docs` (Swagger UI) and `/redoc` (ReDoc)
+- 🏥 Health check endpoints at `/health`
 
 **Development Approach:**
 - 100% Spec-Driven Development (no manual coding)
@@ -34,19 +47,45 @@ hackathon2-todo-app/
 ├── constitution.md           # Project governance and principles
 ├── CLAUDE.md                 # Spec-Kit Plus agent configuration
 ├── specs/                    # Feature specifications
-│   └── 001-todo-app/
-│       ├── spec.md           # Main feature specification
-│       ├── plan.md           # Architecture plan
-│       ├── tasks.md          # Task breakdown
-│       ├── data-model.md     # Data structures
-│       ├── quickstart.md     # Quick reference
-│       ├── research.md       # Research notes
-│       ├── checklists/       # Validation checklists
-│       └── contracts/        # API contracts
-├── src/                      # Python implementation
+│   ├── 001-todo-app/         # Phase I: Console App
+│   │   ├── spec.md           # Main feature specification
+│   │   ├── plan.md           # Architecture plan
+│   │   ├── tasks.md          # Task breakdown
+│   │   ├── data-model.md     # Data structures
+│   │   ├── quickstart.md     # Quick reference
+│   │   ├── research.md       # Research notes
+│   │   ├── checklists/       # Validation checklists
+│   │   └── contracts/        # API contracts
+│   └── phase2-fullstack-web/ # Phase II: Full-Stack Web API
+│       └── 02-backend-api-auth/ # Backend API & Authentication
+│           ├── specs.md      # Specifications
+│           ├── plan.md       # Architecture plan
+│           ├── tasks.md      # Task breakdown
+│           ├── data-model.md # Data models
+│           ├── research.md   # Research notes
+│           ├── quickstart.md # Quick reference
+│           └── checklists/   # Validation checklists
+├── src/                      # Phase I: Console App Python implementation
 │   ├── main.py               # Application entry point
 │   ├── models.py             # Data models (Task class)
 │   └── services.py           # Business logic
+├── backend/                  # Phase II: Backend API implementation
+│   ├── main.py               # FastAPI application entry point
+│   ├── config.py             # Configuration settings
+│   ├── models.py             # SQLModel database models
+│   ├── db.py                 # Database connection
+│   ├── schemas.py            # Pydantic request/response models
+│   ├── auth.py               # Authentication utilities (JWT, password hashing)
+│   ├── dependencies.py       # FastAPI dependencies
+│   ├── routers/              # API route modules
+│   │   ├── auth.py           # Authentication endpoints
+│   │   └── tasks.py          # Task management endpoints
+│   ├── tests/                # Test modules
+│   │   ├── conftest.py       # Test configuration
+│   │   └── test_*.py         # Test files
+│   ├── pyproject.toml        # Dependencies
+│   ├── .env.example          # Environment variables template
+│   └── README.md             # Backend documentation
 └── README.md                 # This file
 ```
 
@@ -54,13 +93,23 @@ hackathon2-todo-app/
 
 ## ⚙️ **Technology Stack**
 
+### Phase I: Console App
 | Component | Technology |
 |-----------|-----------|
 | **Language** | Python 3.13+ |
 | **Environment** | uv (Python package manager) |
+| **Architecture** | In-memory, modular design |
+
+### Phase II: Web API Backend
+| Component | Technology |
+|-----------|-----------|
+| **Framework** | FastAPI 0.104+ |
+| **Database** | SQLModel (with PostgreSQL) |
+| **Authentication** | JWT with python-jose, password hashing with passlib[bcrypt] |
+| **Validation** | Pydantic V2 |
+| **Environment** | uv (Python package manager) |
 | **AI Assistant** | Claude Code |
 | **Spec Framework** | Spec-Kit Plus |
-| **Architecture** | In-memory, modular design |
 
 ---
 
@@ -69,6 +118,7 @@ hackathon2-todo-app/
 ### **Prerequisites**
 
 - **Python 3.13 or higher** installed
+- **uv** package manager installed (`pip install uv`)
 - **Windows users:** WSL 2 (Windows Subsystem for Linux) recommended
 
 #### **WSL 2 Setup (Windows Users)**
@@ -97,19 +147,89 @@ wsl --install -d Ubuntu-22.04
    python --version  # Should show 3.13 or higher
    ```
 
-3. **No additional dependencies required** - uses Python standard library only
+3. **Install dependencies for Phase II (Backend API):**
+   ```bash
+   cd backend
+   uv sync  # Install all dependencies from pyproject.toml
+   ```
+
+4. **Set up environment variables:**
+   ```bash
+   cp .env.example .env  # Copy example environment file
+   # Edit .env with your configuration
+   ```
+
+5. **Phase I (Console App) has no additional dependencies** - uses Python standard library only
 
 ---
 
 ## 🎮 **Usage**
 
-### **Running the Application**
+### **Phase I: Console Application**
 
 ```bash
 python src/main.py
 ```
 
-### **Menu Options**
+### **Phase II: Backend API**
+
+#### **Running the API Server**
+```bash
+cd backend
+uv run uvicorn main:app --reload --host 0.0.0.0 --port 8000
+```
+
+#### **API Endpoints**
+
+**Authentication Endpoints:**
+- `POST /api/v1/auth/register` - User registration
+- `POST /api/v1/auth/login` - User login
+- `GET /api/v1/auth/me` - Get current user (requires JWT token)
+
+**Task Management Endpoints:**
+- `GET /api/v1/tasks/` - Get all tasks for current user
+- `POST /api/v1/tasks/` - Create new task
+- `GET /api/v1/tasks/{task_id}` - Get specific task
+- `PUT /api/v1/tasks/{task_id}` - Update task
+- `DELETE /api/v1/tasks/{task_id}` - Delete task
+
+**Documentation & Health:**
+- `GET /docs` - Interactive API documentation (Swagger UI)
+- `GET /redoc` - API documentation (ReDoc)
+- `GET /health` - Health check endpoint
+
+#### **API Usage Examples**
+
+**Register a new user:**
+```bash
+curl -X POST "http://localhost:8000/api/v1/auth/register" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "name": "John Doe",
+    "password": "SecurePassword123"
+  }'
+```
+
+**Login to get JWT token:**
+```bash
+curl -X POST "http://localhost:8000/api/v1/auth/login" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d 'username=user@example.com&password=SecurePassword123'
+```
+
+**Create a task (with JWT token):**
+```bash
+curl -X POST "http://localhost:8000/api/v1/tasks/" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Sample Task",
+    "description": "This is a sample task"
+  }'
+```
+
+### **Phase I: Console App Menu Options**
 
 ```
 ==============================
@@ -124,7 +244,7 @@ python src/main.py
 ==============================
 ```
 
-### **Feature Guide**
+### **Phase I: Console App Feature Guide**
 
 #### **1️⃣ Add Task**
 ```
@@ -149,7 +269,7 @@ Total: 1 task(s)
 Enter task ID to update: 1
 Current task: [1] ✗ Buy groceries (Created: 2025-12-08 23:31:51)
 Enter new title (current: 'Buy groceries', press Enter to keep current): Buy groceries and fruits
-Enter new description (current: 'Milk, eggs, bread', press Enter to keep current): 
+Enter new description (current: 'Milk, eggs, bread', press Enter to keep current):
 Task updated successfully.
 ```
 
@@ -172,7 +292,7 @@ Task marked as completed.
 
 ## 🧪 **Testing**
 
-### **Manual Testing Checklist**
+### **Phase I: Console App Manual Testing Checklist**
 
 - [x] Add task with title only
 - [x] Add task with title and description
@@ -185,16 +305,43 @@ Task marked as completed.
 - [x] Mark task as incomplete
 - [x] Toggle task status multiple times
 
-### **Edge Cases Validated**
+### **Phase I: Edge Cases Validated**
 
 - [x] Invalid task ID (non-existent)
 - [x] Invalid input type (text instead of number)
 - [x] Empty task list handling
 - [x] Exit confirmation
 
+### **Phase II: Backend API Testing**
+
+#### **Authentication Tests**
+- [x] User registration with valid data
+- [x] User registration with invalid data (validation errors)
+- [x] User login with correct credentials
+- [x] User login with incorrect credentials
+- [x] Protected endpoint access with valid token
+- [x] Protected endpoint access without token
+
+#### **Task Management Tests**
+- [x] Create task with valid data
+- [x] Create task with invalid data (validation errors)
+- [x] Get all tasks for user
+- [x] Get specific task by ID
+- [x] Update task details
+- [x] Delete task
+- [x] User isolation (can't access other users' tasks)
+
+#### **Running Backend Tests**
+```bash
+cd backend
+python -m pytest tests/ -v
+```
+
 ---
 
 ## 📋 **Features Implemented**
+
+### **Phase I: Console App Features**
 
 | Feature | Status | Description |
 |---------|--------|-------------|
@@ -204,11 +351,35 @@ Task marked as completed.
 | **Delete Task** | ✅ Complete | Remove tasks by ID with confirmation |
 | **Mark Complete** | ✅ Complete | Toggle task completion status |
 
-**All features include:**
+**All Phase I features include:**
 - ✅ Input validation
 - ✅ Error handling
 - ✅ User-friendly messages
 - ✅ Graceful edge case handling
+
+### **Phase II: Backend API Features**
+
+| Feature | Status | Description |
+|---------|--------|-------------|
+| **User Registration** | ✅ Complete | Create users with email, name, and password |
+| **User Login** | ✅ Complete | Authenticate users and return JWT tokens |
+| **Get Current User** | ✅ Complete | Retrieve current authenticated user information |
+| **Create Task** | ✅ Complete | Create tasks with title and description |
+| **Get All Tasks** | ✅ Complete | Retrieve all tasks for current user |
+| **Get Specific Task** | ✅ Complete | Retrieve specific task by ID |
+| **Update Task** | ✅ Complete | Update task details (title, description, completion status) |
+| **Delete Task** | ✅ Complete | Delete task by ID |
+| **User Isolation** | ✅ Complete | Users can only access their own tasks |
+| **API Documentation** | ✅ Complete | Interactive docs at /docs and /redoc |
+| **Health Checks** | ✅ Complete | System status at /health |
+
+**All Phase II features include:**
+- ✅ JWT-based authentication
+- ✅ Input validation with Pydantic
+- ✅ Error handling with appropriate HTTP status codes
+- ✅ Database integration with SQLModel
+- ✅ Password hashing with bcrypt
+- ✅ Comprehensive test coverage
 
 ---
 
@@ -240,13 +411,21 @@ This project was built following strict Spec-Driven Development principles:
 
 ## 🔄 **Data Storage**
 
+### **Phase I: Console App**
 **Important:** This is an **in-memory application**. All data is stored in RAM and will be **lost when the application exits**.
 
 - ✅ Fast performance (no disk I/O)
 - ✅ Simple architecture
 - ❌ No data persistence between sessions
 
-This is Phase I - persistence will be added in Phase II with database integration.
+### **Phase II: Backend API**
+Persistent data storage using PostgreSQL database with SQLModel ORM.
+
+- ✅ Data persistence between sessions
+- ✅ ACID compliance
+- ✅ Relational data modeling
+- ✅ Scalable architecture
+- ✅ User authentication and task management
 
 ---
 
@@ -263,7 +442,7 @@ This phase demonstrates:
 
 ## 🚀 **Next Phases**
 
-- **Phase II:** Full-stack web application (Next.js + FastAPI + Neon DB)
+- **Phase II:** Full-stack web application (Next.js + FastAPI + Neon DB) - **IN PROGRESS**
 - **Phase III:** AI-powered chatbot with OpenAI Agents SDK
 - **Phase IV:** Kubernetes deployment (Minikube + Helm)
 - **Phase V:** Cloud deployment (DigitalOcean + Kafka + Dapr)
