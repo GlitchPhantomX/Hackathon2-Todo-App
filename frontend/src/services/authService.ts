@@ -1,10 +1,43 @@
 import api from "./api";
-import { setToken, setUser, getToken, getUser, clearAuth } from "@/utils/cookies";
 import { LoginCredentials, RegisterCredentials, AuthResponse } from "@/types/auth.types";
+
+// Helper function to set cookie (same as in AuthContext)
+const setCookie = (name: string, value: string, days: number = 7) => {
+  const expires = new Date();
+  expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
+  document.cookie = `${name}=${value};expires=${expires.toUTCString};path=/;SameSite=Lax`;
+};
+
+// Helper function to get cookie (same as in AuthContext)
+const getCookie = (name: string): string | null => {
+  if (typeof document === 'undefined') return null;
+  const nameEQ = name + "=";
+  const ca = document.cookie.split(';');
+  for (let i = 0; i < ca.length; i++) {
+    let c = ca[i];
+    while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+    if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+  }
+  return null;
+};
+
+// Helper function to delete cookie (same as in AuthContext)
+const deleteCookie = (name: string) => {
+  document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;`;
+};
 
 export const register = async (credentials: RegisterCredentials) => {
   try {
     const res = await api.post("/auth/register", credentials);
+
+    // Store token in both localStorage and cookie (consistent with AuthContext)
+    const token = res.data.access_token;
+    if (token) {
+      localStorage.setItem('token', token);
+      localStorage.setItem('token_type', res.data.token_type || 'bearer');
+      setCookie('token', token, 7);
+    }
+
     return res.data;
   } catch (e: any) {
     throw new Error(e.response?.data?.detail || "Registration failed");
@@ -25,12 +58,16 @@ export const login = async (credentials: LoginCredentials): Promise<AuthResponse
     const { access_token } = res.data;
     if (!access_token) throw new Error("Token missing from response");
 
-    // save token
-    setToken(access_token);
+    // Store token in both localStorage and cookie (consistent with AuthContext)
+    localStorage.setItem('token', access_token);
+    localStorage.setItem('token_type', res.data.token_type || 'bearer');
+    setCookie('token', access_token, 7);
 
     // now fetch user
     const userRes = await api.get("/auth/me");
-    setUser(userRes.data);
+
+    // Store user in localStorage (consistent with AuthContext pattern)
+    localStorage.setItem('user', JSON.stringify(userRes.data));
 
     return { token: access_token, user: userRes.data };
   } catch (err: any) {
@@ -39,17 +76,32 @@ export const login = async (credentials: LoginCredentials): Promise<AuthResponse
 };
 
 export const getCurrentUser = async () => {
-  const token = getToken();
+  // First try to get from localStorage
+  const token = localStorage.getItem('token');
   if (!token) throw new Error("No auth token");
 
-  const cached = getUser();
-  if (cached) return cached;
+  // Try to get cached user from localStorage
+  const cachedUserStr = localStorage.getItem('user');
+  if (cachedUserStr) {
+    try {
+      const cachedUser = JSON.parse(cachedUserStr);
+      return cachedUser;
+    } catch (e) {
+      console.error('Error parsing cached user:', e);
+    }
+  }
 
   const res = await api.get("/auth/me");
-  setUser(res.data);
+  // Cache user in localStorage
+  localStorage.setItem('user', JSON.stringify(res.data));
   return res.data;
 };
 
 export const logout = async () => {
-  clearAuth();
+  // Clear both localStorage and cookies (consistent with AuthContext)
+  localStorage.removeItem('token');
+  localStorage.removeItem('token_type');
+  localStorage.removeItem('user');
+  deleteCookie('token');
+  deleteCookie('user');
 };

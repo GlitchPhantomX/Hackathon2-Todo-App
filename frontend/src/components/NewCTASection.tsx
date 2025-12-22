@@ -2,6 +2,7 @@
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { ArrowRight, Sparkles, CheckCircle2, Zap, Clock, TrendingUp } from 'lucide-react'
+import { AnimatedTooltipPreview } from './AnimatedTooltipPreview'
 
 const features = [
   { icon: Zap, text: "Start in under 60 seconds" },
@@ -127,13 +128,13 @@ export default function CTASection() {
 
           {/* Social Proof */}
           <motion.div
-            className="flex items-center justify-center gap-8 pt-8 border-t border-white/10"
+            className="flex items-center justify-center gap-8 pt-14 border-t border-white/10"
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
             transition={{ delay: 0.8 }}
           >
-            <div className="flex -space-x-3">
+            {/* <div className="flex -space-x-3">
               {[
                 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face',
                 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face',
@@ -152,7 +153,10 @@ export default function CTASection() {
                   transition={{ delay: 0.9 + i * 0.1 }}
                 />
               ))}
-            </div>
+            </div> */}
+           <div className="flex -space-x-3">
+             <AnimatedTooltipPreview/>
+           </div>
             <div className="text-left">
               <div className="flex items-center gap-1 mb-1">
                 {[...Array(5)].map((_, i) => (

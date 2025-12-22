@@ -7,6 +7,8 @@ export interface Task {
   createdAt: string;
   updatedAt: string;
   userId: string;
+  priority?: 'low' | 'medium' | 'high';
+  tags?: string[];
 }
 
 export interface TaskCreate {

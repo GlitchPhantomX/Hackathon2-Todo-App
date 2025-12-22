@@ -1,33 +1,48 @@
 'use client'
 
-import { Card } from '@/components/ui/Card'
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts'
+import { useEffect, useState } from 'react'
+import { Card } from '@/components/ui/card'
+import { useDashboard } from '@/contexts/DashboardContext'
+import { groupTasksByPriority } from '@/lib/task-utils'
+import { ChartSkeleton } from './skeletons'
+import { Pie, PieChart, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts'
 
-const data = [
-  { name: 'High', value: 28, color: '#ef4444' },
-  { name: 'Medium', value: 45, color: '#f59e0b' },
-  { name: 'Low', value: 27, color: '#6b7280' },
-]
+const COLORS = {
+  high: '#ef4444',    // Bright red for dark mode
+  medium: '#f59e0b',  // Bright amber for dark mode  
+  low: '#10b981',     // Bright green for dark mode
+}
 
 export function PriorityDistributionChart() {
-  return (
-    <Card className="p-6 animate-slideUp animation-delay-600">
-      {/* Header */}
-      <div className="mb-6">
-        <h3 className="font-heading text-h3 text-gray-900 dark:text-gray-50">
-          Priority Distribution
-        </h3>
-        <p className="text-body-sm text-gray-600 dark:text-gray-400 mt-1">
-          Current task priorities
-        </p>
-      </div>
+  const { tasks, loading } = useDashboard()
+  const [chartData, setChartData] = useState([])
 
-      {/* Chart */}
+  useEffect(() => {
+    if (tasks && tasks.length >= 0) {
+      const grouped = groupTasksByPriority(tasks)
+      const processed = [
+        { name: 'High', value: grouped.high, color: COLORS.high },
+        { name: 'Medium', value: grouped.medium, color: COLORS.medium },
+        { name: 'Low', value: grouped.low, color: COLORS.low },
+      ]
+      setChartData(processed)
+    }
+  }, [tasks])
+
+  if (loading) {
+    return <ChartSkeleton />
+  }
+
+  return (
+    <Card className="p-6 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+      <h3 className="font-heading text-xl font-bold text-gray-900 dark:text-white mb-6">
+        Priority Distribution
+      </h3>
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
-              data={data}
+              data={chartData}
               cx="50%"
               cy="50%"
               labelLine={false}
@@ -35,17 +50,17 @@ export function PriorityDistributionChart() {
               outerRadius={80}
               fill="#8884d8"
               dataKey="value"
-              animationDuration={1500}
             >
-              {data.map((entry, index) => (
+              {chartData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.color} />
               ))}
             </Pie>
             <Tooltip
               contentStyle={{
-                backgroundColor: 'hsl(var(--background))',
-                border: '1px solid hsl(var(--border))',
-                borderRadius: '8px',
+                backgroundColor: 'rgb(31, 41, 55)',
+                border: '1px solid rgb(55, 65, 81)',
+                borderRadius: '0.5rem',
+                color: '#fff'
               }}
             />
           </PieChart>
@@ -54,13 +69,13 @@ export function PriorityDistributionChart() {
 
       {/* Legend */}
       <div className="grid grid-cols-3 gap-4 mt-4">
-        {data.map((item) => (
+        {chartData.map((item) => (
           <div key={item.name} className="text-center">
             <div className="flex items-center justify-center gap-2 mb-1">
               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
-              <span className="text-body-sm text-gray-600 dark:text-gray-400">{item.name}</span>
+              <span className="text-sm text-gray-600 dark:text-gray-300">{item.name}</span>
             </div>
-            <div className="font-heading text-h4 text-gray-900 dark:text-gray-50">
+            <div className="text-2xl font-bold text-gray-900 dark:text-white">
               {item.value}
             </div>
           </div>

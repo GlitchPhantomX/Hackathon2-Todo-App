@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
-import { Alert } from '@/components/ui/Alert';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Alert } from '@/components/ui/alert';
 import { Spinner } from '@/components/ui/Spinner';
 import { useAuth } from '@/contexts/AuthContext';
 import { getTasks, deleteTask, toggleTaskCompletion } from '@/services/taskService';

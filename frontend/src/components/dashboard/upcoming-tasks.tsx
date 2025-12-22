@@ -1,10 +1,15 @@
 'use client'
 
-import { Card } from '@/components/ui/Card'
-import { Badge } from '@/components/ui/Badge'
+import { useEffect, useState } from 'react'
+import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { Calendar, Flag } from 'lucide-react'
 import { format } from 'date-fns'
-
+import { taskService } from '@/services/api'
+import { getCurrentUserId } from '@/lib/auth-utils'
+import { getUpcomingTasks } from '@/lib/task-utils'
+import { Task } from '@/types/task'
+import { TaskListSkeleton } from './skeletons'
 
 type Priority = 'high' | 'medium' | 'low';
 
@@ -14,69 +19,77 @@ const priorityConfig: Record<Priority, { color: string; label: string }> = {
   low: { color: 'bg-gray-400 dark:bg-gray-600', label: 'Low' },
 }
 
-interface Task {
-  title: string;
-  dueDate: Date;
-  priority: Priority;
-}
-
 export function UpcomingTasks() {
-  const upcomingTasks: Task[] = [
-    {
-      title: 'Team meeting preparation',
-      dueDate: new Date(Date.now() + 1000 * 60 * 60 * 2),
-      priority: 'high',
-    },
-    {
-      title: 'Code review for PR #234',
-      dueDate: new Date(Date.now() + 1000 * 60 * 60 * 5),
-      priority: 'medium',
-    },
-    {
-      title: 'Update documentation',
-      dueDate: new Date(Date.now() + 1000 * 60 * 60 * 24),
-      priority: 'low',
-    },
-  ];
+  const [tasks, setTasks] = useState<Task[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
+
+  useEffect(() => {
+    async function fetchTasks() {
+      try {
+        const userId = await getCurrentUserId()
+        const allTasks = await taskService.getTasks(userId)
+        const upcoming = getUpcomingTasks(allTasks, 3)
+        setTasks(upcoming)
+      } catch (error) {
+        console.error('Failed to fetch upcoming tasks:', error)
+        setError(error as Error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchTasks()
+
+    // Auto-refresh every 30 seconds
+    const interval = setInterval(fetchTasks, 30000)
+    return () => clearInterval(interval)
+  }, [])
+
+  if (loading) {
+    return <Card className="p-6"><TaskListSkeleton /></Card>
+  }
 
   return (
-    <Card className="p-6 animate-slideUp animation-delay-800">
-      {/* Header */}
+    <Card className="p-6">
       <div className="flex items-center justify-between mb-6">
         <h3 className="font-heading text-h3 text-gray-900 dark:text-gray-50">
           Upcoming Tasks
         </h3>
-        <button className="text-body-sm text-primary-600 dark:text-primary-400 hover:underline">
-          View All
-        </button>
       </div>
 
-      {/* Task List */}
       <div className="space-y-4">
-        {upcomingTasks.map((task, index) => (
-          <div
-            key={index}
-            className="p-4 rounded-lg border border-gray-200 dark:border-gray-800 hover:border-primary-300 dark:hover:border-primary-700 transition-colors animate-slideUp"
-            style={{ animationDelay: `${800 + index * 100}ms` }}
-          >
-            <div className="flex items-start justify-between gap-3 mb-2">
-              <p className="text-body-sm font-medium text-gray-900 dark:text-gray-50 flex-1">
-                {task.title}
-              </p>
-              <Badge
-                variant="secondary"
-                className={`${priorityConfig[task.priority].color} text-white gap-1`}
-              >
-                <Flag className="w-3 h-3 fill-current" />
-                {priorityConfig[task.priority].label}
-              </Badge>
+        {tasks.length === 0 ? (
+          <p className="text-center py-8 text-gray-500">
+            No upcoming tasks
+          </p>
+        ) : (
+          tasks.map((task) => (
+            <div
+              key={task.id}
+              className="p-4 rounded-lg border border-gray-200 dark:border-gray-800 hover:border-primary-300 dark:hover:border-primary-700 transition-colors"
+            >
+              <div className="flex items-start justify-between gap-3 mb-2">
+                <p className="text-body-sm font-medium text-gray-900 dark:text-gray-50 flex-1">
+                  {task.title}
+                </p>
+                <Badge
+                  variant="secondary"
+                  className={`${priorityConfig[task.priority].color} text-white gap-1`}
+                >
+                  <Flag className="w-3 h-3 fill-current" />
+                  {priorityConfig[task.priority].label}
+                </Badge>
+              </div>
+              {task.due_date && (
+                <div className="flex items-center gap-2 text-body-xs text-gray-500 dark:text-gray-500">
+                  <Calendar className="w-3.5 h-3.5" />
+                  <span>{format(new Date(task.due_date), 'MMM d, h:mm a')}</span>
+                </div>
+              )}
             </div>
-            <div className="flex items-center gap-2 text-body-xs text-gray-500 dark:text-gray-500">
-              <Calendar className="w-3.5 h-3.5" />
-              <span>{format(task.dueDate, 'MMM d, h:mm a')}</span>
-            </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
     </Card>
   )

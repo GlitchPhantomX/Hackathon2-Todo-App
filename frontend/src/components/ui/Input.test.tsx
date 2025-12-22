@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Input } from './Input';
+import { Input } from './input';
 
 // This is a test component to demonstrate Input functionality
 const InputTest = () => {

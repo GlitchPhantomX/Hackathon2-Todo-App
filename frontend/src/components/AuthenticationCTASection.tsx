@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { ArrowRight, CheckCircle2 } from 'lucide-react'
-import { Button } from '@/components/ui/Button'
+import { Button } from '@/components/ui/button'
 
 export function AuthenticationCTASection() {
   return (

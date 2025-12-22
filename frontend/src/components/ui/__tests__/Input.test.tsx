@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { Input } from '../Input';
+import { Input } from '../input';
 
 describe('Input Component', () => {
   test('renders input with label', () => {

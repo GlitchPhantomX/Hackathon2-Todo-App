@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button } from './Button';
-import { Input } from './Input';
-import { Alert } from './Alert';
-import { Card } from './Card';
+import { Button } from './button';
+import { Input } from './input';
+import { Alert } from './alert';
+import { Card } from './card';
 import { Modal } from './Modal';
 import { Spinner } from './Spinner';
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { Brain, Zap, Shield, Users, Smartphone, TrendingUp } from 'lucide-react'
-import { Card } from './ui/Card'
+import { Card } from './ui/card'
 type ColorVariant = 'primary' | 'success' | 'warning' | 'error';
 
 const colorVariants: Record<ColorVariant, string> = {

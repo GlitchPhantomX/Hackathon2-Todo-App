@@ -51,6 +51,14 @@ const config: Config = {
           900: "var(--color-indigo-900)",
           950: "var(--color-indigo-950)",
         },
+        // Chart colors optimized for dark mode
+        chart: {
+          1: '#60a5fa',  // Bright blue
+          2: '#4ade80',  // Bright green
+          3: '#fbbf24',  // Bright amber
+          4: '#f87171',  // Bright red
+          5: '#a78bfa',  // Bright purple
+        }
       },
       animation: {
         blob: "blob 7s infinite",

@@ -1,58 +1,22 @@
-'use client';
+import * as React from "react"
 
-import React, { InputHTMLAttributes, forwardRef } from 'react';
-import { cn } from '@/lib/utils';
+import { cn } from "@/lib/utils"
 
-export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
-  label?: string;
-  error?: string;
-  helperText?: string;
-  fullWidth?: boolean;
-}
-
-const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, helperText, fullWidth = false, className, ...props }, ref) => {
-    const hasError = !!error;
-
+const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
+  ({ className, type, ...props }, ref) => {
     return (
-      <div className={cn({ 'w-full': fullWidth })}>
-        {label && (
-          <label
-            htmlFor={props.id}
-            className={cn(
-              'block text-sm font-medium mb-1',
-              hasError ? 'text-red-600' : 'text-gray-700'
-            )}
-          >
-            {label}
-          </label>
+      <input
+        type={type}
+        className={cn(
+          "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+          className
         )}
-        <input
-          ref={ref}
-          className={cn(
-            'block w-full rounded-md border shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm',
-            {
-              'border-gray-300': !hasError,
-              'border-red-300': hasError,
-              'p-2': !label, // Add padding if no label
-              'py-2 px-3': label, // Different padding if label exists
-              'w-full': fullWidth,
-            },
-            className
-          )}
-          {...props}
-        />
-        {error && (
-          <p className="mt-1 text-sm text-red-600">{error}</p>
-        )}
-        {!hasError && helperText && (
-          <p className="mt-1 text-sm text-gray-500">{helperText}</p>
-        )}
-      </div>
-    );
+        ref={ref}
+        {...props}
+      />
+    )
   }
-);
+)
+Input.displayName = "Input"
 
-Input.displayName = 'Input';
-
-export { Input };
+export { Input }

@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
-import { Alert } from '@/components/ui/Alert';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Alert } from '@/components/ui/alert';
 import { Task } from '@/types/task.types';
 import { CheckCircle, Circle, Edit, Trash2 } from 'lucide-react';
 

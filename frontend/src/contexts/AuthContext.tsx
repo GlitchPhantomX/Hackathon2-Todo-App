@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useReducer, useContext, useEffect, ReactNode } from 'react';
+import React, { createContext, useReducer, useContext, useEffect, ReactNode, useRef } from 'react';
 import { AuthState, AuthContextType, LoginCredentials, RegisterCredentials } from '@/types/auth.types';
 
 // Define action types
@@ -13,14 +13,15 @@ type AuthAction =
   | { type: 'REGISTER_FAILURE'; payload: string }
   | { type: 'LOGOUT' }
   | { type: 'SET_LOADING'; payload: boolean }
-  | { type: 'SET_ERROR'; payload: string | null };
+  | { type: 'SET_ERROR'; payload: string | null }
+  | { type: 'RESTORE_SESSION'; payload: { user: any; token: string } }; // 🆕 Added
 
 // Initial state
 const initialState: AuthState = {
   user: null,
   token: null,
   isAuthenticated: false,
-  isLoading: false,
+  isLoading: true, // 🆕 Start with true to avoid flash
 };
 
 // Reducer function
@@ -35,6 +36,7 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
       };
     case 'LOGIN_SUCCESS':
     case 'REGISTER_SUCCESS':
+    case 'RESTORE_SESSION': // 🆕 Added
       return {
         ...state,
         user: action.payload.user,
@@ -77,6 +79,31 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
   }
 };
 
+// 🆕 Helper function to set cookie
+const setCookie = (name: string, value: string, days: number = 7) => {
+  const expires = new Date();
+  expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
+  document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/;SameSite=Lax`;
+};
+
+// 🆕 Helper function to get cookie
+const getCookie = (name: string): string | null => {
+  if (typeof document === 'undefined') return null;
+  const nameEQ = name + "=";
+  const ca = document.cookie.split(';');
+  for (let i = 0; i < ca.length; i++) {
+    let c = ca[i];
+    while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+    if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+  }
+  return null;
+};
+
+// 🆕 Helper function to delete cookie
+const deleteCookie = (name: string) => {
+  document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;`;
+};
+
 // Create context
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -87,55 +114,75 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
+  const isCheckingAuth = useRef(false); // 🆕 Prevent multiple auth checks
+  const hasCheckedAuth = useRef(false); // 🆕 Track if we've checked once
 
-  // ✅ Check for existing token on mount
+  // ✅ Check for existing token on mount ONLY ONCE
   useEffect(() => {
+    // 🆕 Skip if already checking or already checked
+    if (isCheckingAuth.current || hasCheckedAuth.current) return;
+
     const checkAuthStatus = async () => {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      
-      if (token) {
-        try {
-          dispatch({ type: 'SET_LOADING', payload: true });
-          
-          // ✅ Fetch current user with token
+      isCheckingAuth.current = true;
+
+      try {
+        // Check BOTH localStorage AND cookies
+        const localToken = localStorage.getItem('token');
+        const cookieToken = getCookie('token');
+        const token = localToken || cookieToken;
+        
+        console.log('🔍 Auth Check - Token found:', !!token); // Debug log
+
+        if (token) {
+          // Fetch current user with token
           const response = await fetch('http://127.0.0.1:8000/api/v1/auth/me', {
             headers: {
               'Authorization': `Bearer ${token}`,
             },
           });
 
+          console.log('🔍 Auth /me response status:', response.status); // Debug log
+
           if (response.ok) {
             const user = await response.json();
+            console.log('✅ Auth restored successfully'); // Debug log
+            
             dispatch({
-              type: 'LOGIN_SUCCESS',
+              type: 'RESTORE_SESSION', // 🆕 Use different action
               payload: { user, token },
             });
           } else {
-            // Token invalid, clear it
+            console.warn('⚠️ Token invalid, clearing auth'); // Debug log
+            // Token invalid, clear everything
             localStorage.removeItem('token');
+            localStorage.removeItem('token_type');
+            deleteCookie('token');
             dispatch({ type: 'LOGOUT' });
           }
-        } catch (error) {
-          console.error('Auth check failed:', error);
-          localStorage.removeItem('token');
-          dispatch({ type: 'LOGOUT' });
-        } finally {
+        } else {
+          console.log('ℹ️ No token found'); // Debug log
           dispatch({ type: 'SET_LOADING', payload: false });
         }
-      } else {
-        dispatch({ type: 'SET_LOADING', payload: false });
+      } catch (error) {
+        console.error('❌ Auth check failed:', error);
+        localStorage.removeItem('token');
+        localStorage.removeItem('token_type');
+        deleteCookie('token');
+        dispatch({ type: 'LOGOUT' });
+      } finally {
+        isCheckingAuth.current = false;
+        hasCheckedAuth.current = true; // 🆕 Mark as checked
       }
     };
 
     checkAuthStatus();
-  }, []);
+  }, []); // 🆕 Empty dependency array - run ONLY once
 
   // ✅ Login function
   const loginHandler = async (credentials: LoginCredentials) => {
     try {
       dispatch({ type: 'LOGIN_START' });
 
-      // Call backend login API
       const response = await fetch('http://127.0.0.1:8000/api/v1/auth/login', {
         method: 'POST',
         headers: {
@@ -153,15 +200,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       const data = await response.json();
-
-      // ✅ Backend returns { access_token, token_type }
       const token = data.access_token;
 
-      // Save token to localStorage
+      console.log('✅ Login successful, saving token'); // Debug log
+
+      // Save token to BOTH localStorage AND cookie
       localStorage.setItem('token', token);
       localStorage.setItem('token_type', data.token_type || 'bearer');
+      setCookie('token', token, 7);
 
-      // ✅ Fetch user info with the new token
+      // Fetch user info
       const userResponse = await fetch('http://127.0.0.1:8000/api/v1/auth/me', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -178,78 +226,78 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         type: 'LOGIN_SUCCESS',
         payload: { user, token },
       });
+
+      console.log('✅ Login complete, user data loaded'); // Debug log
     } catch (error: any) {
+      console.error('❌ Login error:', error); // Debug log
       dispatch({ type: 'LOGIN_FAILURE', payload: error.message });
       throw error;
     }
   };
 
   // ✅ Register function
-  // ✅ Register function
-// ✅ Register function
-// ✅ Register function
-const registerHandler = async (credentials: RegisterCredentials) => {
-  try {
-    dispatch({ type: 'REGISTER_START' });
+  const registerHandler = async (credentials: RegisterCredentials) => {
+    try {
+      dispatch({ type: 'REGISTER_START' });
 
-    const response = await fetch('http://127.0.0.1:8000/api/v1/auth/register', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        email: credentials.email,
-        name: credentials.username,  // ✅ "username" se "name" kar diya
-        password: credentials.password,
-      }),
-    });
+      const response = await fetch('http://127.0.0.1:8000/api/v1/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: credentials.email,
+          name: credentials.username,
+          password: credentials.password,
+        }),
+      });
 
-    const data = await response.json();
-    console.log('🔍 Backend response:', data);
+      const data = await response.json();
 
-    if (data.detail && Array.isArray(data.detail)) {
-      console.log('🔍 Validation errors:', JSON.stringify(data.detail, null, 2));
-    }
-
-    if (!response.ok) {
-      let errorMsg = 'Registration failed';
-      
-      if (data.detail) {
-        if (Array.isArray(data.detail)) {
-          errorMsg = data.detail.map((err: any) => 
-            `${err.loc ? err.loc.join('.') : ''}: ${err.msg}`
-          ).join(', ');
-        } else if (typeof data.detail === 'string') {
-          errorMsg = data.detail;
+      if (!response.ok) {
+        let errorMsg = 'Registration failed';
+        
+        if (data.detail) {
+          if (Array.isArray(data.detail)) {
+            errorMsg = data.detail.map((err: any) => 
+              `${err.loc ? err.loc.join('.') : ''}: ${err.msg}`
+            ).join(', ');
+          } else if (typeof data.detail === 'string') {
+            errorMsg = data.detail;
+          }
         }
+        
+        throw new Error(errorMsg);
       }
-      
-      console.error('❌ Registration error details:', errorMsg);
-      throw new Error(errorMsg);
+
+      const token = data.access_token;
+      const user = data.user || data;
+
+      // Save token to BOTH localStorage AND cookie
+      localStorage.setItem('token', token);
+      localStorage.setItem('token_type', data.token_type || 'bearer');
+      setCookie('token', token, 7);
+
+      dispatch({
+        type: 'REGISTER_SUCCESS',
+        payload: { user, token },
+      });
+    } catch (error: any) {
+      console.error('❌ Registration error:', error);
+      dispatch({ type: 'REGISTER_FAILURE', payload: error.message });
+      throw error;
     }
+  };
 
-    const token = data.access_token;
-    const user = data.user || data;
-
-    localStorage.setItem('token', token);
-    localStorage.setItem('token_type', data.token_type || 'bearer');
-
-    dispatch({
-      type: 'REGISTER_SUCCESS',
-      payload: { user, token },
-    });
-  } catch (error: any) {
-    console.error('❌ Full error:', error);
-    dispatch({ type: 'REGISTER_FAILURE', payload: error.message });
-    throw error;
-  }
-};
   // ✅ Logout function
   const logoutHandler = async () => {
+    console.log('🚪 Logging out...'); // Debug log
     try {
-      // Clear localStorage
+      // Clear BOTH localStorage AND cookie
       localStorage.removeItem('token');
       localStorage.removeItem('token_type');
+      deleteCookie('token');
+      hasCheckedAuth.current = false; // 🆕 Reset check flag
     } finally {
       dispatch({ type: 'LOGOUT' });
     }

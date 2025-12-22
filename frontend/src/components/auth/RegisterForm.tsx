@@ -1,5 +1,20 @@
 'use client';
 
+// app/login/page.tsx
+import { Metadata } from 'next';
+import Link from 'next/link';
+import { Suspense } from 'react';
+import LoginForm from '@/components/auth/LoginForm';
+import { Spinner } from '@/components/ui/Spinner';
+
+export const metadata: Metadata = {
+  title: 'Login | Todo App',
+  description: 'Login to your todo application account',
+};
+
+// ==============================
+// components/auth/RegisterForm.tsx
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
@@ -7,6 +22,7 @@ import { useAuth } from '@/contexts/AuthContext';
 export default function RegisterForm() {
   const router = useRouter();
   const { register: registerUser, isLoading } = useAuth();
+
   const [formData, setFormData] = useState({
     email: '',
     username: '',
@@ -19,113 +35,124 @@ export default function RegisterForm() {
     e.preventDefault();
     setError('');
 
-    // Validate passwords match
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       return;
     }
 
-    // Validate password length
     if (formData.password.length < 6) {
       setError('Password must be at least 6 characters');
       return;
     }
 
     try {
-      // ✅ Call register from context
       await registerUser({
         email: formData.email,
         username: formData.username,
         password: formData.password,
       });
 
-      console.log('✅ Registration successful, redirecting to dashboard...');
-      
-      // ✅ Redirect to dashboard (auto-logged in after registration)
       router.push('/dashboard');
     } catch (err: any) {
-      console.error('❌ Registration error:', err);
       setError(err.message || 'Failed to register');
     }
   };
 
   return (
-    <div className="max-w-md mx-auto mt-8 p-6 bg-white rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold mb-6 text-center">Create Account</h2>
-      
+    <div className="max-w-md mx-auto mt-8 p-6 bg-gray-900 border border-gray-800 rounded-xl shadow-lg">
+      <h2 className="text-2xl font-bold mb-6 text-center text-white">
+        Create Account
+      </h2>
+
       {error && (
-        <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+        <div className="mb-4 p-3 bg-red-950 border border-red-800 text-red-400 rounded">
           {error}
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium mb-1">Email</label>
+          <label className="block text-sm font-medium mb-1 text-gray-300">
+            Email
+          </label>
           <input
             type="email"
             required
             value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="your@email.com"
+            onChange={(e) =>
+              setFormData({ ...formData, email: e.target.value })
+            }
             disabled={isLoading}
+            placeholder="your@email.com"
+            className="w-full px-3 py-2 rounded-md bg-black text-white border border-gray-700 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-600"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">Username</label>
+          <label className="block text-sm font-medium mb-1 text-gray-300">
+            Username
+          </label>
           <input
             type="text"
             required
             value={formData.username}
-            onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-            className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            onChange={(e) =>
+              setFormData({ ...formData, username: e.target.value })
+            }
+            disabled={isLoading}
             placeholder="johndoe"
-            disabled={isLoading}
+            className="w-full px-3 py-2 rounded-md bg-black text-white border border-gray-700 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-600"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">Password</label>
+          <label className="block text-sm font-medium mb-1 text-gray-300">
+            Password
+          </label>
           <input
             type="password"
             required
+            minLength={6}
             value={formData.password}
-            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-            className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="••••••••"
+            onChange={(e) =>
+              setFormData({ ...formData, password: e.target.value })
+            }
             disabled={isLoading}
-            minLength={6}
+            placeholder="••••••••"
+            className="w-full px-3 py-2 rounded-md bg-black text-white border border-gray-700 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-600"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">Confirm Password</label>
+          <label className="block text-sm font-medium mb-1 text-gray-300">
+            Confirm Password
+          </label>
           <input
             type="password"
             required
-            value={formData.confirmPassword}
-            onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-            className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="••••••••"
-            disabled={isLoading}
             minLength={6}
+            value={formData.confirmPassword}
+            onChange={(e) =>
+              setFormData({ ...formData, confirmPassword: e.target.value })
+            }
+            disabled={isLoading}
+            placeholder="••••••••"
+            className="w-full px-3 py-2 rounded-md bg-black text-white border border-gray-700 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-600"
           />
         </div>
 
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
+          className="w-full py-2 rounded-md font-medium text-white bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition"
         >
           {isLoading ? 'Creating account...' : 'Register'}
         </button>
       </form>
 
-      <p className="mt-4 text-center text-sm text-gray-600">
+      <p className="mt-4 text-center text-sm text-gray-400">
         Already have an account?{' '}
-        <a href="/login" className="text-blue-600 hover:underline">
+        <a href="/login" className="text-purple-400 hover:underline">
           Login here
         </a>
       </p>
