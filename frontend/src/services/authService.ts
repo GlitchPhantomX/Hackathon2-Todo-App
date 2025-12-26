@@ -55,13 +55,15 @@ export const login = async (credentials: LoginCredentials): Promise<AuthResponse
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
     });
 
-    const { access_token } = res.data;
+    const { access_token, refresh_token } = res.data;
     if (!access_token) throw new Error("Token missing from response");
 
-    // Store token in both localStorage and cookie (consistent with AuthContext)
+    // Store tokens in both localStorage and cookie (consistent with AuthContext)
     localStorage.setItem('token', access_token);
+    localStorage.setItem('refresh_token', refresh_token);
     localStorage.setItem('token_type', res.data.token_type || 'bearer');
-    setCookie('token', access_token, 7);
+    setCookie('token', access_token, 0.5); // 30 minutes (0.5 * 24 hours)
+    setCookie('refresh_token', refresh_token, 7); // 7 days
 
     // now fetch user
     const userRes = await api.get("/auth/me");
@@ -100,8 +102,10 @@ export const getCurrentUser = async () => {
 export const logout = async () => {
   // Clear both localStorage and cookies (consistent with AuthContext)
   localStorage.removeItem('token');
+  localStorage.removeItem('refresh_token');
   localStorage.removeItem('token_type');
   localStorage.removeItem('user');
   deleteCookie('token');
+  deleteCookie('refresh_token');
   deleteCookie('user');
 };

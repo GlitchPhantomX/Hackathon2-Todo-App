@@ -38,7 +38,7 @@ export default function LoginForm() {
         password: formData.password,
       });
 
-      router.push('/dashboard');
+      router.push('/new-dashboard');
     } catch (err: any) {
       setError(err.message || 'Failed to login');
     }

@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from typing import Generator
 from db import get_session
 from models import User
-from auth_utils import verify_access_token, get_user_id_from_token
+from utils.auth_utils import verify_access_token, get_user_id_from_token
 
 from config import settings
 

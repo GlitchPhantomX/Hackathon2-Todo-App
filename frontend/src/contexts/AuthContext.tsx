@@ -3,6 +3,9 @@
 import React, { createContext, useReducer, useContext, useEffect, ReactNode, useRef } from 'react';
 import { AuthState, AuthContextType, LoginCredentials, RegisterCredentials } from '@/types/auth.types';
 
+// Add this near the top after imports
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+
 // Define action types
 type AuthAction =
   | { type: 'LOGIN_START' }
@@ -135,7 +138,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         if (token) {
           // Fetch current user with token
-          const response = await fetch('http://127.0.0.1:8000/api/v1/auth/me', {
+          const response = await fetch(`${API_BASE_URL}/auth/me`, {
             headers: {
               'Authorization': `Bearer ${token}`,
             },
@@ -182,8 +185,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const loginHandler = async (credentials: LoginCredentials) => {
     try {
       dispatch({ type: 'LOGIN_START' });
-
-      const response = await fetch('http://127.0.0.1:8000/api/v1/auth/login', {
+  
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -193,101 +196,104 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           password: credentials.password,
         }),
       });
-
+  
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.detail || 'Login failed');
       }
-
+  
       const data = await response.json();
-      const token = data.access_token;
-
-      console.log('✅ Login successful, saving token'); // Debug log
-
-      // Save token to BOTH localStorage AND cookie
-      localStorage.setItem('token', token);
+      const { access_token, refresh_token } = data;
+  
+      console.log('✅ Login successful, saving tokens');
+  
+      localStorage.setItem('token', access_token);
+      localStorage.setItem('refresh_token', refresh_token);
       localStorage.setItem('token_type', data.token_type || 'bearer');
-      setCookie('token', token, 7);
-
-      // Fetch user info
-      const userResponse = await fetch('http://127.0.0.1:8000/api/v1/auth/me', {
+      setCookie('token', access_token, 0.5);
+      setCookie('refresh_token', refresh_token, 7);
+  
+      const userResponse = await fetch(`${API_BASE_URL}/auth/me`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${access_token}`,
         },
       });
-
+  
       if (!userResponse.ok) {
         throw new Error('Failed to fetch user info');
       }
-
+  
       const user = await userResponse.json();
-
+  
       dispatch({
         type: 'LOGIN_SUCCESS',
-        payload: { user, token },
+        payload: { user, token: access_token },
       });
-
-      console.log('✅ Login complete, user data loaded'); // Debug log
+  
+      console.log('✅ Login complete, user data loaded');
     } catch (error: any) {
-      console.error('❌ Login error:', error); // Debug log
+      console.error('❌ Login error:', error);
       dispatch({ type: 'LOGIN_FAILURE', payload: error.message });
       throw error;
     }
   };
 
   // ✅ Register function
-  const registerHandler = async (credentials: RegisterCredentials) => {
-    try {
-      dispatch({ type: 'REGISTER_START' });
+  // ✅ Register function
+const registerHandler = async (credentials: RegisterCredentials) => {
+  try {
+    dispatch({ type: 'REGISTER_START' });
 
-      const response = await fetch('http://127.0.0.1:8000/api/v1/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: credentials.email,
-          name: credentials.username,
-          password: credentials.password,
-        }),
-      });
+    const response = await fetch(`${API_BASE_URL}/auth/register`, {  // ✅ Fixed: parentheses instead of backtick
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: credentials.email,
+        name: credentials.username,
+        password: credentials.password,
+      }),
+    });
 
-      const data = await response.json();
+    const data = await response.json();
 
-      if (!response.ok) {
-        let errorMsg = 'Registration failed';
-        
-        if (data.detail) {
-          if (Array.isArray(data.detail)) {
-            errorMsg = data.detail.map((err: any) => 
-              `${err.loc ? err.loc.join('.') : ''}: ${err.msg}`
-            ).join(', ');
-          } else if (typeof data.detail === 'string') {
-            errorMsg = data.detail;
-          }
+    if (!response.ok) {
+      let errorMsg = 'Registration failed';
+      
+      if (data.detail) {
+        if (Array.isArray(data.detail)) {
+          errorMsg = data.detail.map((err: any) => 
+            `${err.loc ? err.loc.join('.') : ''}: ${err.msg}`
+          ).join(', ');
+        } else if (typeof data.detail === 'string') {
+          errorMsg = data.detail;
         }
-        
-        throw new Error(errorMsg);
       }
-
-      const token = data.access_token;
-      const user = data.user || data;
-
-      // Save token to BOTH localStorage AND cookie
-      localStorage.setItem('token', token);
-      localStorage.setItem('token_type', data.token_type || 'bearer');
-      setCookie('token', token, 7);
-
-      dispatch({
-        type: 'REGISTER_SUCCESS',
-        payload: { user, token },
-      });
-    } catch (error: any) {
-      console.error('❌ Registration error:', error);
-      dispatch({ type: 'REGISTER_FAILURE', payload: error.message });
-      throw error;
+      
+      throw new Error(errorMsg);
     }
-  };
+
+    const { access_token, refresh_token } = data;
+    const user = data.user || data;
+
+    // Save tokens to BOTH localStorage AND cookie
+    localStorage.setItem('token', access_token);
+    localStorage.setItem('refresh_token', refresh_token);
+    localStorage.setItem('token_type', data.token_type || 'bearer');
+    setCookie('token', access_token, 0.5);
+    setCookie('refresh_token', refresh_token, 7);
+
+    dispatch({
+      type: 'REGISTER_SUCCESS',
+      payload: { user, token: access_token },
+    });
+  } catch (error: any) {
+    console.error('❌ Registration error:', error);
+    dispatch({ type: 'REGISTER_FAILURE', payload: error.message });
+    throw error;
+  }
+};
 
   // ✅ Logout function
   const logoutHandler = async () => {

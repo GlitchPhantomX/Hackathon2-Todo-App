@@ -29,12 +29,10 @@ export const TaskForm: React.FC<TaskFormProps> = ({ task, onSuccess }) => {
     const titleValue = formData.title || '';
     if (!titleValue.trim()) {
       newErrors.title = 'Title is required';
-    } else if (titleValue.trim().length < 2) {
-      newErrors.title = 'Title must be at least 2 characters';
-    }
-
-    if (titleValue.length > 200) {
-      newErrors.title = 'Title must be less than 200 characters';
+    } else if (titleValue.trim().length < 3) {
+      newErrors.title = 'Title must be at least 3 characters';
+    } else if (titleValue.trim().length > 100) {
+      newErrors.title = 'Title must be less than 100 characters';
     }
 
     if (formData.description && formData.description.length > 1000) {

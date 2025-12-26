@@ -1,0 +1,33 @@
+'use client';
+
+import React from 'react';
+import PageHeader from '@/components/PageHeader';
+import TaskList from '@/components/TaskList';
+import DashboardStats from '@/components/DashboardStats';
+import { useDashboard } from '@/contexts/DashboardContext';
+import { Card, CardContent } from '@/components/ui/card';
+
+const PendingTasksPage = () => {
+  const { stats } = useDashboard();
+
+  return (
+    <div className="p-6 space-y-6">
+      <PageHeader
+        title="Pending Tasks"
+        description="View all tasks that are pending completion"
+      />
+
+      <div className="mb-6">
+        <DashboardStats />
+      </div>
+
+      <Card>
+        <CardContent className="p-6">
+          <TaskList filter={{ status: 'pending' }} />
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+export default PendingTasksPage;
