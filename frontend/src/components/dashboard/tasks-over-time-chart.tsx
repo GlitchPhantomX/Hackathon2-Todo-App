@@ -9,7 +9,7 @@ import { ChartSkeleton } from './skeletons'
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 
 export function TasksOverTimeChart() {
-  const [chartData, setChartData] = useState([])
+  const [chartData, setChartData] = useState<{ month: string; tasks: number }[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {

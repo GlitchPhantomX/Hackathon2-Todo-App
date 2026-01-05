@@ -64,7 +64,7 @@ export default function IntegrationSettings() {
     ) : (
       <p className="text-sm text-muted-foreground">No services connected yet</p>
     );
-  }, [settings?.integrations.connected_services]);
+  }, [settings]);
 
   if (!settings) return null;
 

@@ -96,7 +96,7 @@ export function EditTaskModal({ task, open, onClose, onSuccess }: EditTaskModalP
             <Label htmlFor="priority">Priority</Label>
             <Select
               value={formData.priority}
-              onValueChange={(value: any) => setFormData({ ...formData, priority: value })}
+              onValueChange={(value: 'low' | 'medium' | 'high') => setFormData({ ...formData, priority: value })}
             >
               <SelectTrigger>
                 <SelectValue />

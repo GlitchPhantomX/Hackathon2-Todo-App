@@ -97,7 +97,7 @@ const ResponsiveTest = () => {
             />
             <div className="flex flex-col sm:flex-row gap-2">
               <Button variant="secondary" fullWidth>Cancel</Button>
-              <Button variant="primary" fullWidth>Submit</Button>
+              <Button variant="default" fullWidth>Submit</Button>
             </div>
           </div>
         </Card>
@@ -124,7 +124,7 @@ const ResponsiveTest = () => {
             <Button variant="secondary" onClick={() => setIsModalOpen(false)}>
               Close
             </Button>
-            <Button variant="primary" onClick={() => setIsModalOpen(false)}>
+            <Button variant="default" onClick={() => setIsModalOpen(false)}>
               Save
             </Button>
           </div>

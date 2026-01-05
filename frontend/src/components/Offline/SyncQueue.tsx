@@ -5,7 +5,7 @@ import React, { createContext, useContext, useReducer, useEffect } from 'react';
 interface QueueItem {
   id: string;
   action: string;
-  payload: any;
+  payload: Record<string, unknown> | unknown;
   timestamp: number;
 }
 
@@ -91,7 +91,7 @@ export const useOffline = () => {
   return context;
 };
 
-export const addToSyncQueue = (action: string, payload: any) => {
+export const addToSyncQueue = (action: string, payload: Record<string, unknown> | unknown) => {
   const queueItem: QueueItem = {
     id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
     action,

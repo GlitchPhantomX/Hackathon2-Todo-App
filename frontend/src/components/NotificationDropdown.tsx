@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
+  // DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
@@ -53,8 +53,20 @@ const NotificationDropdown = () => {
   useEffect(() => {
     console.log('🔄 Notifications changed in context:', notifications);
     console.log('🔄 Count:', notifications.length);
-    setLocalNotifications([...notifications]); // Force new array reference
-  }, [notifications]);
+    // Only update if the notifications actually changed
+    if (localNotifications.length !== notifications.length) {
+      setLocalNotifications([...notifications]);
+      return;
+    }
+    // Check if any notification has changed
+    for (let i = 0; i < notifications.length; i++) {
+      if (localNotifications[i]?.id !== notifications[i]?.id ||
+          localNotifications[i]?.read !== notifications[i]?.read) {
+        setLocalNotifications([...notifications]);
+        return;
+      }
+    }
+  }, [notifications, localNotifications]);
 
   // 🐛 Debug local notifications
   useEffect(() => {

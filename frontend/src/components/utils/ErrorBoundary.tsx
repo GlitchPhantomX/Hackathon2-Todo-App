@@ -42,7 +42,7 @@ class ErrorBoundary extends Component<Props, State> {
           </p>
           <div className="flex justify-center gap-4">
             <Button
-              variant="primary"
+              variant="default"
               onClick={() => window.location.reload()}
             >
               Reload Page

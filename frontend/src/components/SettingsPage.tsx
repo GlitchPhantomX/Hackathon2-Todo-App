@@ -2,12 +2,33 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Settings, 
-  Palette, 
-  Bell, 
-  ListChecks, 
-  Lock, 
+interface SettingsState {
+  theme: string;
+  accentColor: string;
+  fontSize: string;
+  compactMode: boolean;
+  emailNotifications: boolean;
+  pushNotifications: boolean;
+  taskReminders: boolean;
+  dailySummary: boolean;
+  defaultPriority: string;
+  defaultView: string;
+  itemsPerPage: number;
+  autoArchive: boolean;
+  profileVisibility: string;
+  activityTracking: boolean;
+  dataRetention: number;
+  googleCalendar: boolean;
+  slack: boolean;
+  github: boolean;
+}
+
+import {
+  Settings,
+  Palette,
+  Bell,
+  ListChecks,
+  Lock,
   Plug,
   Check,
   Moon,
@@ -26,7 +47,7 @@ import {
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('appearance');
-  const [settings, setSettings] = useState({
+  const [settings, setSettings] = useState<SettingsState>({
     theme: 'dark',
     accentColor: '#8b5cf6',
     fontSize: 'medium',
@@ -55,7 +76,7 @@ export default function SettingsPage() {
     { id: 'integrations', label: 'Integrations', icon: Plug },
   ];
 
-  const updateSetting = (key: string, value: any) => {
+  const updateSetting = (key: keyof SettingsState, value: SettingsState[keyof SettingsState]) => {
     setSettings(prev => ({ ...prev, [key]: value }));
   };
 
@@ -260,7 +281,9 @@ export default function SettingsPage() {
                       { key: 'pushNotifications', icon: Smartphone, label: 'Push Notifications', desc: 'Get notified on your device' },
                       { key: 'taskReminders', icon: Bell, label: 'Task Reminders', desc: 'Reminders for upcoming tasks' },
                       { key: 'dailySummary', icon: Calendar, label: 'Daily Summary', desc: 'Daily recap of your tasks' },
-                    ].map((item) => (
+                    ].map((item) => {
+                      const itemKey = item.key as keyof SettingsState;
+                      return (
                       <div key={item.key} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
                         <div className="flex items-center gap-4">
                           <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
@@ -276,19 +299,19 @@ export default function SettingsPage() {
                           </div>
                         </div>
                         <button
-                          onClick={() => updateSetting(item.key, !settings[item.key as keyof typeof settings])}
+                          onClick={() => updateSetting(itemKey, !settings[itemKey])}
                           className={`relative w-14 h-7 rounded-full transition-colors ${
-                            settings[item.key as keyof typeof settings] ? 'bg-blue-500' : 'bg-slate-300 dark:bg-slate-700'
+                            settings[itemKey] ? 'bg-blue-500' : 'bg-slate-300 dark:bg-slate-700'
                           }`}
                         >
                           <div
                             className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full transition-transform ${
-                              settings[item.key as keyof typeof settings] ? 'translate-x-7' : ''
+                              settings[itemKey] ? 'translate-x-7' : ''
                             }`}
                           />
                         </button>
                       </div>
-                    ))}
+                    )})}
                   </div>
                 )}
 
@@ -394,7 +417,9 @@ export default function SettingsPage() {
 
                     {[
                       { key: 'activityTracking', icon: Eye, label: 'Activity Tracking', desc: 'Track your usage patterns' },
-                    ].map((item) => (
+                    ].map((item) => {
+                      const itemKey = item.key as keyof SettingsState;
+                      return (
                       <div key={item.key} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
                         <div className="flex items-center gap-4">
                           <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
@@ -410,19 +435,19 @@ export default function SettingsPage() {
                           </div>
                         </div>
                         <button
-                          onClick={() => updateSetting(item.key, !settings[item.key as keyof typeof settings])}
+                          onClick={() => updateSetting(itemKey, !settings[itemKey])}
                           className={`relative w-14 h-7 rounded-full transition-colors ${
-                            settings[item.key as keyof typeof settings] ? 'bg-blue-500' : 'bg-slate-300 dark:bg-slate-700'
+                            settings[itemKey] ? 'bg-blue-500' : 'bg-slate-300 dark:bg-slate-700'
                           }`}
                         >
                           <div
                             className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full transition-transform ${
-                              settings[item.key as keyof typeof settings] ? 'translate-x-7' : ''
+                              settings[itemKey] ? 'translate-x-7' : ''
                             }`}
                           />
                         </button>
                       </div>
-                    ))}
+                    )})}
 
                     <div className="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl">
                       <div className="flex items-start gap-3">
@@ -456,7 +481,9 @@ export default function SettingsPage() {
                       { key: 'googleCalendar', icon: Calendar, label: 'Google Calendar', desc: 'Sync tasks with your calendar' },
                       { key: 'slack', icon: Bell, label: 'Slack', desc: 'Get notifications in Slack' },
                       { key: 'github', icon: Globe, label: 'GitHub', desc: 'Link with GitHub issues' },
-                    ].map((item) => (
+                    ].map((item) => {
+                      const itemKey = item.key as keyof SettingsState;
+                      return (
                       <div key={item.key} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
                         <div className="flex items-center gap-4">
                           <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
@@ -472,17 +499,17 @@ export default function SettingsPage() {
                           </div>
                         </div>
                         <button
-                          onClick={() => updateSetting(item.key, !settings[item.key as keyof typeof settings])}
+                          onClick={() => updateSetting(itemKey, !settings[itemKey])}
                           className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                            settings[item.key as keyof typeof settings]
+                            settings[itemKey]
                               ? 'bg-red-500 text-white hover:bg-red-600'
                               : 'bg-blue-500 text-white hover:bg-blue-600'
                           }`}
                         >
-                          {settings[item.key as keyof typeof settings] ? 'Disconnect' : 'Connect'}
+                          {settings[itemKey] ? 'Disconnect' : 'Connect'}
                         </button>
                       </div>
-                    ))}
+                    )})}
                   </div>
                 )}
               </motion.div>

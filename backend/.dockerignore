@@ -1,0 +1,17 @@
+.venv
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.env
+.env.local
+*.db
+*.log
+.pytest_cache
+.vscode
+.claude
+.gemini
+.qwen
+.specify
+tests/
+test_*.py

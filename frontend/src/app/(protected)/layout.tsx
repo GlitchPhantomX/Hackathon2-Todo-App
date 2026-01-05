@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -11,7 +11,6 @@ export default function ProtectedLayout({
 }) {
   const router = useRouter();
   const { isAuthenticated, isLoading, user } = useAuth();
-  const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
     // Wait for auth context to finish loading
@@ -21,13 +20,12 @@ export default function ProtectedLayout({
         router.push('/login');
       } else {
         console.log('✅ Authenticated, user:', user);
-        setIsChecking(false);
       }
     }
   }, [isAuthenticated, isLoading, router, user]);
 
   // Show loading while auth context is initializing
-  if (isLoading || isChecking) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
         <div className="text-center">

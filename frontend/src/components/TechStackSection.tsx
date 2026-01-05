@@ -1,7 +1,5 @@
 'use client'
 
-import Image from 'next/image'
-
 const technologies = {
   frontend: [
     { name: 'Next.js 16+', icon: '⚡', color: 'from-gray-900 to-gray-700' },

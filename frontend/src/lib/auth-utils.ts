@@ -13,7 +13,11 @@ export async function getCurrentUserId(): Promise<string> {
       throw new Error('Invalid token format');
     }
 
-    const payload = JSON.parse(atob(tokenParts[1]));
+    const payloadPart = tokenParts[1];
+    if (!payloadPart) {
+      throw new Error('Invalid token: missing payload');
+    }
+    const payload = JSON.parse(atob(payloadPart));
     return payload.sub || payload.user_id || payload.id;
   } catch (error) {
     console.error('Error decoding token:', error);
@@ -41,7 +45,11 @@ export async function getUserInfo() {
       throw new Error('Invalid token format');
     }
 
-    const payload = JSON.parse(atob(tokenParts[1]));
+    const payloadPart = tokenParts[1];
+    if (!payloadPart) {
+      throw new Error('Invalid token: missing payload');
+    }
+    const payload = JSON.parse(atob(payloadPart));
     return {
       id: payload.sub || payload.user_id || payload.id || '',
       name: payload.name || payload.username || 'User',

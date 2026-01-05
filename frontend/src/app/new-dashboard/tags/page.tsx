@@ -1,4 +1,7 @@
 'use client';
+export const runtime = 'edge';
+
+export const dynamic = 'force-dynamic';
 
 import React, { useState } from 'react';
 import PageHeader from '@/components/PageHeader';
@@ -29,9 +32,21 @@ const TagsPage = () => {
 
   const handleTagSubmit = async (tagData: Omit<Tag, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
     if (editingTag) {
-      await updateTag(editingTag.id, tagData);
+      // For updates, only pass the updatable fields
+      await updateTag(editingTag.id, {
+        name: tagData.name,
+        color: tagData.color,
+      });
     } else {
-      await createTag(tagData);
+      // For creation, construct a complete tag object
+      const fullTagData: Omit<Tag, 'id'> = {
+        name: tagData.name,
+        color: tagData.color,
+        userId: '', // Will be set by backend
+        createdAt: new Date().toISOString(), // Will be set by backend
+        updatedAt: new Date().toISOString(), // Will be set by backend
+      };
+      await createTag(fullTagData);
     }
     setIsTagModalOpen(false);
   };
@@ -143,8 +158,8 @@ const TagsPage = () => {
       </div>
 
       <TagModal
-        isOpen={isTagModalOpen}
-        onClose={() => setIsTagModalOpen(false)}
+        open={isTagModalOpen}
+        onOpenChange={(open) => setIsTagModalOpen(open)}
         onSubmit={handleTagSubmit}
         tag={editingTag}
       />

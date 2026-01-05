@@ -28,7 +28,7 @@ def get_session() -> Session:
 
 def create_tables():
     """Create all tables defined in SQLModel metadata"""
-    from models import User, Task  # Import here to avoid circular imports
+    from models import User, Task, Conversation, ChatMessage  # Import here to avoid circular imports
     from sqlmodel import SQLModel
 
     try:

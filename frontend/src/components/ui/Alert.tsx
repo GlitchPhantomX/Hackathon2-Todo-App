@@ -13,6 +13,11 @@ export interface AlertProps {
   className?: string;
 }
 
+export interface AlertDescriptionProps {
+  children: ReactNode;
+  className?: string;
+}
+
 const variantConfig = {
   success: {
     icon: CheckCircle,
@@ -75,7 +80,7 @@ const Alert: React.FC<AlertProps> = ({
             <h3 className={`text-sm font-medium ${config.textColor}`}>{title}</h3>
           )}
           <div className={`mt-1 text-sm ${config.textColor}`}>
-            <p>{children}</p>
+            {children}
           </div>
         </div>
         {onClose && (
@@ -95,4 +100,17 @@ const Alert: React.FC<AlertProps> = ({
   );
 };
 
-export { Alert };
+// ✅ AlertDescription component
+const AlertDescription: React.FC<AlertDescriptionProps> = ({
+  children,
+  className = '',
+}) => {
+  return (
+    <div className={cn('text-sm', className)}>
+      {children}
+    </div>
+  );
+};
+
+// ✅ EXPORTS
+export { Alert, AlertDescription };

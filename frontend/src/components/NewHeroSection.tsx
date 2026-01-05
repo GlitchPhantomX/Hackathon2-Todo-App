@@ -11,12 +11,6 @@ export function NewHeroSection() {
     { icon: Star, text: 'Top Rated' },
   ]
 
-  const stats = [
-    { value: '10K+', label: 'Active Users' },
-    { value: '500K+', label: 'Tasks Completed' },
-    { value: '99.9%', label: 'Uptime' },
-    { value: '4.9/5', label: 'User Rating' },
-  ]
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900">

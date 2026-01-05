@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+// import { useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, Sparkles, CheckCircle2 } from 'lucide-react'
+import { ArrowRight, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 export function HeroSection() {

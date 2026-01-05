@@ -429,6 +429,27 @@ Persistent data storage using PostgreSQL database with SQLModel ORM.
 
 ---
 
+## ☁️ **Cloud-Native Blueprints (Bonus Feature)**
+
+This project implements Cloud-Native Blueprints using an Agent Skill
+(`cloud-native-blueprint-skill`) rather than hardcoded infrastructure logic.
+
+The TodoReasoningSubagent uses this skill to declaratively determine:
+- execution model (sync, async, event-driven)
+- communication pattern
+- scaling and resiliency hints
+- observability requirements
+
+The same reasoning agent and blueprint skill are reused unchanged across:
+- Phase III (Local AI Chatbot)
+- Phase IV (Kubernetes Deployment)
+- Phase V (Event-Driven Architecture)
+
+This enables cloud portability and infrastructure independence while keeping
+intelligence reusable and spec-driven.
+
+---
+
 ## 🎓 **Learning Outcomes**
 
 This phase demonstrates:

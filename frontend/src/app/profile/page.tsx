@@ -1,4 +1,7 @@
 'use client';
+export const runtime = 'edge';
+
+export const dynamic = 'force-dynamic';
 
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,23 +11,61 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { profileService } from '@/services/apiService';
-import { User, LogOut, Mail, Calendar, Shield, Home, Camera, Save } from 'lucide-react';
+import { LogOut, Mail, Calendar, Shield, Home, Camera, Save, User as UserIcon } from 'lucide-react';
+import type { User } from '@/types/auth.types';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 
+// Profile data type for form
+interface ProfileFormData {
+  name: string;
+  email: string;
+  avatar: string;
+  bio: string;
+  phone: string;
+  timezone: string;
+  locale: string;
+}
+
+// Profile update data type (without email)
+interface ProfileUpdateData {
+  name: string;
+  avatar: string;
+  bio: string;
+  phone: string;
+  timezone: string;
+  locale: string;
+}
+
+// API response type
+interface ProfileResponse {
+  id: string;
+  email: string;
+  fullName?: string;
+  username?: string;
+  name?: string;
+  avatar?: string;
+  bio?: string;
+  phone?: string;
+  timezone?: string;
+  locale?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export default function ProfilePage() {
   const { user: authUser, logout } = useAuth();
-  const [user, setUser] = useState(authUser);
+  const [user, setUser] = useState<User | null>(authUser);
   const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState({
-    name: authUser?.name || '',
-    email: authUser?.email || '',
-    avatar: authUser?.avatar || '',
-    bio: authUser?.bio || '',
-    phone: authUser?.phone || '',
-    timezone: authUser?.timezone || 'UTC',
-    locale: authUser?.locale || 'en-US',
+  const [formData, setFormData] = useState<ProfileFormData>({
+    name: authUser?.name ?? '',
+    email: authUser?.email ?? '',
+    avatar: authUser?.avatar ?? '',
+    bio: authUser?.bio ?? '',
+    phone: authUser?.phone ?? '',
+    timezone: authUser?.timezone ?? 'UTC',
+    locale: authUser?.locale ?? 'en-US',
   });
   const [isLoading, setIsLoading] = useState(false);
 
@@ -32,30 +73,47 @@ export default function ProfilePage() {
     const fetchProfileData = async () => {
       if (authUser) {
         try {
-          const profileData = await profileService.getProfile();
-          setUser(profileData);
+          const profileData: ProfileResponse = await profileService.getProfile();
+          
+          // Cast to User type to ensure compatibility
+          const userProfile: User = {
+            id: profileData.id,
+            email: profileData.email,
+            name: profileData.fullName || profileData.username || profileData.name || authUser.name || '',
+            avatar: profileData.avatar || authUser.avatar || '',
+            bio: profileData.bio || authUser.bio || '',
+            phone: profileData.phone || authUser.phone || '',
+            timezone: profileData.timezone || authUser.timezone || 'UTC',
+            locale: profileData.locale || authUser.locale || 'en-US',
+            createdAt: profileData.createdAt || authUser.createdAt || new Date().toISOString(),
+            updatedAt: profileData.updatedAt || authUser.updatedAt || new Date().toISOString(),
+          };
+          
+          setUser(userProfile);
           setFormData({
-            name: profileData.name || '',
-            email: profileData.email || '',
-            avatar: profileData.avatar || '',
-            bio: profileData.bio || '',
-            phone: profileData.phone || '',
-            timezone: profileData.timezone || 'UTC',
-            locale: profileData.locale || 'en-US',
+            name: userProfile.name ?? '',
+            email: userProfile.email ?? '',
+            avatar: userProfile.avatar ?? '',
+            bio: userProfile.bio ?? '',
+            phone: userProfile.phone ?? '',
+            timezone: userProfile.timezone ?? 'UTC',
+            locale: userProfile.locale ?? 'en-US',
           });
         } catch (error) {
           console.error('Error fetching profile:', error);
           // Fallback to authUser data if profile fetch fails
-          setUser(authUser);
-          setFormData({
-            name: authUser.name || '',
-            email: authUser.email || '',
-            avatar: authUser.avatar || '',
-            bio: authUser.bio || '',
-            phone: authUser.phone || '',
-            timezone: authUser.timezone || 'UTC',
-            locale: authUser.locale || 'en-US',
-          });
+          if (authUser) {
+            setUser(authUser);
+            setFormData({
+              name: authUser.name ?? '',
+              email: authUser.email ?? '',
+              avatar: authUser.avatar ?? '',
+              bio: authUser.bio ?? '',
+              phone: authUser.phone ?? '',
+              timezone: authUser.timezone ?? 'UTC',
+              locale: authUser.locale ?? 'en-US',
+            });
+          }
         }
       }
     };
@@ -74,16 +132,16 @@ export default function ProfilePage() {
   };
 
   const handleEditToggle = () => {
-    if (isEditing) {
+    if (isEditing && user) {
       // Cancel edit - reset form
       setFormData({
-        name: user?.name || '',
-        email: user?.email || '',
-        avatar: user?.avatar || '',
-        bio: user?.bio || '',
-        phone: user?.phone || '',
-        timezone: user?.timezone || 'UTC',
-        locale: user?.locale || 'en-US',
+        name: user.name ?? '',
+        email: user.email ?? '',
+        avatar: user.avatar ?? '',
+        bio: user.bio ?? '',
+        phone: user.phone ?? '',
+        timezone: user.timezone ?? 'UTC',
+        locale: user.locale ?? 'en-US',
       });
     }
     setIsEditing(!isEditing);
@@ -103,7 +161,7 @@ export default function ProfilePage() {
     setIsLoading(true);
 
     try {
-      const profileUpdateData = {
+      const profileUpdateData: ProfileUpdateData = {
         name: formData.name,
         avatar: formData.avatar,
         bio: formData.bio,
@@ -112,9 +170,23 @@ export default function ProfilePage() {
         locale: formData.locale,
       };
 
-      const updatedProfile = await profileService.updateProfile(profileUpdateData);
+      const updatedProfile: ProfileResponse = await profileService.updateProfile(profileUpdateData);
 
-      setUser(updatedProfile);
+      // Cast to User type to ensure compatibility
+      const userProfile: User = {
+        id: updatedProfile.id,
+        email: updatedProfile.email,
+        name: updatedProfile.fullName || updatedProfile.username || updatedProfile.name || formData.name,
+        avatar: updatedProfile.avatar || formData.avatar,
+        bio: updatedProfile.bio || formData.bio,
+        phone: updatedProfile.phone || formData.phone,
+        timezone: updatedProfile.timezone || formData.timezone,
+        locale: updatedProfile.locale || formData.locale,
+        createdAt: updatedProfile.createdAt || user?.createdAt || new Date().toISOString(),
+        updatedAt: updatedProfile.updatedAt || new Date().toISOString(),
+      };
+
+      setUser(userProfile);
       setIsEditing(false);
       toast.success('Profile updated successfully!');
     } catch (error) {
@@ -190,15 +262,15 @@ export default function ProfilePage() {
             <div className="flex flex-col items-center -mt-16 mb-6">
               <div className="relative">
                 <div className="h-32 w-32 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500 p-1 shadow-2xl">
-                  <div className="h-full w-full rounded-full bg-gray-900 flex items-center justify-center">
+                  <div className="h-full w-full rounded-full bg-gray-900 flex items-center justify-center overflow-hidden">
                     {formData.avatar ? (
                       <img
                         src={formData.avatar}
                         alt="Profile"
-                        className="h-full w-full rounded-full object-cover"
+                        className="h-full w-full object-cover"
                       />
                     ) : (
-                      <User className="h-16 w-16 text-purple-400" />
+                      <UserIcon className="h-16 w-16 text-purple-400" />
                     )}
                   </div>
                 </div>
@@ -206,6 +278,7 @@ export default function ProfilePage() {
                 {isEditing && (
                   <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2">
                     <Button
+                      type="button"
                       size="sm"
                       variant="outline"
                       className="bg-purple-600 text-white border-purple-500 hover:bg-purple-700"
@@ -255,34 +328,36 @@ export default function ProfilePage() {
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="avatar">Avatar URL</Label>
+                    <Label htmlFor="avatar" className="text-gray-300">Avatar URL</Label>
                     <Input
                       id="avatar"
                       name="avatar"
                       value={formData.avatar}
                       onChange={handleInputChange}
                       placeholder="https://example.com/avatar.jpg"
+                      className="bg-gray-700/50 border-purple-500/50 text-white"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="phone">Phone Number</Label>
+                    <Label htmlFor="phone" className="text-gray-300">Phone Number</Label>
                     <Input
                       id="phone"
                       name="phone"
                       value={formData.phone}
                       onChange={handleInputChange}
                       placeholder="+1234567890"
+                      className="bg-gray-700/50 border-purple-500/50 text-white"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="timezone">Timezone</Label>
+                    <Label htmlFor="timezone" className="text-gray-300">Timezone</Label>
                     <Select
                       value={formData.timezone}
                       onValueChange={(value) => handleSelectChange('timezone', value)}
                     >
-                      <SelectTrigger className="bg-gray-700/50 border-purple-500/50">
+                      <SelectTrigger className="bg-gray-700/50 border-purple-500/50 text-white">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -300,12 +375,12 @@ export default function ProfilePage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="locale">Locale</Label>
+                    <Label htmlFor="locale" className="text-gray-300">Locale</Label>
                     <Select
                       value={formData.locale}
                       onValueChange={(value) => handleSelectChange('locale', value)}
                     >
-                      <SelectTrigger className="bg-gray-700/50 border-purple-500/50">
+                      <SelectTrigger className="bg-gray-700/50 border-purple-500/50 text-white">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -322,7 +397,7 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="bio">Bio</Label>
+                  <Label htmlFor="bio" className="text-gray-300">Bio</Label>
                   <Textarea
                     id="bio"
                     name="bio"
@@ -330,6 +405,7 @@ export default function ProfilePage() {
                     onChange={handleInputChange}
                     placeholder="Tell us about yourself..."
                     rows={4}
+                    className="bg-gray-700/50 border-purple-500/50 text-white"
                   />
                 </div>
 

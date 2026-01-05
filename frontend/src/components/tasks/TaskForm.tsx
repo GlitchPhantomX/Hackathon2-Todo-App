@@ -160,7 +160,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ task, onSuccess }) => {
       )}
 
       <div className="flex justify-end pt-4">
-        <Button variant="primary" type="submit" disabled={loading}>
+        <Button variant="default" type="submit" disabled={loading}>
           {loading ? (task ? 'Updating...' : 'Creating...') : task ? 'Update Task' : 'Create Task'}
         </Button>
       </div>

@@ -1,0 +1,22 @@
+name: ambiguity-detection-skill
+type: agent-skill
+purpose: Detect ambiguity or missing required information.
+
+input:
+  - intent
+  - extracted_parameters
+  - conversation_context
+
+output:
+  - is_ambiguous: boolean
+  - missing_fields: list
+  - clarification_question: null or string
+
+rules:
+  - Trigger if required parameters are missing
+  - Trigger if references are unclear ("it", "that")
+  - Prefer asking concise, actionable questions
+
+reusability:
+  - Works across all conversational interfaces
+  - Not domain-specific

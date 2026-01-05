@@ -26,17 +26,21 @@ export const focusTrap = (container: HTMLElement, firstElement?: HTMLElement) =>
   const handleKeyDown = (e: KeyboardEvent) => {
     if (e.key !== 'Tab') return;
 
-    if (e.shiftKey && document.activeElement === firstFocusable) {
-      e.preventDefault();
-      lastFocusable.focus();
-    } else if (!e.shiftKey && document.activeElement === lastFocusable) {
-      e.preventDefault();
-      firstFocusable.focus();
+    if (lastFocusable && firstFocusable) {
+      if (e.shiftKey && document.activeElement === firstFocusable) {
+        e.preventDefault();
+        lastFocusable.focus();
+      } else if (!e.shiftKey && document.activeElement === lastFocusable) {
+        e.preventDefault();
+        firstFocusable.focus();
+      }
     }
   };
 
   const focusFirst = () => {
-    firstFocusable?.focus();
+    if (firstFocusable) {
+      firstFocusable.focus();
+    }
   };
 
   return {
@@ -54,12 +58,19 @@ export const focusTrap = (container: HTMLElement, firstElement?: HTMLElement) =>
 export const checkColorContrast = (color1: string, color2: string): { ratio: number; passAA: boolean; passAAA: boolean } => {
   // Convert hex to RGB
   const hexToRgb = (hex: string): { r: number; g: number; b: number } => {
+    if (!hex) {
+      return { r: 0, g: 0, b: 0 };
+    }
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return result ? {
-      r: parseInt(result[1], 16),
-      g: parseInt(result[2], 16),
-      b: parseInt(result[3], 16)
-    } : { r: 0, g: 0, b: 0 };
+    if (result) {
+      const [, r, g, b] = result;
+      return {
+        r: r ? parseInt(r, 16) : 0,
+        g: g ? parseInt(g, 16) : 0,
+        b: b ? parseInt(b, 16) : 0
+      };
+    }
+    return { r: 0, g: 0, b: 0 };
   };
 
   const rgb1 = hexToRgb(color1);

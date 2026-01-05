@@ -25,6 +25,13 @@ export const ToastNotification: React.FC<ToastProps> = ({
   const [isVisible, setIsVisible] = useState(false);
   const [isExiting, setIsExiting] = useState(false);
 
+  const handleClose = () => {
+    setIsExiting(true);
+    setTimeout(() => {
+      onClose(id);
+    }, 300);
+  };
+
   useEffect(() => {
     // Slide in animation
     setTimeout(() => setIsVisible(true), 10);
@@ -35,14 +42,7 @@ export const ToastNotification: React.FC<ToastProps> = ({
     }, duration);
 
     return () => clearTimeout(timer);
-  }, [duration]);
-
-  const handleClose = () => {
-    setIsExiting(true);
-    setTimeout(() => {
-      onClose(id);
-    }, 300);
-  };
+  }, [duration, handleClose]);
 
   const getTypeStyles = () => {
     switch (type) {

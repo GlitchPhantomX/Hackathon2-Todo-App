@@ -22,11 +22,11 @@ export class ErrorBoundary extends Component<Props, State> {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('Error caught by boundary:', error, errorInfo);
   }
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       if (this.props.fallback) {
         return this.props.fallback;
@@ -40,7 +40,7 @@ export class ErrorBoundary extends Component<Props, State> {
           </p>
           <button
             className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-            onClick={() => this.setState({ hasError: false, error: undefined })}
+            onClick={() => this.setState({ hasError: false })}
           >
             Try again
           </button>

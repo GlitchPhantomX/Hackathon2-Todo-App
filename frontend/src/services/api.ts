@@ -20,7 +20,8 @@ const getToken = (): string | null => {
     .find(row => row.startsWith('token='));
   
   if (cookie) {
-    return cookie.split('=')[1];
+    const token = cookie.split('=')[1];
+    return token || null;
   }
   
   // Fallback to localStorage

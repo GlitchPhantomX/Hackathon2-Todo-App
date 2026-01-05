@@ -3,13 +3,14 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { TaskFilter as TaskFilterType } from '@/types/task.types';
+import type { TaskFilter as TaskFilterState } from '@/types/task.types';
 
 interface TaskFilterProps {
-  filter: TaskFilterType;
-  onFilterChange: (filter: TaskFilterType) => void;
+  filter: TaskFilterState;
+  onFilterChange: (filter: TaskFilterState) => void;
   onRefresh: () => void;
 }
+
 
 export const TaskFilter: React.FC<TaskFilterProps> = ({
   filter,
@@ -42,7 +43,7 @@ export const TaskFilter: React.FC<TaskFilterProps> = ({
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div className="flex flex-wrap gap-2">
           <Button
-            variant={filter.status === 'all' ? 'primary' : 'secondary'}
+            variant={filter.status === 'all' ? 'default' : 'outline'}
             size="sm"
             onClick={() => handleStatusChange('all')}
           >
@@ -52,7 +53,7 @@ export const TaskFilter: React.FC<TaskFilterProps> = ({
             </span>
           </Button>
           <Button
-            variant={filter.status === 'active' ? 'primary' : 'secondary'}
+            variant={filter.status === 'active' ? 'default' : 'outline'}
             size="sm"
             onClick={() => handleStatusChange('active')}
           >
@@ -62,7 +63,7 @@ export const TaskFilter: React.FC<TaskFilterProps> = ({
             </span>
           </Button>
           <Button
-            variant={filter.status === 'completed' ? 'primary' : 'secondary'}
+            variant={filter.status === 'completed' ? 'default' : 'outline'}
             size="sm"
             onClick={() => handleStatusChange('completed')}
           >
@@ -119,7 +120,7 @@ export const TaskFilter: React.FC<TaskFilterProps> = ({
             )}
           </div>
           <Button
-            variant="secondary"
+            variant="outline"
             size="sm"
             onClick={onRefresh}
             className="flex items-center"
@@ -145,5 +146,3 @@ export const TaskFilter: React.FC<TaskFilterProps> = ({
     </div>
   );
 };
-
-export default TaskFilter;

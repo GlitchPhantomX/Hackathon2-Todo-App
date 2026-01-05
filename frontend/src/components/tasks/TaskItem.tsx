@@ -142,7 +142,7 @@ const TaskItemComponent: React.FC<TaskItemProps> = ({
                 Cancel
               </Button>
               <Button
-                variant="danger"
+                variant="destructive"
                 size="sm"
                 onClick={handleConfirmDelete}
                 disabled={onDeleteLoading}

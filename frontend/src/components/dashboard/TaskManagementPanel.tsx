@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Plus, Search, Upload, Download, Edit, Trash2, Check } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { Plus, Search, Upload, Download, Edit, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
@@ -27,39 +27,22 @@ export function TaskManagementPanel({ searchQuery: propSearchQuery }: TaskManage
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    fetchTasks()
-  }, [])
+  const currentSearchQuery = propSearchQuery !== undefined ? propSearchQuery : internalSearchQuery;
 
-  useEffect(() => {
-    // Debounced search
-    const timer = setTimeout(() => {
-      fetchTasks()
-    }, 300)
-
-    return () => clearTimeout(timer)
-  }, [propSearchQuery || internalSearchQuery])
-
-  // Auto-refresh every 30 seconds
-  useEffect(() => {
-    const interval = setInterval(fetchTasks, 30000)
-    return () => clearInterval(interval)
-  }, [])
-
-  async function fetchTasks() {
+  const fetchTasks = useCallback(async () => {
     try {
       setLoading(true)
       const userId = await getCurrentUserId()
       const allTasks = await taskService.getTasks(userId)
 
       // Use the appropriate search query (prop takes precedence)
-      const currentSearchQuery = propSearchQuery !== undefined ? propSearchQuery : internalSearchQuery;
+      const searchQuery = propSearchQuery !== undefined ? propSearchQuery : internalSearchQuery;
 
       // Filter and sort
-      const filtered = currentSearchQuery
+      const filtered = searchQuery
         ? allTasks.filter(t =>
-            t.title.toLowerCase().includes(currentSearchQuery.toLowerCase()) ||
-            (t.description && t.description.toLowerCase().includes(currentSearchQuery.toLowerCase()))
+            t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (t.description && t.description.toLowerCase().includes(searchQuery.toLowerCase()))
           )
         : allTasks
 
@@ -74,9 +57,28 @@ export function TaskManagementPanel({ searchQuery: propSearchQuery }: TaskManage
     } finally {
       setLoading(false)
     }
-  }
+  }, [propSearchQuery, internalSearchQuery])
 
-  async function handleToggleComplete(taskId: string) {
+  useEffect(() => {
+    fetchTasks()
+  }, [fetchTasks])
+
+  useEffect(() => {
+    // Debounced search
+    const timer = setTimeout(() => {
+      fetchTasks()
+    }, 300)
+
+    return () => clearTimeout(timer)
+  }, [currentSearchQuery, fetchTasks])
+
+  // Auto-refresh every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(fetchTasks, 30000)
+    return () => clearInterval(interval)
+  }, [fetchTasks])
+
+  const handleToggleComplete = useCallback(async (taskId: string) => {
     try {
       const userId = await getCurrentUserId()
       const task = tasks.find(t => t.id === taskId)
@@ -90,9 +92,9 @@ export function TaskManagementPanel({ searchQuery: propSearchQuery }: TaskManage
     } catch (error) {
       console.error('Failed to toggle task:', error)
     }
-  }
+  }, [tasks, fetchTasks])
 
-  async function handleDelete(taskId: string) {
+  const handleDelete = useCallback(async (taskId: string) => {
     if (!confirm('Delete this task?')) return
 
     try {
@@ -102,9 +104,9 @@ export function TaskManagementPanel({ searchQuery: propSearchQuery }: TaskManage
     } catch (error) {
       console.error('Failed to delete task:', error)
     }
-  }
+  }, [fetchTasks])
 
-  function handleExport() {
+  const handleExport = useCallback(() => {
     const json = JSON.stringify(tasks, null, 2)
     const blob = new Blob([json], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
@@ -114,7 +116,7 @@ export function TaskManagementPanel({ searchQuery: propSearchQuery }: TaskManage
     a.click()
     // Clean up the URL object to prevent memory leaks
     URL.revokeObjectURL(url)
-  }
+  }, [tasks])
 
   return (
     <Card className="p-6">
@@ -217,7 +219,7 @@ export function TaskManagementPanel({ searchQuery: propSearchQuery }: TaskManage
               <div className="flex items-center gap-1">
                 <Button
                   variant="ghost"
-                  size="icon-sm"
+                  size="sm"
                   onClick={() => {
                     setEditingTask(task)
                     setShowEditModal(true)
@@ -227,7 +229,7 @@ export function TaskManagementPanel({ searchQuery: propSearchQuery }: TaskManage
                 </Button>
                 <Button
                   variant="ghost"
-                  size="icon-sm"
+                  size="sm"
                   onClick={() => handleDelete(task.id)}
                 >
                   <Trash2 className="w-4 h-4 text-error-600" />

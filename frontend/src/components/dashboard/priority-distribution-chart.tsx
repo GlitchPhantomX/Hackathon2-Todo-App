@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card'
 import { useDashboard } from '@/contexts/DashboardContext'
 import { groupTasksByPriority } from '@/lib/task-utils'
 import { ChartSkeleton } from './skeletons'
-import { Pie, PieChart, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts'
+import { Pie, PieChart, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 
 const COLORS = {
   high: '#ef4444',    // Bright red for dark mode
@@ -15,7 +15,7 @@ const COLORS = {
 
 export function PriorityDistributionChart() {
   const { tasks, loading } = useDashboard()
-  const [chartData, setChartData] = useState([])
+  const [chartData, setChartData] = useState<Array<{name: string; value: number; color: string}>>([])
 
   useEffect(() => {
     if (tasks && tasks.length >= 0) {
@@ -25,7 +25,24 @@ export function PriorityDistributionChart() {
         { name: 'Medium', value: grouped.medium, color: COLORS.medium },
         { name: 'Low', value: grouped.low, color: COLORS.low },
       ]
-      setChartData(processed)
+      setChartData(prevData => {
+        // Only update if data has actually changed
+        if (prevData.length !== processed.length) return processed;
+        for (let i = 0; i < prevData.length; i++) {
+          // Check if both elements exist before comparing
+          const prevItem = prevData[i];
+          const processedItem = processed[i];
+          if (!prevItem || !processedItem || prevItem.value !== processedItem.value) {
+            return processed;
+          }
+        }
+        return prevData;
+      })
+    } else {
+      setChartData(prevData => {
+        if (prevData.length === 0) return prevData;
+        return [];
+      })
     }
   }, [tasks])
 

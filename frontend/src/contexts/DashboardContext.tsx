@@ -1,9 +1,10 @@
 'use client';
 
 import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
-import { taskService, projectService, tagService, notificationService, statsService } from '@/services/apiService';
-import { Task, Project, Tag, UserPreferences, TaskStats, Notification } from '@/types/types';
+import { projectService, tagService, notificationService, statsService } from '@/services/apiService';
+import { Task, Project, Tag, TaskStats, Notification } from '@/types/types';
 import { useAuth } from './AuthContext';
+import { useTaskSync } from './TaskSyncContext'; // ✅ ADDED
 import { webSocketNotificationService } from '@/services/notificationService';
 import { notificationSoundService } from '@/services/notificationSoundService';
 
@@ -300,7 +301,12 @@ const calculateStats = (tasks: Task[]): TaskStats => {
   }));
 
   const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
-  const productivityTrend = [];
+  const productivityTrend: Array<{
+    date: string;
+    created: number;
+    completed: number;
+    score: number;
+  }> = [];
 
   return {
     total,
@@ -347,6 +353,53 @@ const DashboardContext = createContext<DashboardContextType | undefined>(undefin
 export const DashboardProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { user } = useAuth();
   const [state, dispatch] = useReducer(dashboardReducer, initialState);
+  
+  // ✅ GET TASKS FROM TaskSyncContext for real-time sync
+  const taskSyncContext = useTaskSync();
+
+  // ✅ SYNC tasks from TaskSyncContext to DashboardContext (REAL-TIME)
+  useEffect(() => {
+    if (taskSyncContext.tasks && taskSyncContext.tasks.length >= 0) {
+      console.log('🔄 AUTO-SYNC: TaskSyncContext → DashboardContext');
+      console.log('   TaskSync tasks:', taskSyncContext.tasks.length);
+      console.log('   Dashboard tasks:', state.tasks.length);
+
+      // Convert tasks from TaskSyncContext format to DashboardContext format
+      const convertedTasks = taskSyncContext.tasks.map(task => {
+        const baseTask = {
+          id: task.id,
+          title: task.title,
+          description: task.description,
+          completed: task.status === 'completed', // Derive completed from status
+          status: task.status === 'in_progress' ? 'pending' : task.status, // Map in_progress to pending
+          createdAt: task.created_at,
+          updatedAt: task.updated_at,
+          userId: task.user_id,
+          priority: task.priority === 'urgent' ? 'high' : task.priority, // Map urgent to high
+        };
+
+        // Conditionally add optional fields if they exist
+        const convertedTask: Task = { ...baseTask };
+
+        if (task.due_date) {
+          convertedTask.dueDate = task.due_date;
+        }
+
+        if (task.projectId) {
+          convertedTask.projectId = task.projectId;
+        }
+
+        return convertedTask;
+      });
+
+      // Only update if different to avoid infinite loops
+      if (JSON.stringify(convertedTasks) !== JSON.stringify(state.tasks)) {
+        console.log('✅ Syncing tasks to DashboardContext');
+        dispatch({ type: 'SET_TASKS', payload: convertedTasks });
+        saveTasksToLocalStorage(convertedTasks);
+      }
+    }
+  }, [taskSyncContext.tasks]);
 
   // ✅ Browser notification permission (FIXED)
   useEffect(() => {
@@ -381,7 +434,7 @@ export const DashboardProvider: React.FC<{ children: ReactNode }> = ({ children 
     }
   };
 
-  // ✅ Create task notification (Legacy function - now just calls direct dispatch)
+  // ✅ Create task notification
   const createTaskNotification = (
     type: 'created' | 'updated' | 'completed' | 'deleted',
     taskTitle: string,
@@ -429,20 +482,28 @@ export const DashboardProvider: React.FC<{ children: ReactNode }> = ({ children 
     };
 
     const config = notificationMessages[type];
-    
-    const notification: Notification = {
+
+    const baseNotification = {
       id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       userId: user?.id || '',
       type: config.type,
       title: config.title,
       message: config.message,
-      taskId: taskId,
-      taskTitle: taskTitle,
-      icon: config.icon,
-      color: config.color,
       read: false,
       createdAt: new Date().toISOString(),
+      icon: config.icon,
+      color: config.color,
     };
+
+    const notification: Notification = { ...baseNotification };
+
+    if (taskId) {
+      notification.taskId = taskId;
+    }
+
+    if (taskTitle) {
+      notification.taskTitle = taskTitle;
+    }
 
     dispatch({ type: 'ADD_NOTIFICATION', payload: notification });
 
@@ -477,27 +538,6 @@ export const DashboardProvider: React.FC<{ children: ReactNode }> = ({ children 
   useEffect(() => {
     if (user?.id) {
       const loadInitialData = async () => {
-        // LOAD TASKS
-        try {
-          dispatch({ type: 'SET_LOADING', payload: { loadingType: 'tasks', value: true } });
-          
-          try {
-            const tasks = await taskService.getTasks(user.id);
-            console.log('✅ Tasks loaded from backend:', tasks);
-            dispatch({ type: 'SET_TASKS', payload: tasks });
-            saveTasksToLocalStorage(tasks);
-          } catch (backendError) {
-            console.warn('⚠️ Backend not available, loading from localStorage:', backendError);
-            const localTasks = loadTasksFromLocalStorage();
-            dispatch({ type: 'SET_TASKS', payload: localTasks });
-          }
-        } catch (error) {
-          console.error('❌ Error loading tasks:', error);
-          dispatch({ type: 'SET_TASKS', payload: [] });
-        } finally {
-          dispatch({ type: 'SET_LOADING', payload: { loadingType: 'tasks', value: false } });
-        }
-
         // LOAD PROJECTS
         try {
           dispatch({ type: 'SET_LOADING', payload: { loadingType: 'projects', value: true } });
@@ -578,136 +618,104 @@ export const DashboardProvider: React.FC<{ children: ReactNode }> = ({ children 
     };
   }, [user?.id]);
 
-  // ✅ CREATE TASK with IMMEDIATE notification
- // ✅ CREATE TASK with IMMEDIATE notification (FIXED - use shared function for consistency)
-const createTask = async (taskData: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
-  if (!user?.id) {
-    console.error('❌ No user ID found');
-    return;
-  }
+  // ✅ CREATE TASK - Now uses TaskSyncContext
+  const createTask = async (taskData: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
+    if (!user?.id) {
+      console.error('❌ No user ID found');
+      return;
+    }
 
-  const newTask: Task = {
-    ...taskData,
-    id: `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    console.log('🎯 DashboardContext.createTask called:', taskData.title);
+    console.log('   Using TaskSyncContext.addTask');
+
+    // Convert taskData from DashboardContext format to TaskSyncContext format
+    const syncTaskData = {
+      id: '', // Will be replaced by backend
+      title: taskData.title,
+      description: taskData.description,
+      status: (taskData.status || 'pending') as 'pending' | 'in_progress' | 'completed',
+      priority: taskData.priority || 'medium',
+      due_date: taskData.dueDate || null,
+      created_at: '', // Will be replaced by backend
+      updated_at: '', // Will be replaced by backend
+      user_id: user.id,
+      project_id: taskData.projectId || null,
+      tags: taskData.tags || [],
+    };
+
+    try {
+      // ✅ Use TaskSyncContext's addTask (handles API + state)
+      await taskSyncContext.addTask(syncTaskData);
+
+      // ✅ Create notification AFTER task is added
+      console.log('🔔 Creating notification for task:', taskData.title);
+      createTaskNotification('created', taskData.title);
+
+      console.log('✅ Task created successfully via TaskSyncContext');
+    } catch (error) {
+      console.error('❌ Error creating task:', error);
+      dispatch({ type: 'SET_ERROR', payload: 'Failed to create task' });
+      throw error;
+    }
   };
 
-  console.log('🎯 CREATE TASK CALLED from AddTaskModal:', newTask.title);
-
-  try {
-    dispatch({ type: 'SET_LOADING', payload: { loadingType: 'tasks', value: true } });
-
-    // ✅ FIRST: Add task to state immediately
-    dispatch({ type: 'ADD_TASK', payload: newTask });
-    console.log('✅ Task added to state first');
-
-    // ✅ THEN: Create notification using the shared function to ensure consistency with other notification creation
-    console.log('🔔 Creating task notification via createTaskNotification function');
-    createTaskNotification('created', newTask.title, newTask.id);
-    console.log('✅ Notification created via shared function - should propagate to all context consumers');
-
-    // ✅ Save to localStorage immediately
-    const currentTasks = loadTasksFromLocalStorage();
-    saveTasksToLocalStorage([...currentTasks, newTask]);
-
-    // ✅ Play sound and browser notification are handled in createTaskNotification
-
-    // Now handle backend API (optional - task already in state)
-    try {
-      const createdTask = await taskService.createTask(user.id, taskData);
-      console.log('✅ Task created on backend:', createdTask);
-
-      // Update with backend response if needed
-      if (createdTask.id !== newTask.id) {
-        dispatch({ type: 'UPDATE_TASK', payload: { id: newTask.id, updates: createdTask } });
-      }
-    } catch (backendError) {
-      console.warn('⚠️ Backend failed, but task already in localStorage:', backendError);
-      // Task already added to state and localStorage, so we're good
-    }
-  } catch (error) {
-    console.error('❌ Error creating task:', error);
-    dispatch({ type: 'SET_ERROR', payload: 'Failed to create task' });
-    throw error;
-  } finally {
-    dispatch({ type: 'SET_LOADING', payload: { loadingType: 'tasks', value: false } });
-  }
-};
-
-  // ✅ UPDATE TASK with notification
+  // ✅ UPDATE TASK - Uses TaskSyncContext
   const updateTask = async (id: string, updates: Partial<Task>) => {
     if (!user?.id) return;
 
     const task = state.tasks.find(t => t.id === id);
     if (!task) return;
 
-    try {
-      dispatch({ type: 'SET_LOADING', payload: { loadingType: 'tasks', value: true } });
+    console.log('🎯 DashboardContext.updateTask called:', id);
 
-      // ✅ Only show notification for significant changes using shared function
+    // Convert updates from DashboardContext format to TaskSyncContext format
+    const syncUpdates: Partial<any> = {};
+    if (updates.title !== undefined) syncUpdates.title = updates.title;
+    if (updates.description !== undefined) syncUpdates.description = updates.description;
+    if (updates.status !== undefined) syncUpdates.status = updates.status;
+    if (updates.priority !== undefined) syncUpdates.priority = updates.priority;
+    if (updates.dueDate !== undefined) syncUpdates.due_date = updates.dueDate;
+    if (updates.projectId !== undefined) syncUpdates.project_id = updates.projectId;
+    if (updates.tags !== undefined) syncUpdates.tags = updates.tags;
+
+    try {
+      // ✅ Use TaskSyncContext
+      await taskSyncContext.updateTask(id, syncUpdates);
+
+      // ✅ Notification for significant changes
       if (updates.title || updates.priority || updates.dueDate) {
         createTaskNotification('updated', task.title, id);
-      }
-
-      try {
-        const updatedTask = await taskService.updateTask(user.id, id, updates);
-        dispatch({ type: 'UPDATE_TASK', payload: { id, updates: updatedTask } });
-
-        const updatedTasks = state.tasks.map(t => t.id === id ? { ...t, ...updatedTask } : t);
-        saveTasksToLocalStorage(updatedTasks);
-      } catch (backendError) {
-        console.warn('⚠️ Backend failed, updating localStorage only:', backendError);
-        dispatch({ type: 'UPDATE_TASK', payload: { id, updates } });
-
-        const updatedTasks = state.tasks.map(t => t.id === id ? { ...t, ...updates } : t);
-        saveTasksToLocalStorage(updatedTasks);
       }
     } catch (error) {
       console.error('❌ Error updating task:', error);
       dispatch({ type: 'SET_ERROR', payload: 'Failed to update task' });
       throw error;
-    } finally {
-      dispatch({ type: 'SET_LOADING', payload: { loadingType: 'tasks', value: false } });
     }
   };
 
-  // ✅ DELETE TASK with notification
+  // ✅ DELETE TASK - Uses TaskSyncContext
   const deleteTask = async (id: string) => {
     if (!user?.id) return;
 
     const task = state.tasks.find(t => t.id === id);
     if (!task) return;
 
+    console.log('🎯 DashboardContext.deleteTask called:', id);
+
     try {
-      dispatch({ type: 'SET_LOADING', payload: { loadingType: 'tasks', value: true } });
-
-      // ✅ Create notification using shared function
+      // ✅ Use TaskSyncContext
+      await taskSyncContext.deleteTask(id);
+      
+      // ✅ Create notification
       createTaskNotification('deleted', task.title, id);
-
-      try {
-        await taskService.deleteTask(user.id, id);
-        dispatch({ type: 'DELETE_TASK', payload: id });
-
-        const updatedTasks = state.tasks.filter(t => t.id !== id);
-        saveTasksToLocalStorage(updatedTasks);
-      } catch (backendError) {
-        console.warn('⚠️ Backend failed, deleting from localStorage only:', backendError);
-        dispatch({ type: 'DELETE_TASK', payload: id });
-
-        const updatedTasks = state.tasks.filter(t => t.id !== id);
-        saveTasksToLocalStorage(updatedTasks);
-      }
     } catch (error) {
       console.error('❌ Error deleting task:', error);
       dispatch({ type: 'SET_ERROR', payload: 'Failed to delete task' });
       throw error;
-    } finally {
-      dispatch({ type: 'SET_LOADING', payload: { loadingType: 'tasks', value: false } });
     }
   };
 
-  // ✅ TOGGLE TASK COMPLETION with notification
+  // ✅ TOGGLE TASK COMPLETION - Uses TaskSyncContext
   const toggleTaskCompletion = async (id: string) => {
     if (!user?.id) return;
 
@@ -716,33 +724,20 @@ const createTask = async (taskData: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>
 
     const newStatus = task.status === 'completed' ? 'pending' : 'completed';
 
-    try {
-      dispatch({ type: 'SET_LOADING', payload: { loadingType: 'tasks', value: true } });
+    console.log('🎯 DashboardContext.toggleTaskCompletion called:', id, newStatus);
 
-      // ✅ Only show notification when COMPLETING using shared function
+    try {
+      // ✅ Use TaskSyncContext
+      await taskSyncContext.updateTask(id, { status: newStatus });
+      
+      // ✅ Only notify when COMPLETING
       if (newStatus === 'completed') {
         createTaskNotification('completed', task.title, id);
-      }
-
-      try {
-        const updatedTask = await taskService.toggleTaskCompletion(user.id, id);
-        dispatch({ type: 'UPDATE_TASK', payload: { id, updates: updatedTask } });
-
-        const updatedTasks = state.tasks.map(t => t.id === id ? { ...t, ...updatedTask } : t);
-        saveTasksToLocalStorage(updatedTasks);
-      } catch (backendError) {
-        console.warn('⚠️ Backend failed, toggling in localStorage only:', backendError);
-        dispatch({ type: 'UPDATE_TASK', payload: { id, updates: { status: newStatus } } });
-
-        const updatedTasks = state.tasks.map(t => t.id === id ? { ...t, status: newStatus } : t);
-        saveTasksToLocalStorage(updatedTasks);
       }
     } catch (error) {
       console.error('❌ Error toggling task:', error);
       dispatch({ type: 'SET_ERROR', payload: 'Failed to toggle task completion' });
       throw error;
-    } finally {
-      dispatch({ type: 'SET_LOADING', payload: { loadingType: 'tasks', value: false } });
     }
   };
 

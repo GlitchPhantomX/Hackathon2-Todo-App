@@ -29,7 +29,7 @@ class WebSocketNotificationService {
 
       // Get API base URL from environment or use default
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'ws://localhost:8000';
-      const wsUrl = `${apiBaseUrl.replace('http', 'ws')}/ws/notifications/${userId}?token=${token}`;
+      const wsUrl = `${apiBaseUrl.replace('http', 'ws')}/ws/notifications?token=${token}`;
 
       try {
         this.ws = new WebSocket(wsUrl);

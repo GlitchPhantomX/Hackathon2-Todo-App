@@ -2,10 +2,10 @@
 
 // app/login/page.tsx
 import { Metadata } from 'next';
-import Link from 'next/link';
-import { Suspense } from 'react';
-import LoginForm from '@/components/auth/LoginForm';
-import { Spinner } from '@/components/ui/Spinner';
+// import Link from 'next/link';
+// import { Suspense } from 'react';
+// import LoginForm from '@/components/auth/LoginForm';
+// import { Spinner } from '@/components/ui/Spinner';
 
 export const metadata: Metadata = {
   title: 'Login | Todo App',
@@ -53,8 +53,9 @@ export default function RegisterForm() {
       });
 
       router.push('/dashboard');
-    } catch (err: any) {
-      setError(err.message || 'Failed to register');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to register';
+      setError(errorMessage);
     }
   };
 

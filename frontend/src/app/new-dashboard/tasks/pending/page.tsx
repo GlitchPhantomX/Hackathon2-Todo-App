@@ -1,5 +1,9 @@
 'use client';
+export const runtime = 'edge';
 
+// Force dynamic rendering - this page cannot be statically generated
+export const dynamic = 'force-dynamic';
+export const dynamicParams = true;
 import React from 'react';
 import PageHeader from '@/components/PageHeader';
 import TaskList from '@/components/TaskList';

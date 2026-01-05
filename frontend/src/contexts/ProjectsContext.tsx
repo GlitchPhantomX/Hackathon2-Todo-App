@@ -146,7 +146,39 @@ export const ProjectsProvider: React.FC<ProjectsProviderProps> = ({ children }) 
   // Load projects when user changes
   useEffect(() => {
     if (user?.id) {
-      fetchProjects();
+      const loadProjects = async () => {
+        try {
+          dispatch({ type: 'FETCH_START' });
+          const projects = await projectService.getProjects(user.id);
+          dispatch({ type: 'FETCH_SUCCESS', payload: projects });
+
+          // If no projects exist, create default projects
+          if (projects.length === 0) {
+            const defaultProjects = [
+              { name: 'Work', description: 'Work-related tasks', color: '#3B82F6', icon: 'Briefcase' },
+              { name: 'Personal', description: 'Personal tasks', color: '#10B981', icon: 'Home' },
+              { name: 'Study', description: 'Study and learning tasks', color: '#8B5CF6', icon: 'BookOpen' }
+            ];
+
+            for (const projectData of defaultProjects) {
+              try {
+                const newProject = await projectService.createProject(user.id, {
+                  ...projectData,
+                  userId: user.id,
+                });
+                dispatch({ type: 'ADD_PROJECT', payload: newProject });
+              } catch (error) {
+                console.error('Error creating default project:', error);
+              }
+            }
+          }
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Failed to fetch projects';
+          dispatch({ type: 'FETCH_ERROR', payload: errorMessage });
+        }
+      };
+
+      loadProjects();
     }
   }, [user?.id]);
 

@@ -3,8 +3,9 @@
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+// import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Select,
   SelectContent,
@@ -12,16 +13,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import {
   FilterIcon,
-  PlusIcon,
   GridIcon,
   ListIcon,
-  CalendarIcon,
-  MoreHorizontalIcon,
 } from 'lucide-react';
 import { useDashboard } from '@/contexts/DashboardContext';
+import { useTaskSync } from '@/contexts/TaskSyncContext';
 import { Task } from '@/types/types';
 import TaskItem from '@/components/TaskItem';
 
@@ -36,20 +34,44 @@ interface FilterOptions {
 interface TaskListProps {
   tasks?: Task[];
   onEditTask?: (task: Task) => void;
+  onTaskClick?: (task: Task) => void;
+  onSelectionChange?: (selectedIds: string[]) => void;
   filter?: FilterOptions;
 }
 
-const TaskList = ({ tasks: propTasks, onEditTask, filter }: TaskListProps = {}) => {
-  const { tasks, toggleTaskCompletion, filters, setFilter, setSortBy: setContextSortBy, tags } = useDashboard();
-  const [searchQuery, setSearchQuery] = useState('');
+const TaskList: React.FC<TaskListProps> = ({ 
+  tasks: propTasks, 
+  onEditTask, 
+  onTaskClick,
+  onSelectionChange,
+  filter 
+}) => {
+  const {
+    tasks: dashboardTasks,
+    filters,
+    setFilter,
+    setSortBy: setContextSortBy,
+    sortBy, // Extract sortBy separately
+    tags
+  } = useDashboard();
+  const { tasks: syncTasks } = useTaskSync();
+
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
 
-  // Use prop tasks if provided, otherwise use context tasks
-  const allTasks = propTasks || tasks;
+  // ✅ Fixed: Use dashboardTasks as primary source to ensure consistent Task type
+  const allTasks: Task[] = propTasks || dashboardTasks || [];
+
+  console.log('📋 TaskList render:', {
+    propTasks: propTasks?.length || 0,
+    syncTasks: syncTasks?.length || 0,
+    dashboardTasks: dashboardTasks?.length || 0,
+    allTasks: allTasks.length
+  });
 
   // Filter tasks based on criteria
-  const filteredTasks = allTasks
-    .filter(task => {
+  const filteredTasks: Task[] = allTasks
+    .filter((task: Task) => {
       // Apply filter prop first if provided
       if (filter) {
         if (filter.status && task.status !== filter.status) {
@@ -75,7 +97,6 @@ const TaskList = ({ tasks: propTasks, onEditTask, filter }: TaskListProps = {}) 
               if (!taskDate || taskDate < today) {
                 return false;
               }
-              // Only upcoming tasks (next 7 days for example)
               const nextWeek = new Date();
               nextWeek.setDate(today.getDate() + 7);
               if (taskDate > nextWeek) {
@@ -112,32 +133,35 @@ const TaskList = ({ tasks: propTasks, onEditTask, filter }: TaskListProps = {}) 
         return false;
       }
 
-      if (filters.tags.length > 0 && task.tags) {
-        return filters.tags.some(tag => task.tags?.includes(tag));
+      if (filters.tags && filters.tags.length > 0 && task.tags) {
+        return filters.tags.some((tag: string) => task.tags?.includes(tag));
       }
 
       // Filter by search query
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
-        if (
-          !task.title.toLowerCase().includes(query) &&
-          !task.description.toLowerCase().includes(query) &&
-          !(task.tags && task.tags.some(tag => tag.toLowerCase().includes(query)))
-        ) {
+        const titleMatch = task.title?.toLowerCase().includes(query);
+        const descriptionMatch = task.description?.toLowerCase().includes(query);
+        const tagsMatch = task.tags?.some((tag: string) => tag.toLowerCase().includes(query));
+        
+        if (!titleMatch && !descriptionMatch && !tagsMatch) {
           return false;
         }
       }
 
       return true;
     })
-    .sort((a, b) => {
+    .sort((a: Task, b: Task) => {
       // Sort tasks based on selected sort option
-      switch (filters.sortBy || 'date') {
-        case 'priority':
-          const priorityOrder = { high: 3, medium: 2, low: 1 };
-          return (priorityOrder[b.priority || 'low'] || 0) - (priorityOrder[a.priority || 'low'] || 0);
+      switch (sortBy || 'date') {
+        case 'priority': {
+          const priorityOrder: Record<string, number> = { high: 3, medium: 2, low: 1 };
+          const aPriority = priorityOrder[a.priority || 'low'] || 0;
+          const bPriority = priorityOrder[b.priority || 'low'] || 0;
+          return bPriority - aPriority;
+        }
         case 'title':
-          return a.title.localeCompare(b.title);
+          return (a.title || '').localeCompare(b.title || '');
         case 'date':
         default:
           if (a.dueDate && b.dueDate) {
@@ -151,56 +175,10 @@ const TaskList = ({ tasks: propTasks, onEditTask, filter }: TaskListProps = {}) 
       }
     });
 
-  // Get tags from context
-  const allTags = Array.from(
-    new Set(
-      tags.map(tag => tag.name)
-    )
-  );
-
-  // Priority color mapping
-  const getPriorityColor = (priority?: string) => {
-    switch (priority) {
-      case 'high':
-        return 'bg-red-500';
-      case 'medium':
-        return 'bg-yellow-500';
-      case 'low':
-        return 'bg-blue-500';
-      default:
-        return 'bg-gray-500';
-    }
-  };
-
-  // Format date
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-    });
-  };
-
-  // Get due date status
-  const getDueDateStatus = (dateString?: string) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    if (date < today) {
-      return 'overdue';
-    } else if (date.toDateString() === today.toDateString()) {
-      return 'today';
-    }
-    return '';
-  };
-
   return (
     <Card className="mb-8">
       <CardContent className="p-6">
-        {/* Filter and Sort Bar - Only show if no filter prop is provided */}
+        {/* Filter and Sort Bar */}
         {!filter && (
           <div className="flex flex-col md:flex-row gap-4 mb-6">
             <div className="flex-1">
@@ -209,7 +187,7 @@ const TaskList = ({ tasks: propTasks, onEditTask, filter }: TaskListProps = {}) 
                   type="text"
                   placeholder="Search tasks..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
                   className="pl-9"
                 />
                 <div className="absolute left-3 top-1/2 -translate-y-1/2">
@@ -220,7 +198,7 @@ const TaskList = ({ tasks: propTasks, onEditTask, filter }: TaskListProps = {}) 
 
             <Select
               value={filters.status}
-              onValueChange={(value: any) => setFilter('status', value)}
+              onValueChange={(value: string) => setFilter('status', value)}
             >
               <SelectTrigger className="w-[140px]">
                 <SelectValue placeholder="Status" />
@@ -234,7 +212,7 @@ const TaskList = ({ tasks: propTasks, onEditTask, filter }: TaskListProps = {}) 
 
             <Select
               value={filters.priority}
-              onValueChange={(value: any) => setFilter('priority', value)}
+              onValueChange={(value: string) => setFilter('priority', value)}
             >
               <SelectTrigger className="w-[140px]">
                 <SelectValue placeholder="Priority" />
@@ -247,7 +225,10 @@ const TaskList = ({ tasks: propTasks, onEditTask, filter }: TaskListProps = {}) 
               </SelectContent>
             </Select>
 
-            <Select value={filters.sortBy} onValueChange={(value: any) => setContextSortBy(value)}>
+            <Select
+              value={sortBy}
+              onValueChange={(value: string) => setContextSortBy(value as 'date' | 'priority' | 'title')}
+            >
               <SelectTrigger className="w-[140px]">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
@@ -277,26 +258,28 @@ const TaskList = ({ tasks: propTasks, onEditTask, filter }: TaskListProps = {}) 
           </div>
         )}
 
-        {/* Task List */}
-        <div className={`space-y-3 ${viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' : ''}`}>
-          {filteredTasks.map((task) => (
-            <TaskItem
-              key={task.id}
-              task={task}
-              onEditClick={(task) => {
-                if (onEditTask) {
-                  onEditTask(task);
-                }
-              }}
-            />
-          ))}
-        </div>
-
-        {filteredTasks.length === 0 && (
-          <div className="text-center py-8 text-muted-foreground">
-            <p>No tasks found. Create a new task to get started!</p>
+        {/* ✅ SCROLL AREA - Task List with Scroll */}
+        <ScrollArea className="h-[600px] pr-4">
+          <div className={`space-y-3 ${viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' : ''}`}>
+            {filteredTasks.map((task: Task) => (
+              <TaskItem
+                key={task.id}
+                task={task}
+                onEditClick={(task: Task) => {
+                  if (onEditTask) {
+                    onEditTask(task);
+                  }
+                }}
+              />
+            ))}
           </div>
-        )}
+
+          {filteredTasks.length === 0 && (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>No tasks found. Create a new task to get started!</p>
+            </div>
+          )}
+        </ScrollArea>
       </CardContent>
     </Card>
   );

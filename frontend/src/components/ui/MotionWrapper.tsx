@@ -25,15 +25,17 @@ export const MotionWrapper: React.FC<MotionWrapperProps> = ({
     if (typeof window !== 'undefined') {
       const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
       setPrefersReducedMotion(mediaQuery.matches);
-
+  
       // Listen for changes
       const handleChange = (e: MediaQueryListEvent) => {
         setPrefersReducedMotion(e.matches);
       };
-
+  
       mediaQuery.addEventListener('change', handleChange);
       return () => mediaQuery.removeEventListener('change', handleChange);
     }
+    
+    return undefined;
   }, []);
 
   const getVariants = () => {

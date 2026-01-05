@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useReducer, useEffect, ReactNode, useRef } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, ReactNode, useRef, useCallback } from 'react';
 import { notificationService } from '@/services/apiService';
 import type { Notification as NotificationType } from '../types/types';
 import { useAuth } from './AuthContext';
@@ -128,7 +128,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   }, []);
 
   // ✅ Show browser notification
-  const showBrowserNotification = (title: string, body: string, icon?: string) => {
+  const showBrowserNotification = useCallback((title: string, body: string, icon?: string) => {
     if (typeof window === 'undefined' || !('Notification' in window)) return;
 
     if (Notification.permission === 'granted') {
@@ -150,10 +150,10 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
         console.warn('Failed to show browser notification:', error);
       }
     }
-  };
+  }, []);
 
   // ✅ Show toast notification with sound
-  const showToast = (notification: NotificationType) => {
+  const showToast = useCallback((notification: NotificationType) => {
     const notificationsEnabled = preferences?.notificationsEnabled !== false;
     
     if (notificationsEnabled) {
@@ -180,10 +180,65 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
 
       console.log('🔔 Notification:', notification.title, '-', notification.message);
     }
-  };
+  }, [preferences?.notificationsEnabled, showBrowserNotification]);
 
-  // ✅ Create task-related notification
-  const createTaskNotification = (
+  // Fetch notifications
+  const fetchNotifications = useCallback(async () => {
+    if (!user?.id) return;
+
+    try {
+      dispatch({ type: 'FETCH_START' });
+      const notifications = await notificationService.getNotifications(user.id, false, 20);
+      dispatch({ type: 'FETCH_SUCCESS', payload: notifications });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch notifications';
+      dispatch({ type: 'FETCH_ERROR', payload: errorMessage });
+    }
+  }, [user?.id]);
+
+  // Mark as read
+  const markAsRead = useCallback(async (notificationId: string) => {
+    if (!user?.id) return;
+
+    try {
+      const updatedNotification = await notificationService.markNotificationAsRead(user.id, notificationId);
+      dispatch({ type: 'UPDATE_NOTIFICATION', payload: updatedNotification });
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error);
+    }
+  }, [user?.id]);
+
+  // Mark all as read
+  const markAllAsRead = useCallback(async () => {
+    if (!user?.id) return;
+
+    try {
+      dispatch({ type: 'MARK_ALL_AS_READ' });
+      
+      const unreadNotifications = state.notifications.filter(n => !n.read);
+      for (const notification of unreadNotifications) {
+        await notificationService.markNotificationAsRead(user.id, notification.id);
+      }
+    } catch (error) {
+      console.error('Failed to mark all as read:', error);
+    }
+  }, [user?.id, state.notifications]);
+
+  // Add notification - MUST be declared before createTaskNotification
+  const addNotification = useCallback((notification: NotificationType) => {
+    dispatch({ type: 'ADD_NOTIFICATION', payload: notification });
+    showToast(notification);
+
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+    }
+    toastTimeoutRef.current = setTimeout(() => {
+      // Auto-dismiss logic if needed
+    }, 5000);
+  }, [showToast]);
+
+  // ✅ Create task-related notification - now uses addNotification which is declared above
+  const createTaskNotification = useCallback((
     type: 'created' | 'updated' | 'completed' | 'deleted',
     taskTitle: string,
     taskId?: string
@@ -220,90 +275,45 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     };
 
     const config = notificationMessages[type];
-    
-    const notification: NotificationType = {
-      id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+
+    const timestamp = Date.now();
+    const randomId = Math.random().toString(36).substr(2, 9);
+    const baseNotification = {
+      id: `notif_${timestamp}_${randomId}`,
       userId: user?.id || '',
       type: config.type,
       title: config.title,
       message: config.message,
-      taskId: taskId,
-      taskTitle: taskTitle,
-      icon: config.icon,
-      color: config.color,
       read: false,
       createdAt: new Date().toISOString(),
+      icon: config.icon,
+      color: config.color,
     };
 
+    const notification: NotificationType = { ...baseNotification };
+
+    if (taskId) {
+      notification.taskId = taskId;
+    }
+
+    if (taskTitle) {
+      notification.taskTitle = taskTitle;
+    }
+
     addNotification(notification);
-  };
-
-  // Fetch notifications
-  const fetchNotifications = async () => {
-    if (!user?.id) return;
-
-    try {
-      dispatch({ type: 'FETCH_START' });
-      const notifications = await notificationService.getNotifications(user.id, false, 20);
-      dispatch({ type: 'FETCH_SUCCESS', payload: notifications });
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch notifications';
-      dispatch({ type: 'FETCH_ERROR', payload: errorMessage });
-    }
-  };
-
-  // Mark as read
-  const markAsRead = async (notificationId: string) => {
-    if (!user?.id) return;
-
-    try {
-      const updatedNotification = await notificationService.markNotificationAsRead(user.id, notificationId);
-      dispatch({ type: 'UPDATE_NOTIFICATION', payload: updatedNotification });
-    } catch (error) {
-      console.error('Failed to mark notification as read:', error);
-    }
-  };
-
-  // Mark all as read
-  const markAllAsRead = async () => {
-    if (!user?.id) return;
-
-    try {
-      dispatch({ type: 'MARK_ALL_AS_READ' });
-      
-      const unreadNotifications = state.notifications.filter(n => !n.read);
-      for (const notification of unreadNotifications) {
-        await notificationService.markNotificationAsRead(user.id, notification.id);
-      }
-    } catch (error) {
-      console.error('Failed to mark all as read:', error);
-    }
-  };
-
-  // Add notification
-  const addNotification = (notification: NotificationType) => {
-    dispatch({ type: 'ADD_NOTIFICATION', payload: notification });
-    showToast(notification);
-
-    if (toastTimeoutRef.current) {
-      clearTimeout(toastTimeoutRef.current);
-    }
-    toastTimeoutRef.current = setTimeout(() => {
-      // Auto-dismiss logic if needed
-    }, 5000);
-  };
+  }, [user?.id, addNotification]);
 
   // Polling for notifications
   useEffect(() => {
-    if (user?.id) {
-      fetchNotifications();
-      const interval = setInterval(() => {
-        fetchNotifications();
-      }, 30000); // 30 seconds
+    if (!user?.id) return; // Early return if no user
 
-      return () => clearInterval(interval);
-    }
-  }, [user?.id]);
+    fetchNotifications();
+    const interval = setInterval(() => {
+      fetchNotifications();
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
+  }, [user?.id, fetchNotifications]);
 
   // WebSocket connection
   useEffect(() => {
@@ -346,7 +356,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
         clearTimeout(toastTimeoutRef.current);
       }
     };
-  }, [user?.id]);
+  }, [user?.id, addNotification]);
 
   return (
     <NotificationContext.Provider

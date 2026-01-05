@@ -1,4 +1,7 @@
 'use client';
+export const runtime = 'edge';
+
+export const dynamic = 'force-dynamic';
 
 import React from 'react';
 import { useDashboard } from '@/contexts/DashboardContext';
@@ -18,7 +21,7 @@ const RemindersPage = () => {
     if (!task.dueDate) return false;
     const taskDate = new Date(task.dueDate);
     taskDate.setHours(0, 0, 0, 0);
-    return taskDate.getTime() < today.getTime() && task.status !== 'completed';
+    return taskDate.getTime() < today.getTime() && !task.completed;
   });
 
   return (

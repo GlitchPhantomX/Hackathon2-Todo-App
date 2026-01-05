@@ -37,13 +37,17 @@ export const AriaLiveAnnouncer: React.FC<AriaLiveAnnouncerProps> = ({
   const [announcement, setAnnouncement] = useState('');
 
   useEffect(() => {
-    if (message) {
-      setAnnouncement(message);
-      // Clear the announcement after a short delay to avoid repeated announcements
-      const timer = setTimeout(() => setAnnouncement(''), 100);
-      return () => clearTimeout(timer);
+    if (!message) {
+      return;
     }
+  
+    setAnnouncement(message);
+  
+    const timer = setTimeout(() => setAnnouncement(''), 100);
+  
+    return () => clearTimeout(timer);
   }, [message]);
+  
 
   return (
     <div

@@ -17,45 +17,66 @@ def get_user_settings(
     """
     Get user settings.
     """
-    settings = db.query(UserSettings).filter(
-        UserSettings.user_id == current_user.id
-    ).first()
+    try:
+        settings = db.query(UserSettings).filter(
+            UserSettings.user_id == current_user.id
+        ).first()
 
-    if not settings:
-        # Create default settings if they don't exist
-        settings = UserSettings(
-            user_id=current_user.id,
-            appearance_theme="system",
-            appearance_accent_color="#a855f7",
-            appearance_font_size="M",
-            appearance_language="en",
-            appearance_date_format="MM/DD/YYYY",
-            appearance_time_format="12h",
-            notifications_enabled=True,
-            notifications_sound_enabled=True,
-            notifications_email_notifications=True,
-            notifications_push_notifications=False,
-            notifications_task_reminders=True,
-            notifications_daily_digest=False,
-            task_defaults_default_priority="medium",
-            task_defaults_default_project_id=None,
-            task_defaults_default_view="list",
-            task_defaults_items_per_page=20,
-            task_defaults_auto_assign_today=True,
-            privacy_data_retention_days=90,
-            privacy_export_data_enabled=True,
-            privacy_analytics_enabled=True,
-            privacy_profile_visible=True,
-            integrations_calendar_connected=False,
-            integrations_email_connected=False,
-            integrations_webhooks_enabled=False,
-            integrations_connected_services="[]"  # JSON string, not Python list
+        if not settings:
+            # Create default settings - SIMPLIFIED
+            settings = UserSettings(
+                user_id=current_user.id,
+                # Appearance
+                appearance_theme="system",
+                appearance_accent_color="#a855f7",
+                appearance_font_size="M",
+                appearance_language="en",
+                appearance_date_format="MM/DD/YYYY",
+                appearance_time_format="12h",
+                
+                # Notifications
+                notifications_enabled=True,
+                notifications_sound_enabled=True,
+                notifications_email_notifications=True,
+                notifications_push_notifications=False,
+                notifications_task_reminders=True,
+                notifications_daily_digest=False,
+                
+                # Task Defaults
+                task_defaults_default_priority="medium",
+                task_defaults_default_project_id=None,
+                task_defaults_default_view="list",
+                task_defaults_items_per_page=20,
+                task_defaults_auto_assign_today=True,
+                
+                # Privacy
+                privacy_data_retention_days=90,
+                privacy_export_data_enabled=True,
+                privacy_analytics_enabled=True,
+                privacy_profile_visible=True,
+                
+                # Integrations
+                integrations_calendar_connected=False,
+                integrations_email_connected=False,
+                integrations_webhooks_enabled=False,
+                integrations_connected_services="[]"
+            )
+            
+            db.add(settings)
+            db.commit()
+            db.refresh(settings)
+            
+            print(f"Created default settings for user {current_user.id}")
+
+        return settings
+        
+    except Exception as e:
+        print(f"Error getting user settings: {str(e)}")
+        db.rollback()
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Failed to get user settings: {str(e)}"
         )
-        db.add(settings)
-        db.commit()
-        db.refresh(settings)
-
-    return settings
 
 
 @router.put("/", response_model=UserSettingsResponse)

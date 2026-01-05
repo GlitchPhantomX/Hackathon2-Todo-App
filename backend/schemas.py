@@ -754,3 +754,101 @@ class UserSettingsUpdate(BaseModel):
             }
         }
     }
+
+
+# Chat-related schemas
+class ConversationCreate(BaseModel):
+    """Schema for creating a new conversation"""
+    title: Optional[str] = Field(default="New Chat", max_length=200, description="Conversation title")
+    is_archived: Optional[bool] = Field(default=False, description="Whether the conversation is archived")
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "title": "Task Management Chat",
+                "is_archived": False
+            }
+        }
+    }
+
+
+class ConversationUpdate(BaseModel):
+    """Schema for updating a conversation"""
+    title: Optional[str] = Field(None, max_length=200, description="Updated conversation title")
+    is_archived: Optional[bool] = Field(None, description="Updated archive status")
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "title": "Updated Chat Title",
+                "is_archived": True
+            }
+        }
+    }
+
+
+class ConversationResponse(BaseModel):
+    """Schema for conversation information in responses"""
+    id: int
+    user_id: int
+    title: str
+    created_at: datetime
+    updated_at: datetime
+    is_archived: bool
+
+    model_config = {
+        "from_attributes": True,
+        "json_schema_extra": {
+            "example": {
+                "id": 1,
+                "user_id": 1,
+                "title": "Task Management Chat",
+                "created_at": "2025-12-27T10:00:00Z",
+                "updated_at": "2025-12-27T10:00:00Z",
+                "is_archived": False
+            }
+        }
+    }
+
+
+class MessageCreate(BaseModel):
+    """Schema for creating a new message"""
+    conversation_id: int = Field(..., description="ID of the conversation")
+    role: str = Field(..., pattern=r"^(user|assistant)$", description="Role of the message sender")
+    content: str = Field(..., max_length=4000, description="Message content")
+    metadata_json: Optional[str] = Field(None, description="Metadata as JSON string")
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "conversation_id": 1,
+                "role": "user",
+                "content": "Create a task to buy groceries",
+                "metadata_json": None
+            }
+        }
+    }
+
+
+class MessageResponse(BaseModel):
+    """Schema for message information in responses"""
+    id: int
+    conversation_id: int
+    role: str
+    content: str
+    timestamp: datetime
+    metadata_json: Optional[str]
+
+    model_config = {
+        "from_attributes": True,
+        "json_schema_extra": {
+            "example": {
+                "id": 1,
+                "conversation_id": 1,
+                "role": "assistant",
+                "content": "I've created the task 'buy groceries' for you.",
+                "timestamp": "2025-12-27T10:00:00Z",
+                "metadata_json": '{"tool_calls": ["create_task"]}'
+            }
+        }
+    }

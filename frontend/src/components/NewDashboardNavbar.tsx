@@ -19,22 +19,19 @@ import {
 import { Badge } from "./ui/badge";
 import {
   HomeIcon,
-  BellIcon,
   SunIcon,
   MoonIcon,
   LogOutIcon,
   UserIcon,
   SettingsIcon,
-  HelpCircleIcon,
   XIcon,
   SearchIcon,
   CheckCircle2,
   Circle,
   Clock,
-  Flag,
   FolderIcon,
-  TagIcon,
   ArrowRight,
+  MessageCircle,
   TestTube, // ✅ New icon for test button
 } from "lucide-react";
 import { Input } from "./ui/input";
@@ -43,11 +40,11 @@ import KeyboardShortcuts from "./KeyboardShortcuts";
 import { format } from "date-fns";
 
 // Debounced callback hook
-const useDebouncedCallback = (
-  callback: (...args: any[]) => void,
+const useDebouncedCallback = <T extends (...args: any[]) => void>(
+  callback: T,
   delay: number
 ) => {
-  const callbackRef = useRef(callback);
+  const callbackRef = useRef<T>(callback);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -63,7 +60,7 @@ const useDebouncedCallback = (
   }, []);
 
   return useCallback(
-    (...args: any[]) => {
+    (...args: Parameters<T>) => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
@@ -81,27 +78,37 @@ const NewDashboardNavbar = () => {
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
   const { user, logout } = useAuth();
-  const { stats, tasks, projects, createTaskNotification, notifications } = useDashboard(); // ✅ Added createTaskNotification and notifications
+  const { tasks, projects, createTaskNotification, notifications } =
+    useDashboard(); // ✅ Added createTaskNotification and notifications
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchResults, setSearchResults] = useState<(
+    | { type: 'task'; id: string; title: string; description?: string; status: string; priority?: string; dueDate?: string }
+    | { type: 'project'; id: string; title: string; description?: string; color?: string }
+    | { type: 'action'; id: string; title: string; icon?: string; action: () => void }
+  )[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const searchRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
-  
+
   useEffect(() => {
-    setMounted(true);
+    const timer = setTimeout(() => {
+      setMounted(true);
+    }, 0);
+    return () => clearTimeout(timer);
   }, []);
 
   // ✅ Debug notifications on mount and changes
   useEffect(() => {
-    console.log('🎯 NAVBAR: Notifications updated:', notifications);
-    console.log('🎯 NAVBAR: Notifications count:', notifications?.length || 0);
+    console.log("🎯 NAVBAR: Notifications updated:", notifications);
+    console.log("🎯 NAVBAR: Notifications count:", notifications?.length || 0);
   }, [notifications]);
 
-  const basePath = pathname.startsWith("/new-dashboard") ? "/new-dashboard" : "";
+  const basePath = pathname.startsWith("/new-dashboard")
+    ? "/new-dashboard"
+    : "";
 
-  const constructRoute = (path: string) => {
+  const constructRoute = useCallback((path: string) => {
     if (path.startsWith("/")) {
       if (basePath && !path.startsWith(basePath) && path !== "/") {
         return `${basePath}${path}`;
@@ -109,88 +116,138 @@ const NewDashboardNavbar = () => {
       return path;
     }
     return path;
-  };
+  }, [basePath]);
 
   // ✅ Test notification function
   const handleTestNotification = () => {
-    console.log('🧪 TEST BUTTON CLICKED - Creating test notification');
-    const notificationTypes = ['created', 'updated', 'completed', 'deleted'] as const;
-    const randomType = notificationTypes[Math.floor(Math.random() * notificationTypes.length)];
+    console.log("🧪 TEST BUTTON CLICKED - Creating test notification");
+    const notificationTypes = [
+      "created",
+      "updated",
+      "completed",
+      "deleted",
+    ] as const;
+    const randomIndex = Math.floor(Math.random() * notificationTypes.length);
+    // Use a type assertion since we know the array is non-empty and index is valid
+    const randomType = notificationTypes[randomIndex] as "created" | "updated" | "completed" | "deleted";
     const testTaskTitle = `Test Task ${Date.now()}`;
-    
-    console.log('🧪 Calling createTaskNotification with:', randomType, testTaskTitle);
+
+    console.log(
+      "🧪 Calling createTaskNotification with:",
+      randomType,
+      testTaskTitle
+    );
     createTaskNotification(randomType, testTaskTitle, `test_${Date.now()}`);
-    console.log('🧪 createTaskNotification called successfully');
+    console.log("🧪 createTaskNotification called successfully");
   };
 
   // ✅ Enhanced search function with multiple result types
-  const performSearch = useCallback((query: string) => {
-    if (!query.trim()) {
-      setSearchResults([]);
+  const performSearch = useCallback(
+    (query: string) => {
+      if (!query.trim()) {
+        setSearchResults([]);
+        setSelectedIndex(-1);
+        return;
+      }
+
+      const lowerQuery = query.toLowerCase();
+      const results: (
+    | { type: 'task'; id: string; title: string; description?: string; status: string; priority?: string; dueDate?: string }
+    | { type: 'project'; id: string; title: string; description?: string; color?: string }
+    | { type: 'action'; id: string; title: string; icon?: string; action: () => void }
+  )[] = [] as (
+    | { type: 'task'; id: string; title: string; description?: string; status: string; priority?: string; dueDate?: string }
+    | { type: 'project'; id: string; title: string; description?: string; color?: string }
+    | { type: 'action'; id: string; title: string; icon?: string; action: () => void }
+  )[];
+
+      // Search tasks
+      const matchedTasks: (
+    | { type: 'task'; id: string; title: string; description?: string; status: string; priority?: string; dueDate?: string }
+    | { type: 'project'; id: string; title: string; description?: string; color?: string }
+    | { type: 'action'; id: string; title: string; icon?: string; action: () => void }
+  )[] = tasks
+        .filter((task) => {
+          const matchesTitle = task.title.toLowerCase().includes(lowerQuery);
+          const matchesDescription =
+            task.description?.toLowerCase().includes(lowerQuery) || false;
+          const matchesTags =
+            task.tags?.some((tag: string | { name: string }) =>
+              typeof tag === "string"
+                ? tag.toLowerCase().includes(lowerQuery)
+                : typeof tag === "object" && tag.name
+                  ? tag.name.toLowerCase().includes(lowerQuery)
+                  : false
+            ) || false;
+          const matchesPriority =
+            task.priority?.toLowerCase().includes(lowerQuery) || false;
+
+          return (
+            matchesTitle || matchesDescription || matchesTags || matchesPriority
+          );
+        })
+        .slice(0, 5)
+        .map((task) => ({
+          type: "task" as const,
+          id: task.id,
+          title: task.title,
+          description: task.description,
+          status: task.status as string,
+          priority: task.priority as string | undefined,
+          dueDate: task.dueDate,
+        })) as any; // Cast to avoid exactOptionalPropertyTypes issues
+
+      results.push(...matchedTasks);
+
+      // Search projects
+      const matchedProjects: (
+    | { type: 'task'; id: string; title: string; description?: string; status: string; priority?: string; dueDate?: string }
+    | { type: 'project'; id: string; title: string; description?: string; color?: string }
+    | { type: 'action'; id: string; title: string; icon?: string; action: () => void }
+  )[] = projects
+        .filter(
+          (project) =>
+            project.name.toLowerCase().includes(lowerQuery) ||
+            project.description?.toLowerCase().includes(lowerQuery)
+        )
+        .slice(0, 3)
+        .map((project) => ({
+          type: "project" as const,
+          id: project.id,
+          title: project.name,
+          description: project.description as string | undefined,
+          color: project.color,
+        })) as any; // Cast to avoid exactOptionalPropertyTypes issues
+
+      results.push(...matchedProjects);
+
+      // Quick actions
+      const quickActions = [
+        {
+          type: "action" as const,
+          id: "new-task",
+          title: "Create New Task",
+          icon: "plus",
+          action: () => console.log("Create task"),
+        },
+        {
+          type: "action" as const,
+          id: "view-all",
+          title: "View All Tasks",
+          icon: "list",
+          action: () => router.push(constructRoute("/new-dashboard")),
+        },
+      ].filter((action) => action.title.toLowerCase().includes(lowerQuery));
+
+      if (quickActions.length > 0) {
+        results.push(...quickActions);
+      }
+
+      setSearchResults(results);
       setSelectedIndex(-1);
-      return;
-    }
-
-    const lowerQuery = query.toLowerCase();
-    const results: any[] = [];
-
-    // Search tasks
-    const matchedTasks = tasks
-      .filter((task) => {
-        const matchesTitle = task.title.toLowerCase().includes(lowerQuery);
-        const matchesDescription = task.description?.toLowerCase().includes(lowerQuery) || false;
-        const matchesTags = task.tags?.some((tag) =>
-          typeof tag === "string"
-            ? tag.toLowerCase().includes(lowerQuery)
-            : tag.name?.toLowerCase().includes(lowerQuery)
-        ) || false;
-        const matchesPriority = task.priority?.toLowerCase().includes(lowerQuery) || false;
-
-        return matchesTitle || matchesDescription || matchesTags || matchesPriority;
-      })
-      .slice(0, 5)
-      .map(task => ({
-        type: 'task',
-        id: task.id,
-        title: task.title,
-        description: task.description,
-        status: task.status,
-        priority: task.priority,
-        dueDate: task.dueDate,
-      }));
-
-    results.push(...matchedTasks);
-
-    // Search projects
-    const matchedProjects = projects
-      .filter((project) => 
-        project.name.toLowerCase().includes(lowerQuery) ||
-        project.description?.toLowerCase().includes(lowerQuery)
-      )
-      .slice(0, 3)
-      .map(project => ({
-        type: 'project',
-        id: project.id,
-        title: project.name,
-        description: project.description,
-        color: project.color,
-      }));
-
-    results.push(...matchedProjects);
-
-    // Quick actions
-    const quickActions = [
-      { type: 'action', id: 'new-task', title: 'Create New Task', icon: 'plus', action: () => console.log('Create task') },
-      { type: 'action', id: 'view-all', title: 'View All Tasks', icon: 'list', action: () => router.push(constructRoute('/new-dashboard')) },
-    ].filter(action => action.title.toLowerCase().includes(lowerQuery));
-
-    if (quickActions.length > 0) {
-      results.push(...quickActions);
-    }
-
-    setSearchResults(results);
-    setSelectedIndex(-1);
-  }, [tasks, projects, router, constructRoute]);
+    },
+    [tasks, projects, router, basePath]
+  );
 
   // Debounced search
   const debouncedSearch = useDebouncedCallback(performSearch, 300);
@@ -207,46 +264,46 @@ const NewDashboardNavbar = () => {
     if (searchResults.length === 0) return;
 
     switch (e.key) {
-      case 'ArrowDown':
+      case "ArrowDown":
         e.preventDefault();
-        setSelectedIndex(prev => 
+        setSelectedIndex((prev) =>
           prev < searchResults.length - 1 ? prev + 1 : prev
         );
         break;
-      case 'ArrowUp':
+      case "ArrowUp":
         e.preventDefault();
-        setSelectedIndex(prev => prev > 0 ? prev - 1 : -1);
+        setSelectedIndex((prev) => (prev > 0 ? prev - 1 : -1));
         break;
-      case 'Enter':
+      case "Enter":
         e.preventDefault();
         if (selectedIndex >= 0 && searchResults[selectedIndex]) {
           handleResultClick(searchResults[selectedIndex]);
         }
         break;
-      case 'Escape':
+      case "Escape":
         setIsSearchOpen(false);
-        setSearchQuery('');
+        setSearchQuery("");
         setSearchResults([]);
         break;
     }
   };
 
   // Handle result click
-  const handleResultClick = (result: any) => {
-    if (result.type === 'task') {
-      console.log('Open task:', result.id);
+  const handleResultClick = (result: { type: 'task'; id: string; title: string; description?: string; status: string; priority?: string; dueDate?: string } | { type: 'project'; id: string; title: string; description?: string; color?: string } | { type: 'action'; id: string; title: string; icon?: string; action: () => void }) => {
+    if (result.type === "task") {
+      console.log("Open task:", result.id);
       setIsSearchOpen(false);
-      setSearchQuery('');
+      setSearchQuery("");
       setSearchResults([]);
-    } else if (result.type === 'project') {
+    } else if (result.type === "project") {
       router.push(constructRoute(`/new-dashboard/projects/${result.id}`));
       setIsSearchOpen(false);
-      setSearchQuery('');
+      setSearchQuery("");
       setSearchResults([]);
-    } else if (result.type === 'action') {
+    } else if (result.type === "action") {
       result.action();
       setIsSearchOpen(false);
-      setSearchQuery('');
+      setSearchQuery("");
       setSearchResults([]);
     }
   };
@@ -255,7 +312,10 @@ const NewDashboardNavbar = () => {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim() && searchResults.length > 0) {
-      handleResultClick(searchResults[0]);
+      const firstResult = searchResults[0];
+      if (firstResult) {
+        handleResultClick(firstResult);
+      }
     }
   };
 
@@ -269,7 +329,10 @@ const NewDashboardNavbar = () => {
   // Handle click outside to close search
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+      if (
+        searchRef.current &&
+        !searchRef.current.contains(event.target as Node)
+      ) {
         setIsSearchOpen(false);
       }
     };
@@ -293,8 +356,8 @@ const NewDashboardNavbar = () => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
       if (
-        target.tagName === 'INPUT' ||
-        target.tagName === 'TEXTAREA' ||
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
         target.isContentEditable
       ) {
         return;
@@ -306,7 +369,9 @@ const NewDashboardNavbar = () => {
             e.preventDefault();
             setIsSearchOpen(true);
             setTimeout(() => {
-              const searchInput = document.querySelector('input[type="text"]') as HTMLInputElement;
+              const searchInput = document.querySelector(
+                'input[type="text"]'
+              ) as HTMLInputElement;
               if (searchInput) searchInput.focus();
             }, 100);
             break;
@@ -338,7 +403,7 @@ const NewDashboardNavbar = () => {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [theme, setTheme]);
+  }, [theme, setTheme, setIsSearchOpen, setShowShortcutsModal, handleClearSearch]);
 
   // Get user initials
   const getUserInitials = () => {
@@ -352,9 +417,7 @@ const NewDashboardNavbar = () => {
   const getUserAvatar = () => {
     if (!user) return "";
     return (
-      (user as any).avatar ||
-      (user as any).profilePicture ||
-      (user as any).image ||
+      user.avatar ||
       ""
     );
   };
@@ -368,14 +431,16 @@ const NewDashboardNavbar = () => {
   };
 
   // ✅ Get icon for search result
-  const getResultIcon = (result: any) => {
-    if (result.type === 'task') {
-      return result.status === 'completed' 
-        ? <CheckCircle2 className="h-4 w-4 text-green-500" />
-        : <Circle className="h-4 w-4 text-muted-foreground" />;
-    } else if (result.type === 'project') {
+  const getResultIcon = (result: { type: 'task'; id: string; title: string; description?: string; status: string; priority?: string; dueDate?: string } | { type: 'project'; id: string; title: string; description?: string; color?: string } | { type: 'action'; id: string; title: string; icon?: string; action: () => void }) => {
+    if (result.type === "task") {
+      return result.status === "completed" ? (
+        <CheckCircle2 className="h-4 w-4 text-green-500" />
+      ) : (
+        <Circle className="h-4 w-4 text-muted-foreground" />
+      );
+    } else if (result.type === "project") {
       return <FolderIcon className="h-4 w-4 text-blue-500" />;
-    } else if (result.type === 'action') {
+    } else if (result.type === "action") {
       return <ArrowRight className="h-4 w-4 text-purple-500" />;
     }
     return <SearchIcon className="h-4 w-4" />;
@@ -384,10 +449,14 @@ const NewDashboardNavbar = () => {
   // ✅ Get priority badge color
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'high': return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
-      case 'medium': return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400';
-      case 'low': return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
-      default: return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400';
+      case "high":
+        return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400";
+      case "medium":
+        return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400";
+      case "low":
+        return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400";
+      default:
+        return "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400";
     }
   };
 
@@ -407,7 +476,7 @@ const NewDashboardNavbar = () => {
                     TodoMaster
                   </span>
                 </Link>
-                
+
                 {/* Mobile search toggle */}
                 <Button
                   variant="ghost"
@@ -420,7 +489,12 @@ const NewDashboardNavbar = () => {
               </div>
 
               {/* ✅ Enhanced search bar with dropdown */}
-              <div className={`${isSearchOpen ? 'flex' : 'hidden md:flex'} flex-1 mx-0 md:mx-4 w-full md:w-auto relative`} ref={searchRef}>
+              <div
+                className={`${
+                  isSearchOpen ? "flex" : "hidden md:flex"
+                } flex-1 mx-0 md:mx-4 w-full md:w-auto relative`}
+                ref={searchRef}
+              >
                 <form onSubmit={handleSearch} className="relative w-full">
                   <Input
                     type="text"
@@ -455,7 +529,7 @@ const NewDashboardNavbar = () => {
                         type="button"
                         onClick={() => handleResultClick(result)}
                         className={`w-full flex items-start gap-3 p-3 hover:bg-muted/50 transition-colors border-b last:border-b-0 text-left ${
-                          index === selectedIndex ? 'bg-muted/50' : ''
+                          index === selectedIndex ? "bg-muted/50" : ""
                         }`}
                       >
                         {/* Icon */}
@@ -469,29 +543,40 @@ const NewDashboardNavbar = () => {
                             <p className="font-medium text-sm truncate">
                               {result.title}
                             </p>
-                            {result.priority && (
-                              <Badge variant="secondary" className={`text-xs px-2 py-0 ${getPriorityColor(result.priority)}`}>
+                            {result.type === 'task' && result.priority && (
+                              <Badge
+                                variant="secondary"
+                                className={`text-xs px-2 py-0 ${getPriorityColor(
+                                  result.priority
+                                )}`}
+                              >
                                 {result.priority}
                               </Badge>
                             )}
                           </div>
-                          {result.description && (
+                          {(result.type !== 'action' && result.description) && (
                             <p className="text-xs text-muted-foreground line-clamp-1">
                               {result.description}
                             </p>
                           )}
-                          {result.dueDate && (
+                          {result.type === 'task' && result.dueDate && (
                             <div className="flex items-center gap-1 mt-1">
                               <Clock className="h-3 w-3 text-muted-foreground" />
                               <span className="text-xs text-muted-foreground">
-                                {format(new Date(result.dueDate), 'MMM dd, yyyy')}
+                                {format(
+                                  new Date(result.dueDate),
+                                  "MMM dd, yyyy"
+                                )}
                               </span>
                             </div>
                           )}
                         </div>
 
                         {/* Type badge */}
-                        <Badge variant="outline" className="text-xs flex-shrink-0">
+                        <Badge
+                          variant="outline"
+                          className="text-xs flex-shrink-0"
+                        >
                           {result.type}
                         </Badge>
                       </button>
@@ -504,7 +589,8 @@ const NewDashboardNavbar = () => {
                   <div className="absolute top-full left-0 right-0 mt-2 bg-background border rounded-lg shadow-lg p-8 text-center z-50">
                     <SearchIcon className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
                     <p className="text-sm text-muted-foreground">
-                      No results found for "<span className="font-medium">{searchQuery}</span>"
+                      No results found for "
+                      <span className="font-medium">{searchQuery}</span>"
                     </p>
                     <p className="text-xs text-muted-foreground/70 mt-1">
                       Try different keywords
@@ -526,9 +612,17 @@ const NewDashboardNavbar = () => {
                   <TestTube className="h-3 w-3" />
                   <span className="hidden sm:inline">Test</span>
                 </Button>
+                <button
+                  onClick={() => router.push("/chat")} // ✅ Changed from /new-dashboard/chat
+                  className="relative p-2 text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
+                  aria-label="AI Assistant"
+                  title="AI Assistant"
+                >
+                  <MessageCircle className="h-6 w-6" />
+                </button>
 
                 <NotificationDropdown />
-                
+
                 <Button
                   variant="ghost"
                   size="icon"
@@ -568,24 +662,30 @@ const NewDashboardNavbar = () => {
                         </p>
                       </div>
                     </DropdownMenuLabel>
-                    
+
                     <DropdownMenuSeparator />
-                    
+
                     <DropdownMenuItem asChild>
-                      <Link href={constructRoute("/new-dashboard/profile")} className="cursor-pointer">
+                      <Link
+                        href={constructRoute("/new-dashboard/profile")}
+                        className="cursor-pointer"
+                      >
                         <UserIcon className="mr-2 h-4 w-4" />
                         <span>Profile</span>
                       </Link>
                     </DropdownMenuItem>
-                    
+
                     <DropdownMenuItem asChild>
-                      <Link href={constructRoute("/new-dashboard/settings")} className="cursor-pointer">
+                      <Link
+                        href={constructRoute("/new-dashboard/settings")}
+                        className="cursor-pointer"
+                      >
                         <SettingsIcon className="mr-2 h-4 w-4" />
                         <span>Settings</span>
                       </Link>
                     </DropdownMenuItem>
-                    
-                    <DropdownMenuItem 
+
+                    <DropdownMenuItem
                       onClick={() => setShowShortcutsModal(true)}
                       className="cursor-pointer"
                     >
@@ -595,10 +695,10 @@ const NewDashboardNavbar = () => {
                         Ctrl+/
                       </span>
                     </DropdownMenuItem>
-                    
+
                     <DropdownMenuSeparator />
-                    
-                    <DropdownMenuItem 
+
+                    <DropdownMenuItem
                       onClick={handleLogout}
                       className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950"
                     >

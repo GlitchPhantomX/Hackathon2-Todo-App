@@ -1,4 +1,7 @@
 'use client';
+export const runtime = 'edge';
+
+export const dynamic = 'force-dynamic';
 
 import React, { useState } from 'react';
 import PageHeader from '@/components/PageHeader';
@@ -27,9 +30,22 @@ const ProjectsPage = () => {
     setIsProjectModalOpen(true);
   };
 
-  const handleProjectSubmit = async (projectData: Omit<Project, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
+  const handleProjectSubmit = async (projectData: Omit<Project, 'id'>) => {
     if (editingProject) {
-      await updateProject(editingProject.id, projectData);
+      // Create a base object with potentially undefined values
+      const baseUpdates = {
+        name: projectData.name !== editingProject.name ? projectData.name : undefined,
+        description: projectData.description !== editingProject.description ? projectData.description : undefined,
+        color: projectData.color !== editingProject.color ? projectData.color : undefined,
+        icon: projectData.icon !== editingProject.icon ? projectData.icon : undefined,
+      };
+
+      // Filter out undefined values to create the final updates object
+      const updates = Object.fromEntries(
+        Object.entries(baseUpdates).filter(([_, value]) => value !== undefined)
+      ) as Partial<Project>;
+
+      await updateProject(editingProject.id, updates);
     } else {
       await createProject(projectData);
     }

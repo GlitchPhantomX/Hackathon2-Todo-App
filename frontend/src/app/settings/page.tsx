@@ -1,4 +1,7 @@
 'use client';
+export const runtime = 'edge';
+
+export const dynamic = 'force-dynamic';
 
 import React, { lazy, Suspense, useEffect, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
@@ -28,38 +31,46 @@ const SettingsPageContent = () => {
           theme: 'dark' as const,
           accent_color: '#a855f7',
           font_size: 'M' as const,
-          compact_mode: false,
+          language: 'en',
+          date_format: 'MM/DD/YYYY',
+          time_format: '12h' as const,
         },
         notifications: {
+          enabled: true,
+          sound_enabled: true,
           email_notifications: true,
           push_notifications: false,
           task_reminders: true,
-          daily_summary: false,
+          daily_digest: false,
         },
         task_defaults: {
           default_priority: 'medium' as const,
+          default_project_id: null,
           default_view: 'list' as const,
           items_per_page: 20,
-          auto_archive: true,
+          auto_assign_today: false,
         },
         privacy: {
-          profile_visibility: 'private' as const,
-          activity_tracking: true,
           data_retention_days: 90,
+          export_data_enabled: true,
+          analytics_enabled: true,
+          profile_visible: true,
         },
         integrations: {
-          google_calendar: false,
-          slack: false,
-          github: false,
+          calendar_connected: false,
+          email_connected: false,
+          webhooks_enabled: false,
+          connected_services: [],
         },
       };
 
       // Try to update settings, but don't fail if it doesn't work
-      updateSettings(defaultSettings).catch((err) => {
+      updateSettings(defaultSettings).then(() => {
+        setHasInitialized(true);
+      }).catch((err) => {
         console.warn('Failed to initialize settings:', err);
+        setHasInitialized(true);
       });
-      
-      setHasInitialized(true);
     }
   }, [loading, settings, error, hasInitialized, updateSettings]);
 

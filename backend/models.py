@@ -9,11 +9,11 @@ if TYPE_CHECKING:
 class UserBase(SQLModel):
     email: str = Field(unique=True, nullable=False, max_length=255)
     name: str = Field(min_length=2, max_length=100, nullable=False)
-    avatar: Optional[str] = Field(default=None, max_length=255, nullable=True)  # URL to user avatar
-    bio: Optional[str] = Field(default=None, max_length=500, nullable=True)  # User bio/description
-    phone: Optional[str] = Field(default=None, max_length=20, nullable=True)  # Phone number
-    timezone: Optional[str] = Field(default="UTC", max_length=50, nullable=True)  # User's timezone
-    locale: Optional[str] = Field(default="en-US", max_length=10, nullable=True)  # User's locale/language
+    avatar: Optional[str] = Field(default=None, max_length=255, nullable=True)
+    bio: Optional[str] = Field(default=None, max_length=500, nullable=True)
+    phone: Optional[str] = Field(default=None, max_length=20, nullable=True)
+    timezone: Optional[str] = Field(default="UTC", max_length=50, nullable=True)
+    locale: Optional[str] = Field(default="en-US", max_length=10, nullable=True)
 
 
 class User(SQLModel, table=True):
@@ -31,7 +31,7 @@ class User(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
-    # Relationship to tasks
+    # Relationships
     tasks: list["Task"] = Relationship(back_populates="user")
     notifications: list["Notification"] = Relationship(back_populates="user")
     preferences: Optional["UserPreference"] = Relationship(back_populates="user")
@@ -39,6 +39,7 @@ class User(SQLModel, table=True):
     refresh_tokens: list["RefreshToken"] = Relationship(back_populates="user")
     projects: list["Project"] = Relationship(back_populates="user")
     tags: list["Tag"] = Relationship(back_populates="user")
+    conversations: list["Conversation"] = Relationship(back_populates="user")
 
 
 class TaskBase(SQLModel):
@@ -47,7 +48,6 @@ class TaskBase(SQLModel):
     completed: bool = Field(default=False)
 
 
-# Define TaskTagLink first since it's used in Task and Tag relationships
 class TaskTagLink(SQLModel, table=True):
     __tablename__ = "task_tag_links"
 
@@ -63,13 +63,14 @@ class Task(TaskBase, table=True):
     description: str = Field(default="", max_length=1000)
     completed: bool = Field(default=False)
     due_date: Optional[datetime] = Field(default=None)
-    priority: str = Field(default="medium", max_length=10, nullable=False)  # low, medium, high
+    priority: str = Field(default="medium", max_length=10, nullable=False)
+    status: str = Field(default="pending", max_length=20, nullable=False)  # pending, in_progress, completed
     project_id: Optional[int] = Field(foreign_key="projects.id", nullable=True, index=True)
     user_id: int = Field(foreign_key="users.id", nullable=False, index=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
-    # Relationship to user
+    # Relationships
     user: Optional[User] = Relationship(back_populates="tasks")
     project: Optional["Project"] = Relationship(back_populates="tasks")
     notifications: list["Notification"] = Relationship(back_populates="task")
@@ -81,10 +82,10 @@ class Notification(SQLModel, table=True):
 
     id: Optional[int] = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="users.id", nullable=False, index=True)
-    type: str = Field(max_length=50, nullable=False)  # info, warning, error, reminder, etc.
+    type: str = Field(max_length=50, nullable=False)
     title: str = Field(max_length=200, nullable=False)
     message: str = Field(max_length=1000, nullable=False)
-    task_id: Optional[int] = Field(foreign_key="tasks.id", nullable=True)  # ON DELETE SET NULL
+    task_id: Optional[int] = Field(foreign_key="tasks.id", nullable=True)
     task_title: Optional[str] = Field(max_length=200, nullable=True)
     read: bool = Field(default=False)
     created_at: datetime = Field(default_factory=datetime.utcnow)
@@ -101,14 +102,14 @@ class UserPreference(SQLModel, table=True):
 
     id: Optional[int] = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="users.id", nullable=False, unique=True)
-    theme: str = Field(default="system", max_length=20, nullable=False)  # light, dark, system
-    accent_color: str = Field(default="#3b82f6", max_length=7, nullable=False)  # hex color
-    font_size: str = Field(default="M", max_length=1, nullable=False)  # S, M, L
+    theme: str = Field(default="system", max_length=20, nullable=False)
+    accent_color: str = Field(default="#3b82f6", max_length=7, nullable=False)
+    font_size: str = Field(default="M", max_length=1, nullable=False)
     notifications_enabled: bool = Field(default=True)
     email_notifications: bool = Field(default=True)
-    default_priority: str = Field(default="medium", max_length=10, nullable=False)  # low, medium, high
-    default_project_id: Optional[int] = Field(foreign_key="projects.id", nullable=True)  # ON DELETE SET NULL
-    default_view: str = Field(default="list", max_length=10, nullable=False)  # list, grid
+    default_priority: str = Field(default="medium", max_length=10, nullable=False)
+    default_project_id: Optional[int] = Field(foreign_key="projects.id", nullable=True)
+    default_view: str = Field(default="list", max_length=10, nullable=False)
     items_per_page: int = Field(default=10)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
@@ -120,10 +121,10 @@ class Project(SQLModel, table=True):
     __tablename__ = "projects"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    user_id: int = Field(foreign_key="users.id", nullable=False, index=True)  # ON DELETE CASCADE
+    user_id: int = Field(foreign_key="users.id", nullable=False, index=True)
     name: str = Field(max_length=100, nullable=False)
     description: str = Field(default="", max_length=500)
-    color: str = Field(default="#3b82f6", max_length=7, nullable=False)  # hex color
+    color: str = Field(default="#3b82f6", max_length=7, nullable=False)
     icon: Optional[str] = Field(max_length=50, nullable=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
@@ -137,9 +138,9 @@ class Tag(SQLModel, table=True):
     __tablename__ = "tags"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    user_id: int = Field(foreign_key="users.id", nullable=False, index=True)  # ON DELETE CASCADE
+    user_id: int = Field(foreign_key="users.id", nullable=False, index=True)
     name: str = Field(min_length=3, max_length=100, nullable=False)
-    color: str = Field(default="#3B82F6", max_length=7, nullable=False)  # hex color
+    color: str = Field(default="#3B82F6", max_length=7, nullable=False)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
@@ -154,15 +155,15 @@ class UserSettings(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="users.id", nullable=False, unique=True)
 
-    # Appearance settings
-    appearance_theme: str = Field(default="system", max_length=20, nullable=False)  # light, dark, system
-    appearance_accent_color: str = Field(default="#a855f7", max_length=7, nullable=False)  # hex color
-    appearance_font_size: str = Field(default="M", max_length=1, nullable=False)  # S, M, L
+    # Appearance
+    appearance_theme: str = Field(default="system", max_length=20, nullable=False)
+    appearance_accent_color: str = Field(default="#a855f7", max_length=7, nullable=False)
+    appearance_font_size: str = Field(default="M", max_length=10, nullable=False)
     appearance_language: str = Field(default="en", max_length=10, nullable=False)
     appearance_date_format: str = Field(default="MM/DD/YYYY", max_length=20, nullable=False)
-    appearance_time_format: str = Field(default="12h", max_length=2, nullable=False)  # 12h, 24h
+    appearance_time_format: str = Field(default="12h", max_length=2, nullable=False)
 
-    # Notification settings
+    # Notifications
     notifications_enabled: bool = Field(default=True)
     notifications_sound_enabled: bool = Field(default=True)
     notifications_email_notifications: bool = Field(default=True)
@@ -170,24 +171,24 @@ class UserSettings(SQLModel, table=True):
     notifications_task_reminders: bool = Field(default=True)
     notifications_daily_digest: bool = Field(default=False)
 
-    # Task default settings
-    task_defaults_default_priority: str = Field(default="medium", max_length=10, nullable=False)  # low, medium, high
-    task_defaults_default_project_id: Optional[int] = Field(foreign_key="projects.id", nullable=True)  # ON DELETE SET NULL
-    task_defaults_default_view: str = Field(default="list", max_length=10, nullable=False)  # list, grid
+    # Task defaults
+    task_defaults_default_priority: str = Field(default="medium", max_length=10, nullable=False)
+    task_defaults_default_project_id: Optional[int] = Field(foreign_key="projects.id", nullable=True)
+    task_defaults_default_view: str = Field(default="list", max_length=10, nullable=False)
     task_defaults_items_per_page: int = Field(default=20)
     task_defaults_auto_assign_today: bool = Field(default=True)
 
-    # Privacy settings
+    # Privacy
     privacy_data_retention_days: int = Field(default=90)
     privacy_export_data_enabled: bool = Field(default=True)
     privacy_analytics_enabled: bool = Field(default=True)
     privacy_profile_visible: bool = Field(default=True)
 
-    # Integration settings
+    # Integrations
     integrations_calendar_connected: bool = Field(default=False)
     integrations_email_connected: bool = Field(default=False)
     integrations_webhooks_enabled: bool = Field(default=False)
-    integrations_connected_services: str = Field(default="[]", max_length=1000, nullable=False)  # JSON string
+    integrations_connected_services: str = Field(default="[]", max_length=1000, nullable=False)
 
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
@@ -208,3 +209,33 @@ class RefreshToken(SQLModel, table=True):
     user: Optional[User] = Relationship(back_populates="refresh_tokens")
 
 
+class Conversation(SQLModel, table=True):
+    __tablename__ = "conversations"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="users.id", nullable=False, index=True)
+    title: str = Field(max_length=200, nullable=False)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    is_archived: bool = Field(default=False)
+
+    # Relationships
+    user: Optional[User] = Relationship(back_populates="conversations")
+    messages: list["ChatMessage"] = Relationship(
+        back_populates="conversation",
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"}  # ✅ CASCADE DELETE
+    )
+
+
+class ChatMessage(SQLModel, table=True):
+    __tablename__ = "chat_messages"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    conversation_id: int = Field(foreign_key="conversations.id", nullable=False, index=True)
+    role: str = Field(max_length=20, nullable=False)
+    content: str = Field(nullable=False)
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    metadata_json: Optional[str] = Field(default=None)
+
+    # Relationship
+    conversation: Optional[Conversation] = Relationship(back_populates="messages")

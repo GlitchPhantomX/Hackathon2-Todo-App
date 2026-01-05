@@ -1,0 +1,24 @@
+name: tool-recommendation-skill
+type: agent-skill
+version: 1.0
+purpose: Recommend abstract execution tools based on classified intent and extracted parameters.
+
+input:
+  - intent: classified user intent
+  - extracted_parameters: structured entity data
+
+output:
+  - recommended_tools:
+      - tool_name: string
+        payload: object
+        priority: number
+
+rules:
+  - Map intent to abstract tool names (create_entity, list_entities, update_entity)
+  - Never reference implementation-specific tools
+  - Support multi-step and ordered execution
+  - Do not invoke tools
+
+reusability:
+  - Works with MCP tools, REST APIs, event-driven systems
+  - Infrastructure-agnostic

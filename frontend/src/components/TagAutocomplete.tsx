@@ -40,6 +40,15 @@ const TagAutocomplete: React.FC<TagAutocompleteProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const handleSelectTag = (tag: Tag) => {
+    if (!selectedTags.some(t => t.id === tag.id)) {
+      onTagsChange([...selectedTags, tag]);
+    }
+    setInputValue('');
+    setIsOpen(false);
+    setHighlightedIndex(-1);
+  };
+
   // Handle keyboard navigation
   useEffect(() => {
     if (!isOpen) return;
@@ -71,16 +80,7 @@ const TagAutocomplete: React.FC<TagAutocompleteProps> = ({
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, highlightedIndex, filteredTags]);
-
-  const handleSelectTag = (tag: Tag) => {
-    if (!selectedTags.some(t => t.id === tag.id)) {
-      onTagsChange([...selectedTags, tag]);
-    }
-    setInputValue('');
-    setIsOpen(false);
-    setHighlightedIndex(-1);
-  };
+  }, [isOpen, highlightedIndex, filteredTags, handleSelectTag]);
 
   const handleRemoveTag = (tagId: string) => {
     onTagsChange(selectedTags.filter(tag => tag.id !== tagId));

@@ -1,4 +1,7 @@
 'use client';
+export const runtime = 'edge';
+
+export const dynamic = 'force-dynamic';
 
 import React, { useState } from 'react';
 import PageHeader from '@/components/PageHeader';
@@ -17,7 +20,7 @@ const TodayPage = () => {
   return (
     <div className="p-6 space-y-6">
       <PageHeader
-        title="Today's Tasks"
+        title="Today&#39;s Tasks"
         description="Tasks that are due today"
       />
 
@@ -28,7 +31,7 @@ const TodayPage = () => {
         <div className="lg:w-1/4">
           <Card>
             <CardHeader>
-              <CardTitle>Today's Summary</CardTitle>
+              <CardTitle>Today&#39;s Summary</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">

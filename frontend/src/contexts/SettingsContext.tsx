@@ -13,7 +13,11 @@ type SettingsAction =
   | { type: 'CLEAR_ERROR' };
 
 // Initial state
-const initialState = {
+const initialState: {
+  settings: UserSettings | null;
+  loading: boolean;
+  error: string | null;
+} = {
   settings: null,
   loading: false,
   error: null,
@@ -35,27 +39,27 @@ const settingsReducer = (state: typeof initialState, action: SettingsAction) => 
       return {
         ...state,
         settings: {
-          ...state.settings,
+          ...(state.settings as UserSettings),
           ...action.payload,
           // Merge nested objects properly
           appearance: {
-            ...state.settings.appearance,
+            ...((state.settings as UserSettings).appearance || {}),
             ...(action.payload as any).appearance,
           },
           notifications: {
-            ...state.settings.notifications,
+            ...((state.settings as UserSettings).notifications || {}),
             ...(action.payload as any).notifications,
           },
           task_defaults: {
-            ...state.settings.task_defaults,
+            ...((state.settings as UserSettings).task_defaults || {}),
             ...(action.payload as any).task_defaults,
           },
           privacy: {
-            ...state.settings.privacy,
+            ...((state.settings as UserSettings).privacy || {}),
             ...(action.payload as any).privacy,
           },
           integrations: {
-            ...state.settings.integrations,
+            ...((state.settings as UserSettings).integrations || {}),
             ...(action.payload as any).integrations,
           },
         },

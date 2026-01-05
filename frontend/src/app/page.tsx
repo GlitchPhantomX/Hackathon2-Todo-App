@@ -1,3 +1,4 @@
+"use client"
 import React from 'react'
 import NewNavbar from '@/components/layout/NewNavbar'
 import { NewHeroSection } from '@/components/NewHeroSection'

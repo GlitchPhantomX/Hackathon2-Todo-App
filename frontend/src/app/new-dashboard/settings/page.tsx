@@ -1,4 +1,7 @@
 'use client';
+export const runtime = 'edge';
+
+export const dynamic = 'force-dynamic';
 
 import React, { useState } from 'react';
 import { 
@@ -59,7 +62,7 @@ const SettingsPageWithProviders = () => {
     { id: 'integrations', label: 'Integrations', icon: Plug },
   ];
 
-  const updateSetting = (key: string, value: any) => {
+  const updateSetting = (key: string, value: boolean | string | number) => {
     setSettings(prev => ({ ...prev, [key]: value }));
   };
 
@@ -413,7 +416,7 @@ const SettingsPageWithProviders = () => {
               <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
                 <h3 className="font-medium text-slate-900 dark:text-white mb-2">Active Sessions</h3>
                 <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
-                  Manage devices where you're currently logged in
+                  Manage devices where you&#39;re currently logged in
                 </p>
                 <button className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors">
                   View Sessions

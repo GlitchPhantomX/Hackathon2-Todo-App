@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, ReactNode } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { statsService } from '@/services/apiService';
 import { useAuth } from '@/contexts/AuthContext';
@@ -43,7 +43,6 @@ export const ChartDataProvider: React.FC<ChartDataProviderProps> = ({ children }
     enabled: !!user?.id,
     refetchInterval: 30000, // Auto-refresh every 30 seconds
     staleTime: 1000 * 60 * 5, // 5 minutes
-    cacheTime: 1000 * 60 * 10, // 10 minutes
   });
 
   const refreshStats = () => {
@@ -52,7 +51,7 @@ export const ChartDataProvider: React.FC<ChartDataProviderProps> = ({ children }
 
   return (
     <ChartDataContext.Provider value={{
-      stats: stats || {
+      stats: stats ?? {
         total: 0,
         completed: 0,
         pending: 0,

@@ -1,9 +1,12 @@
 'use client';
+export const runtime = 'edge';
+
+export const dynamic = 'force-dynamic';
 
 import React from 'react';
 import { useDashboard } from '@/contexts/DashboardContext';
 import TaskList from '@/components/TaskList';
-import TaskListSkeleton from '@/components/ui/Skeleton/TaskListSkeleton';
+import {TaskListSkeleton} from '@/components/ui/Skeleton/TaskListSkeleton';
 import DashboardStats from '@/components/DashboardStats';
 import PageHeader from '@/components/PageHeader';
 import EmptyState from '@/components/EmptyState';

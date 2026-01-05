@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 const TagsList: React.FC = () => {
-  const { tags, loading, error, deleteTag } = useTags();
+  const { tags, loading, error, deleteTag, createTag, updateTag } = useTags();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTag, setEditingTag] = useState<Tag | null>(null);
 
@@ -32,6 +32,21 @@ const TagsList: React.FC = () => {
   const handleCreateNew = () => {
     setEditingTag(null);
     setIsModalOpen(true);
+  };
+
+  const handleSubmit = async (tagData: Omit<Tag, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
+    if (editingTag) {
+      // Update existing tag
+      await updateTag(editingTag.id, {
+        name: tagData.name,
+        color: tagData.color,
+      });
+      setIsModalOpen(false);
+    } else {
+      // Create new tag
+      await createTag(tagData);
+      setIsModalOpen(false);
+    }
   };
 
   if (loading) {
@@ -71,9 +86,6 @@ const TagsList: React.FC = () => {
                 </Badge>
               </div>
               <div className="flex items-center space-x-2">
-                <span className="text-sm text-muted-foreground">
-                  {tag.taskIds?.length || 0} tasks
-                </span>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="sm">
@@ -105,6 +117,7 @@ const TagsList: React.FC = () => {
       <TagModal
         open={isModalOpen}
         onOpenChange={setIsModalOpen}
+        onSubmit={handleSubmit}
         tag={editingTag}
       />
     </Card>

@@ -1,9 +1,9 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { LoginForm } from '@/components/auth/LoginForm';
+import LoginForm from '../auth/LoginForm';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { AuthProvider } from '@/contexts/AuthContext';
+// import { AuthProvider } from '@/contexts/AuthContext';
 import { AuthContextType, LoginCredentials } from '@/types/auth.types';
 
 // Mock the router and auth context

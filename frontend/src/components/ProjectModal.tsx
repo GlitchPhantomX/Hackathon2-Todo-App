@@ -4,18 +4,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { useProjects } from '@/contexts/ProjectsContext';
 import { Project } from '@/types/types';
 import { Briefcase, Home, BookOpen, Palette } from 'lucide-react';
 
 interface ProjectModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (projectData: Omit<Project, 'id'>) => Promise<void>;
   project?: Project | null;
 }
 
-const ProjectModal: React.FC<ProjectModalProps> = ({ open, onOpenChange, project }) => {
-  const { createProject, updateProject } = useProjects();
+const ProjectModal: React.FC<ProjectModalProps> = ({ isOpen, onClose, onSubmit, project }) => {
   const [name, setName] = useState(project?.name || '');
   const [description, setDescription] = useState(project?.description || '');
   const [color, setColor] = useState(project?.color || '#3B82F6');
@@ -45,23 +44,29 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ open, onOpenChange, project
     setLoading(true);
     try {
       if (project) {
-        // Update existing project
-        await updateProject(project.id, {
+        // Update existing project - only pass the updatable fields
+        await onSubmit({
           name,
           description,
           color,
           icon,
+          userId: project.userId, // Keep the original userId
+          createdAt: project.createdAt, // Keep the original createdAt
+          updatedAt: new Date().toISOString(), // Update the timestamp
         });
       } else {
         // Create new project
-        await createProject({
+        await onSubmit({
           name,
           description,
           color,
           icon,
+          userId: '', // Will be filled by backend
+          createdAt: new Date().toISOString(), // Will be set by backend
+          updatedAt: new Date().toISOString(), // Will be set by backend
         });
       }
-      onOpenChange(false);
+      onClose();
       // Reset form
       setName('');
       setDescription('');
@@ -75,7 +80,7 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ open, onOpenChange, project
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{project ? 'Edit Project' : 'Create Project'}</DialogTitle>
@@ -140,7 +145,7 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ open, onOpenChange, project
           </div>
 
           <div className="flex justify-end space-x-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>

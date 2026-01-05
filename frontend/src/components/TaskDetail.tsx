@@ -42,15 +42,29 @@ const TaskDetail = ({ task, onClose, onEdit, onDelete, onDuplicate }: TaskDetail
 
   const handleSave = async () => {
     try {
-      await updateTask(task.id, {
+      // Build update object with proper optional property handling
+      const updateData: Partial<Task> = {
         title: editedTask.title,
         description: editedTask.description,
-        dueDate: editedTask.dueDate || undefined,
         priority: editedTask.priority,
-        status: editedTask.status,
-        projectId: editedTask.projectId || undefined,
         tags: editedTask.tags,
-      });
+      };
+
+      // Only add status if it has a valid value
+      if (editedTask.status) {
+        updateData.status = editedTask.status;
+      }
+
+      // Only add optional properties if they have values
+      if (editedTask.dueDate) {
+        updateData.dueDate = editedTask.dueDate;
+      }
+      
+      if (editedTask.projectId) {
+        updateData.projectId = editedTask.projectId;
+      }
+
+      await updateTask(task.id, updateData);
       setIsEditing(false);
     } catch (error) {
       console.error('Error updating task:', error);

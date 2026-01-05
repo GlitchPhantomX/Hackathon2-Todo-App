@@ -3,12 +3,14 @@ export interface Task {
   title: string;
   description: string;
   completed: boolean;
+  status?: 'pending' | 'completed';
   dueDate?: string;
   createdAt: string;
   updatedAt: string;
   userId: string;
   priority?: 'low' | 'medium' | 'high';
   tags?: string[];
+  projectId?: string;
 }
 
 export interface TaskCreate {

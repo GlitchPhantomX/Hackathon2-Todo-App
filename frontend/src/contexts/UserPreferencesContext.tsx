@@ -2,8 +2,15 @@
 
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
 import { userPreferencesService } from '@/services/apiService';
-import { UserPreferences } from '@/types/types';
+import { UserPreferences as BaseUserPreferences } from '@/types/types';
 import { useAuth } from './AuthContext';
+
+// Define extended UserPreferences interface for this context
+interface UserPreferences extends BaseUserPreferences {
+  notificationSound: boolean;
+  pushNotifications: boolean;
+  createdAt: string;
+}
 
 interface UserPreferencesState {
   preferences: UserPreferences | null;
@@ -79,6 +86,8 @@ interface UserPreferencesProviderProps {
 
 // Default preferences
 const defaultPreferences: UserPreferences = {
+  id: '', // Will be filled in by backend
+  userId: '', // Will be filled in by backend
   theme: 'system',
   accentColor: 'blue',
   fontSize: 'medium',
@@ -87,7 +96,6 @@ const defaultPreferences: UserPreferences = {
   emailNotifications: true,
   pushNotifications: false,
   defaultPriority: 'medium',
-  defaultProjectId: null,
   defaultView: 'list',
   itemsPerPage: 25,
   createdAt: new Date().toISOString(),
@@ -108,12 +116,48 @@ export const UserPreferencesProvider: React.FC<UserPreferencesProviderProps> = (
 
     try {
       dispatch({ type: 'FETCH_START' });
-      const preferences = await userPreferencesService.getUserPreferences(user.id);
+      const apiPreferences = await userPreferencesService.getUserPreferences(user.id);
+      // Convert API response to match context interface
+      const preferences: UserPreferences = {
+        id: apiPreferences.id,
+        userId: apiPreferences.userId,
+        theme: apiPreferences.theme,
+        accentColor: apiPreferences.accentColor,
+        fontSize: apiPreferences.fontSize,
+        notificationsEnabled: apiPreferences.notificationsEnabled,
+        notificationSound: true, // Default value
+        emailNotifications: apiPreferences.emailNotifications,
+        pushNotifications: false, // Default value
+        defaultPriority: apiPreferences.defaultPriority,
+        defaultView: apiPreferences.defaultView,
+        itemsPerPage: apiPreferences.itemsPerPage,
+        createdAt: apiPreferences.updatedAt, // Use updatedAt as createdAt if no createdAt exists
+        updatedAt: apiPreferences.updatedAt,
+        ...(apiPreferences.defaultProjectId !== undefined ? { defaultProjectId: apiPreferences.defaultProjectId } : {}),
+      };
       dispatch({ type: 'FETCH_SUCCESS', payload: preferences });
     } catch (error) {
       // If no preferences exist, create with defaults
       try {
-        const newPreferences = await userPreferencesService.updateUserPreferences(user.id, defaultPreferences);
+        const apiPreferences = await userPreferencesService.updateUserPreferences(user.id, defaultPreferences);
+        // Convert API response to match context interface
+        const newPreferences: UserPreferences = {
+          id: apiPreferences.id,
+          userId: apiPreferences.userId,
+          theme: apiPreferences.theme,
+          accentColor: apiPreferences.accentColor,
+          fontSize: apiPreferences.fontSize,
+          notificationsEnabled: apiPreferences.notificationsEnabled,
+          notificationSound: true, // Default value
+          emailNotifications: apiPreferences.emailNotifications,
+          pushNotifications: false, // Default value
+          defaultPriority: apiPreferences.defaultPriority,
+          defaultView: apiPreferences.defaultView,
+          itemsPerPage: apiPreferences.itemsPerPage,
+          createdAt: apiPreferences.updatedAt, // Use updatedAt as createdAt
+          updatedAt: apiPreferences.updatedAt,
+          ...(apiPreferences.defaultProjectId !== undefined ? { defaultProjectId: apiPreferences.defaultProjectId } : {}),
+        };
         dispatch({ type: 'FETCH_SUCCESS', payload: newPreferences });
       } catch (secondError) {
         const errorMessage = secondError instanceof Error ? secondError.message : 'Failed to fetch or create preferences';
@@ -128,7 +172,15 @@ export const UserPreferencesProvider: React.FC<UserPreferencesProviderProps> = (
 
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
-      const updatedPreferences = await userPreferencesService.updateUserPreferences(user.id, updates);
+      // Filter updates to only include fields that the API expects
+      const apiUpdates: Partial<BaseUserPreferences> = {};
+      (Object.keys(updates) as (keyof UserPreferences)[]).forEach(key => {
+        if (key !== 'notificationSound' && key !== 'pushNotifications' && key !== 'createdAt') {
+          (apiUpdates as any)[key] = updates[key];
+        }
+      });
+
+      await userPreferencesService.updateUserPreferences(user.id, apiUpdates);
       dispatch({ type: 'UPDATE_PREFERENCES', payload: updates });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to update preferences';

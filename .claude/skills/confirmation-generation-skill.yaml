@@ -1,0 +1,20 @@
+name: confirmation-generation-skill
+type: agent-skill
+purpose: Generate human-friendly confirmation messages.
+
+input:
+  - intent
+  - extracted_parameters
+  - recommended_tools
+
+output:
+  - confirmation_message: string
+
+rules:
+  - Echo key user-provided values
+  - Use clear, active language
+  - Avoid technical terms
+
+reusability:
+  - Frontend, chat UI, voice assistants
+  - Any language-capable interface

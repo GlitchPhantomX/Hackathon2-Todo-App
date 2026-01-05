@@ -4,7 +4,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/t
 import { Plus, Upload, BarChart3, Settings, HelpCircle } from 'lucide-react';
 import ImportModal from './ImportModal';
 import AddTaskModal from './AddTaskModal';
-import { useDashboard } from '@/contexts/DashboardContext';
 import { useRouter } from 'next/navigation';
 
 const QuickActionsPanel: React.FC = () => {

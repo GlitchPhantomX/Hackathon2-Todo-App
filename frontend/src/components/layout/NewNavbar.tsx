@@ -13,7 +13,10 @@ export default function NewNavbar() {
 
   // ✅ Fix hydration
   useEffect(() => {
-    setMounted(true)
+    const timer = setTimeout(() => {
+      setMounted(true)
+    }, 0)
+    return () => clearTimeout(timer)
   }, [])
 
   // Scroll shadow effect
@@ -140,7 +143,7 @@ export default function NewNavbar() {
         }`}
       >
         <div className="px-4 pt-2 pb-6 space-y-3 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800">
-          {navLinks.map((link, index) => (
+          {navLinks.map((link) => (
             <Link
               key={link.name}
               href={link.href}

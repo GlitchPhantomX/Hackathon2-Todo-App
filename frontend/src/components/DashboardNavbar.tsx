@@ -10,19 +10,18 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
+  // DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Badge } from "./ui/badge";
 import {
   HomeIcon,
   BellIcon,
   SunIcon,
   MoonIcon,
-  LogOutIcon,
-  UserIcon,
-  SettingsIcon,
-  HelpCircleIcon,
+  // LogOutIcon,
+  // UserIcon,
+  // SettingsIcon,
+  // HelpCircleIcon,
   XIcon,
   SearchIcon,
 } from "lucide-react";
@@ -69,7 +68,7 @@ const useDebouncedCallback = (
 const DashboardNavbar = () => {
   const { theme, setTheme } = useTheme();
   const { user } = useAuth();
-  const { stats, tasks } = useDashboard();
+  const { tasks } = useDashboard();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const searchRef = useRef<HTMLDivElement>(null);
@@ -82,55 +81,6 @@ const DashboardNavbar = () => {
     }
   }, 300);
 
-  // Enhanced search function to filter tasks by multiple fields
-  const searchTasks = (query: string) => {
-    if (!query.trim()) return [];
-
-    const lowerQuery = query.toLowerCase();
-    return tasks.filter((task) => {
-      // Search in title, description, tags, and priority
-      const matchesTitle = task.title.toLowerCase().includes(lowerQuery);
-      const matchesDescription =
-        task.description?.toLowerCase().includes(lowerQuery) || false;
-
-      // Fixed: Handle tags properly - check if it's an array of objects or strings
-      const matchesTags =
-        task.tags?.some((tag) =>
-          typeof tag === "string"
-            ? tag.toLowerCase().includes(lowerQuery)
-            : tag.name?.toLowerCase().includes(lowerQuery)
-        ) || false;
-
-      // Fixed: Handle priority which might be undefined
-      const matchesPriority =
-        task.priority?.toLowerCase().includes(lowerQuery) || false;
-
-      return (
-        matchesTitle || matchesDescription || matchesTags || matchesPriority
-      );
-    });
-  };
-
-  // Function to highlight matching text
-  const highlightText = (text: string, query: string) => {
-    if (!query.trim()) return text;
-
-    const regex = new RegExp(`(${query})`, "gi");
-    const parts = text.split(regex);
-
-    return parts.map((part, index) =>
-      regex.test(part) ? (
-        <span
-          key={index}
-          className="bg-yellow-200 dark:bg-yellow-700 px-0.5 rounded"
-        >
-          {part}
-        </span>
-      ) : (
-        part
-      )
-    );
-  };
 
   // Handle search input changes
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -260,12 +210,7 @@ const DashboardNavbar = () => {
   const getUserAvatar = () => {
     if (!user) return "";
     // Check for different possible avatar field names
-    return (
-      (user as any).avatar ||
-      (user as any).profilePicture ||
-      (user as any).image ||
-      ""
-    );
+    return user.avatar || "";
   };
 
   return (

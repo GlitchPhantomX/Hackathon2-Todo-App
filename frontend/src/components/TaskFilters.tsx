@@ -11,15 +11,23 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { Calendar } from '@/components/ui/Calendar'; // Fixed import path
-import { CalendarIcon, XIcon } from 'lucide-react';
+// import { Calendar } from '@/components/ui/calendar'; // Fixed import path
+import { XIcon } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
+// import { format } from 'date-fns';
+// import { cn } from '@/lib/utils';
 import { useDashboard } from '@/contexts/DashboardContext';
 
+interface FilterState {
+  status: 'all' | 'pending' | 'completed';
+  priority: 'all' | 'high' | 'medium' | 'low';
+  tags: string[];
+  dateRange: { start: Date | null; end: Date | null };
+  project: string | null;
+}
+
 interface TaskFiltersProps {
-  onFilterChange?: (filters: any) => void;
+  onFilterChange?: (filters: FilterState) => void;
 }
 
 const TaskFilters = ({ onFilterChange }: TaskFiltersProps) => {

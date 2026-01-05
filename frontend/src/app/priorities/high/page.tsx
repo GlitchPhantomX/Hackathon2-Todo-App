@@ -1,4 +1,7 @@
 'use client';
+export const runtime = 'edge';
+
+export const dynamic = 'force-dynamic'; // ✅ Ensure this is a client component
 
 import React from 'react';
 import { useDashboard } from '@/contexts/DashboardContext';
@@ -8,7 +11,7 @@ import PageHeader from '@/components/PageHeader';
 import EmptyState from '@/components/EmptyState';
 
 const HighPriorityPage = () => {
-  const { tasks } = useDashboard();
+  const { tasks } = useDashboard(); // ✅ Safe now, because provider is in layout
 
   // Filter tasks to show only high priority ones
   const highPriorityTasks = tasks.filter(task => task.priority === 'high');

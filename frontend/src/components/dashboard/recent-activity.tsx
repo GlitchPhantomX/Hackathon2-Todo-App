@@ -2,18 +2,18 @@
 
 import { useEffect, useState } from 'react'
 import { Card } from '@/components/ui/card'
-import { CheckCircle2, Clock, AlertCircle, Edit3 } from 'lucide-react'
+import { CheckCircle2, Clock, AlertCircle } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { taskService } from '@/services/api'
 import { getCurrentUserId } from '@/lib/auth-utils'
 import { getRecentActivity } from '@/lib/task-utils'
-import { Task } from '@/types/task'
+import { Task } from '../../types/task.types'
 import { TaskListSkeleton } from './skeletons'
 
 export function RecentActivity() {
   const [activities, setActivities] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<Error | null>(null)
+  const [errorState, setErrorState] = useState<Error | null>(null)
 
   useEffect(() => {
     async function fetchActivity() {
@@ -24,7 +24,7 @@ export function RecentActivity() {
         setActivities(recent)
       } catch (error) {
         console.error('Failed to fetch activity:', error)
-        setError(error as Error)
+        setErrorState(error as Error)
       } finally {
         setLoading(false)
       }
@@ -37,15 +37,15 @@ export function RecentActivity() {
     return () => clearInterval(interval)
   }, [])
 
-  const getActivityIcon = (task) => {
+  const getActivityIcon = (task: Task) => {
     if (task.completed) return CheckCircle2
-    if (task.due_date && new Date(task.due_date) < new Date()) return AlertCircle
+    if (task.dueDate && new Date(task.dueDate) < new Date()) return AlertCircle
     return Clock
   }
 
-  const getActivityColor = (task) => {
+  const getActivityColor = (task: Task) => {
     if (task.completed) return 'text-success-600 dark:text-success-400'
-    if (task.due_date && new Date(task.due_date) < new Date()) return 'text-error-600 dark:text-error-400'
+    if (task.dueDate && new Date(task.dueDate) < new Date()) return 'text-error-600 dark:text-error-400'
     return 'text-primary-600 dark:text-primary-400'
   }
 
@@ -67,7 +67,7 @@ export function RecentActivity() {
             No recent activity
           </p>
         ) : (
-          activities.map((task, index) => {
+          activities.map((task) => {
             const Icon = getActivityIcon(task)
             return (
               <div
@@ -82,7 +82,7 @@ export function RecentActivity() {
                     {task.title}
                   </p>
                   <p className="text-body-xs text-gray-500 dark:text-gray-500 mt-0.5">
-                    {formatDistanceToNow(new Date(task.updated_at), { addSuffix: true })}
+                    {formatDistanceToNow(new Date(task.updatedAt), { addSuffix: true })}
                   </p>
                 </div>
               </div>

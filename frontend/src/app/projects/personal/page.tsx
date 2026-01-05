@@ -1,4 +1,7 @@
 'use client';
+export const runtime = 'edge';
+
+export const dynamic = 'force-dynamic';
 
 import React from 'react';
 import { useDashboard } from '@/contexts/DashboardContext';
@@ -8,12 +11,15 @@ import PageHeader from '@/components/PageHeader';
 import EmptyState from '@/components/EmptyState';
 
 const PersonalProjectPage = () => {
-  const { tasks } = useDashboard();
+  const { tasks, projects } = useDashboard();
 
   // Filter tasks to show only personal ones
   const personalTasks = tasks.filter(task =>
     task.tags?.includes('personal') ||
-    task.project?.toLowerCase().includes('personal') ||
+    (task.projectId && projects.some(project =>
+      project.id === task.projectId &&
+      project.name.toLowerCase().includes('personal')
+    )) ||
     task.title.toLowerCase().includes('personal') ||
     task.description?.toLowerCase().includes('personal')
   );

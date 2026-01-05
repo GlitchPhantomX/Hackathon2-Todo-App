@@ -54,25 +54,27 @@ function AnimatedCounter({ value }: { value: string }) {
   useEffect(() => {
     const numericValue = parseFloat(value.replace(/[^0-9.]/g, ''))
     const suffix = value.replace(/[0-9.]/g, '')
-    
+
     if (isNaN(numericValue)) {
-      setDisplayValue(value)
-      return
+      const timeout = setTimeout(() => {
+        setDisplayValue(value)
+      }, 0)
+      return () => clearTimeout(timeout)
     }
-    
+
     let current = 0
     const increment = numericValue / 50
-    const timer = setInterval(() => {
+    const interval = setInterval(() => {
       current += increment
       if (current >= numericValue) {
         setDisplayValue(value)
-        clearInterval(timer)
+        clearInterval(interval)
       } else {
         setDisplayValue(Math.floor(current) + suffix)
       }
     }, 30)
-    
-    return () => clearInterval(timer)
+
+    return () => clearInterval(interval)
   }, [value])
   
   return <span>{displayValue}</span>
@@ -95,7 +97,7 @@ const TestimonialCard = ({ testimonial }: { testimonial: typeof testimonials[0] 
 
       {/* Quote Text */}
       <p className="text-gray-300 mb-6 leading-relaxed text-sm">
-        "{testimonial.quote}"
+        &quot;{testimonial.quote}&quot;
       </p>
 
       {/* Metric Badge */}

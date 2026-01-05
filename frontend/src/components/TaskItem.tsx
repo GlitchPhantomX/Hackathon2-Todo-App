@@ -11,8 +11,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useDashboard } from '@/contexts/DashboardContext';
-import { MoreHorizontalIcon, EditIcon, TrashIcon, CopyIcon, FolderOpenIcon } from 'lucide-react';
+import { useTaskSync } from '@/contexts/TaskSyncContext';
+import { MoreHorizontalIcon, EditIcon, TrashIcon, CopyIcon, FolderOpenIcon, WifiIcon, WifiOffIcon } from 'lucide-react';
 import { Task } from '@/types/types';
 import { format, isToday, isPast } from 'date-fns';
 
@@ -31,18 +31,20 @@ const TaskItem = ({
   onDuplicateClick,
   onMoveToProjectClick
 }: TaskItemProps) => {
-  const { toggleTaskCompletion, deleteTask } = useDashboard();
+  const { updateTask, deleteTask: deleteTaskSync, websocketStatus } = useTaskSync();
   const [isHovered, setIsHovered] = useState(false);
 
   const handleCompletionToggle = async () => {
-    await toggleTaskCompletion(task.id);
+    await updateTask(task.id, { status: task.status === 'completed' ? 'pending' : 'completed' });
   };
 
   const handleDelete = async () => {
-    if (onDeleteClick) {
-      onDeleteClick(task.id);
-    } else {
-      await deleteTask(task.id);
+    if (window.confirm("Are you sure you want to delete this task?")) {
+      if (onDeleteClick) {
+        onDeleteClick(task.id);
+      } else {
+        await deleteTaskSync(task.id);
+      }
     }
   };
 
@@ -109,6 +111,20 @@ const TaskItem = ({
 
   const dueDateStatus = getDueDateStatus(task.dueDate);
 
+  // WebSocket status indicator - only show when connected
+  const renderWebSocketStatus = () => {
+    if (websocketStatus === 'connected') {
+      return (
+        <div className="flex items-center gap-1 text-green-600 text-xs">
+          <WifiIcon className="h-3 w-3" />
+          <span>Synced</span>
+        </div>
+      );
+    }
+    // Don't show offline/error status indicators - only show when connected
+    return null;
+  };
+
   return (
     <Card
       className={`transition-all duration-200 ${
@@ -141,36 +157,54 @@ const TaskItem = ({
                 {task.title}
               </h3>
 
-              {/* Menu dropdown */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <MoreHorizontalIcon className="h-4 w-4" />
-                    <span className="sr-only">Task menu</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={handleEdit}>
-                    <EditIcon className="mr-2 h-4 w-4" />
-                    Edit
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleDuplicate}>
-                    <CopyIcon className="mr-2 h-4 w-4" />
-                    Duplicate
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleMoveToProject}>
-                    <FolderOpenIcon className="mr-2 h-4 w-4" />
-                    Move to Project
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={handleDelete}
-                    className="text-red-600 focus:text-red-600"
+              <div className="flex items-center gap-2">
+                {/* WebSocket status indicator */}
+                {renderWebSocketStatus()}
+
+                {/* Visible edit and delete buttons */}
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={handleEdit}
+                    title="Edit task"
                   >
-                    <TrashIcon className="mr-2 h-4 w-4" />
-                    Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                    <EditIcon className="h-4 w-4" />
+                    <span className="sr-only">Edit task</span>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-red-600 hover:text-red-700"
+                    onClick={handleDelete}
+                    title="Delete task"
+                  >
+                    <TrashIcon className="h-4 w-4" />
+                    <span className="sr-only">Delete task</span>
+                  </Button>
+                </div>
+
+                {/* Menu dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <MoreHorizontalIcon className="h-4 w-4" />
+                      <span className="sr-only">Task menu</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={handleDuplicate}>
+                      <CopyIcon className="mr-2 h-4 w-4" />
+                      Duplicate
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleMoveToProject}>
+                      <FolderOpenIcon className="mr-2 h-4 w-4" />
+                      Move to Project
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
 
             {task.description && (

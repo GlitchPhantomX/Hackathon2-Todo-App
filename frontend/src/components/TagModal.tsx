@@ -3,17 +3,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useTags } from '@/contexts/TagsContext';
 import { Tag } from '@/types/types';
 
 interface TagModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onSubmit: (tagData: Omit<Tag, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => Promise<void>;
   tag?: Tag | null;
 }
 
-const TagModal: React.FC<TagModalProps> = ({ open, onOpenChange, tag }) => {
-  const { createTag, updateTag } = useTags();
+const TagModal: React.FC<TagModalProps> = ({ open, onOpenChange, onSubmit, tag }) => {
   const [name, setName] = useState(tag?.name || '');
   const [color, setColor] = useState(tag?.color || '#3B82F6');
   const [loading, setLoading] = useState(false);
@@ -34,19 +33,11 @@ const TagModal: React.FC<TagModalProps> = ({ open, onOpenChange, tag }) => {
 
     setLoading(true);
     try {
-      if (tag) {
-        // Update existing tag
-        await updateTag(tag.id, {
-          name,
-          color,
-        });
-      } else {
-        // Create new tag
-        await createTag({
-          name,
-          color,
-        });
-      }
+      // Use the onSubmit function passed from parent
+      await onSubmit({
+        name,
+        color,
+      });
       onOpenChange(false);
       // Reset form
       setName('');

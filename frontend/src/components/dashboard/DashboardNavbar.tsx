@@ -29,18 +29,17 @@ export function DashboardNavbar({ onSearch, onAddTask }: DashboardNavbarProps) {
   const router = useRouter()
   const { user, logout } = useAuth()
   const [searchQuery, setSearchQuery] = useState('')
-  const [theme, setTheme] = useState<'light' | 'dark'>('light')
-  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-
-  // Load theme on mount
-  useEffect(() => {
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-    const initialTheme = savedTheme || (prefersDark ? 'dark' : 'light')
-    
-    setTheme(initialTheme)
-    document.documentElement.classList.toggle('dark', initialTheme === 'dark')
-  }, [])
+    return savedTheme || (prefersDark ? 'dark' : 'light')
+  })
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Apply theme class to document
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', theme === 'dark')
+  }, [theme])
 
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light'

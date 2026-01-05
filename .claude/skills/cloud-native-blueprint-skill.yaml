@@ -1,0 +1,38 @@
+name: cloud-native-blueprint-skill
+type: agent-skill
+version: 1.0
+
+purpose: |
+  Define reusable cloud-native execution blueprints for agent-driven applications.
+  This skill determines how recommended actions should be executed in different
+  cloud environments (local, Kubernetes, event-driven) without embedding
+  infrastructure-specific logic.
+
+input:
+  - intent: classified user intent
+  - recommended_tools: abstract tool recommendations
+  - deployment_context:
+      environment: local | kubernetes | event-driven
+      reliability_level: low | medium | high
+      scalability_requirement: single | horizontal | event-stream
+      latency_sensitivity: low | medium | high
+
+output:
+  - cloud_blueprint:
+      execution_model: synchronous | async | event-driven
+      communication_pattern: direct-call | pub-sub | command-event
+      scaling_hint: none | horizontal-pod-autoscale | consumer-groups
+      resiliency_hint: retry | circuit-breaker | idempotent
+      observability:
+        logging: basic | structured
+        tracing: enabled | disabled
+
+rules:
+  - Do not reference Kubernetes manifests, Helm charts, or Terraform
+  - Provide declarative hints, not implementation steps
+  - Ensure blueprint is portable across cloud providers
+  - Maintain compatibility with MCP, REST, and event brokers
+
+reusability:
+  - Works across cloud providers (AWS, Azure, GCP)
+  - Applicable to microservices, serverless, and event-driven systems

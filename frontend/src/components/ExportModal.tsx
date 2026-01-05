@@ -4,10 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { importExportService } from '@/services/apiService';
+// import { importExportService } from '@/services/apiService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDashboard } from '@/contexts/DashboardContext';
-import { Download, Calendar, CalendarCheck, FileText } from 'lucide-react';
+import { Download, FileText } from 'lucide-react';
 
 interface ExportModalProps {
   open: boolean;
@@ -71,11 +71,11 @@ const ExportModal: React.FC<ExportModalProps> = ({ open, onOpenChange }) => {
   };
 
   return (
-    <Dialog open={open} onOpenChange={(open) => {
-      if (!open) {
+    <Dialog open={open} onOpenChange={(isOpen) => {
+      if (!isOpen) {
         resetForm();
       }
-      onOpenChange(open);
+      onOpenChange(isOpen);
     }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
@@ -150,7 +150,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ open, onOpenChange }) => {
                       id="startDate"
                       type="date"
                       value={dateRange?.start || ''}
-                      onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                      onChange={(e) => setDateRange(prev => prev ? { ...prev, start: e.target.value } : { start: e.target.value, end: '' })}
                       className="w-full"
                     />
                   </div>
@@ -160,7 +160,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ open, onOpenChange }) => {
                       id="endDate"
                       type="date"
                       value={dateRange?.end || ''}
-                      onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                      onChange={(e) => setDateRange(prev => prev ? { ...prev, end: e.target.value } : { start: '', end: e.target.value })}
                       className="w-full"
                     />
                   </div>

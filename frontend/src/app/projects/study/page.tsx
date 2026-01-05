@@ -1,4 +1,7 @@
 'use client';
+export const runtime = 'edge';
+
+export const dynamic = 'force-dynamic';
 
 import React from 'react';
 import { useDashboard } from '@/contexts/DashboardContext';
@@ -8,12 +11,15 @@ import PageHeader from '@/components/PageHeader';
 import EmptyState from '@/components/EmptyState';
 
 const StudyProjectPage = () => {
-  const { tasks } = useDashboard();
+  const { tasks, projects } = useDashboard();
 
   // Filter tasks to show only study-related ones
   const studyTasks = tasks.filter(task =>
     task.tags?.includes('study') ||
-    task.project?.toLowerCase().includes('study') ||
+    (task.projectId && projects.some(project =>
+      project.id === task.projectId &&
+      project.name.toLowerCase().includes('study')
+    )) ||
     task.title.toLowerCase().includes('study') ||
     task.description?.toLowerCase().includes('study')
   );

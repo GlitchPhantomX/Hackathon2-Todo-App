@@ -26,16 +26,29 @@ import {
   TagIcon,
   CalendarDaysIcon,
 } from "lucide-react";
-import { useDashboard } from "@/contexts/DashboardContext";
+import { useTaskSync } from "@/contexts/TaskSyncContext";
+import { useTags } from "@/contexts/TagsContext";
 import { format, addDays } from "date-fns";
 
 interface AddTaskModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
+interface Project {
+  id: string;
+  name: string;
+}
+
+interface Notification {
+  id: string;
+  message: string;
+}
 
 const AddTaskModal = ({ isOpen, onClose }: AddTaskModalProps) => {
-  const { createTask, projects, tags, loading, notifications } = useDashboard();
+  const { addTask, isLoading, websocketStatus } = useTaskSync();
+  const { tags: allTags, createTag, loading: tagsLoading } = useTags();
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState<string>("");
@@ -43,20 +56,26 @@ const AddTaskModal = ({ isOpen, onClose }: AddTaskModalProps) => {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedProject, setSelectedProject] = useState<string>("");
   const [newTag, setNewTag] = useState("");
-  const [errors, setErrors] = useState<{ title?: string }>({});
+  const [errors, setErrors] = useState<{
+    title?: string;
+    description?: string;
+  }>({});
 
   // ✅ Debug: Log when modal opens
   useEffect(() => {
     if (isOpen) {
-      console.log('📋 MODAL: Opened');
-      console.log('📋 MODAL: Current notifications count:', notifications?.length || 0);
+      console.log("📋 MODAL: Opened");
+      console.log(
+        "📋 MODAL: Current notifications count:",
+        notifications?.length || 0
+      );
       resetForm();
     }
   }, [isOpen]);
 
   // ✅ Debug: Log notifications changes
   useEffect(() => {
-    console.log('📋 MODAL: Notifications updated:', notifications?.length || 0);
+    console.log("📋 MODAL: Notifications updated:", notifications?.length || 0);
   }, [notifications]);
 
   const resetForm = () => {
@@ -94,17 +113,25 @@ const AddTaskModal = ({ isOpen, onClose }: AddTaskModalProps) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    console.log('🚀🚀🚀 MODAL: ========== SUBMIT STARTED ==========');
-    console.log('🚀 MODAL: Form submitted at:', new Date().toISOString());
-
     if (!validateForm()) {
-      console.log('❌ MODAL: Validation failed');
       return;
     }
 
-    console.log('✅ MODAL: Validation passed');
-
     try {
+      // First, create any new tags that don't already exist
+      const allTagNames = allTags.map((tag) => tag.name.toLowerCase());
+      const newTagPromises = selectedTags
+        .filter((tag) => !allTagNames.includes(tag.toLowerCase()))
+        .map((tagName) =>
+          createTag({
+            name: tagName,
+            color: "#3B82F6", // Default blue color
+          })
+        );
+
+      // Wait for all new tags to be created
+      await Promise.all(newTagPromises);
+
       // Build the task object with all required and optional fields
       const newTask: any = {
         title: title.trim(),
@@ -127,28 +154,13 @@ const AddTaskModal = ({ isOpen, onClose }: AddTaskModalProps) => {
         newTask.projectId = selectedProject;
       }
 
-      console.log('🚀 MODAL: Task object created:', newTask);
-      console.log('🚀 MODAL: Notifications BEFORE createTask:', notifications?.length || 0);
-      console.log('🚀 MODAL: About to call createTask()...');
-
-      // ✅ Call createTask
-      await createTask(newTask);
-
-      // Re-read the current notifications count from the context after the task is created
-      const currentDashboardState = { notifications }; // This is still the old value due to closure
-      console.log('✅✅✅ MODAL: createTask() completed successfully');
-
-      // Instead of relying on the closure variable, we should trust that the context state has been updated
-      // The NotificationDropdown will automatically receive the updated notifications via context
-      console.log('✅ MODAL: Notifications should now be updated in context');
-
-      console.log('🚀🚀🚀 MODAL: ========== SUBMIT COMPLETED ==========');
+      // Add the task using TaskSyncContext
+      await addTask(newTask);
 
       resetForm();
       onClose();
     } catch (error) {
-      console.error("❌❌❌ MODAL: Error creating task:", error);
-      console.error("❌ MODAL: Error details:", JSON.stringify(error, null, 2));
+      console.error("❌ Error creating task:", error);
     }
   };
 
@@ -361,7 +373,7 @@ const AddTaskModal = ({ isOpen, onClose }: AddTaskModalProps) => {
             <Label htmlFor="project">Project</Label>
 
             <Select
-              value={selectedProject || undefined}
+              value={selectedProject}
               onValueChange={setSelectedProject}
             >
               <SelectTrigger id="project">
@@ -388,8 +400,8 @@ const AddTaskModal = ({ isOpen, onClose }: AddTaskModalProps) => {
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" disabled={loading.tasks}>
-              {loading.tasks ? "Creating..." : "Create Task"}
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? "Creating..." : "Create Task"}
             </Button>
           </DialogFooter>
         </form>

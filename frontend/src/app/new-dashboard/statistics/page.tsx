@@ -1,6 +1,8 @@
 "use client";
 
-import React from "react";
+export const dynamic = 'force-dynamic';
+
+import React, { memo } from "react";
 import PageHeader from "@/components/PageHeader";
 import DashboardStats from "@/components/DashboardStats";
 import { useDashboard } from "@/contexts/DashboardContext";
@@ -15,15 +17,16 @@ import CalendarWidget from "../../../components/CalendarWidget";
 import UpcomingTasksWidget from "../../../components/UpcomingTasksWidget";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const StatisticsPage = () => {
-  const { stats, loading } = useDashboard();
+// Memoized ChartSkeleton component to avoid creating during render
+const ChartSkeleton = memo(() => (
+  <div className="h-64 w-full">
+    <Skeleton className="h-full w-full" />
+  </div>
+));
+ChartSkeleton.displayName = "ChartSkeleton";
 
-  // Chart skeleton component
-  const ChartSkeleton = () => (
-    <div className="h-64 w-full">
-      <Skeleton className="h-full w-full" />
-    </div>
-  );
+const StatisticsPage = () => {
+  useDashboard(); // Just to ensure data is loaded, but not using the values
 
   return (
     <div className="p-6 space-y-6">

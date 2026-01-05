@@ -113,8 +113,8 @@ const TaskDefaultSettings = () => {
 
         <div className="flex items-center justify-between">
           <div className="space-y-0.5">
-            <Label htmlFor="auto-assign-today">Auto-assign Today's Date</Label>
-            <p className="text-sm text-muted-foreground">Automatically assign today's date to new tasks</p>
+            <Label htmlFor="auto-assign-today">Auto-assign Today&apos;s Date</Label>
+            <p className="text-sm text-muted-foreground">Automatically assign today&apos;s date to new tasks</p>
           </div>
           <Input
             id="auto-assign-today"

@@ -7,31 +7,31 @@ export const useAccessibility = () => {
 
   useEffect(() => {
     // Check for reduced motion preference
-    if (typeof window !== 'undefined') {
-      const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-      setReducedMotion(mediaQuery.matches);
+    if (typeof window === 'undefined') return; // Early return for SSR
 
-      const handleChange = (e: MediaQueryListEvent) => {
-        setReducedMotion(e.matches);
-      };
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setReducedMotion(mediaQuery.matches);
 
-      mediaQuery.addEventListener('change', handleChange);
+    const handleChange = (e: MediaQueryListEvent) => {
+      setReducedMotion(e.matches);
+    };
 
-      // Check for high contrast mode
-      const highContrastQuery = window.matchMedia('(prefers-contrast: more)');
-      setHighContrast(highContrastQuery.matches);
+    mediaQuery.addEventListener('change', handleChange);
 
-      const handleHighContrastChange = (e: MediaQueryListEvent) => {
-        setHighContrast(e.matches);
-      };
+    // Check for high contrast mode
+    const highContrastQuery = window.matchMedia('(prefers-contrast: more)');
+    setHighContrast(highContrastQuery.matches);
 
-      highContrastQuery.addEventListener('change', handleHighContrastChange);
+    const handleHighContrastChange = (e: MediaQueryListEvent) => {
+      setHighContrast(e.matches);
+    };
 
-      return () => {
-        mediaQuery.removeEventListener('change', handleChange);
-        highContrastQuery.removeEventListener('change', handleHighContrastChange);
-      };
-    }
+    highContrastQuery.addEventListener('change', handleHighContrastChange);
+
+    return () => {
+      mediaQuery.removeEventListener('change', handleChange);
+      highContrastQuery.removeEventListener('change', handleHighContrastChange);
+    };
   }, []);
 
   return {

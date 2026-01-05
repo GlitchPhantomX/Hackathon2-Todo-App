@@ -14,9 +14,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { CalendarIcon, PlusIcon, Trash2Icon } from 'lucide-react';
-import { useDashboard } from '@/contexts/DashboardContext';
-import { format, addDays } from 'date-fns';
+import { CalendarIcon, PlusIcon } from 'lucide-react';
+import { useTaskSync } from '@/contexts/TaskSyncContext';
+import { useTags } from '@/contexts/TagsContext';
 import { Task } from '@/types/types';
 
 interface EditTaskModalProps {
@@ -26,7 +26,8 @@ interface EditTaskModalProps {
 }
 
 const EditTaskModal = ({ isOpen, onClose, task }: EditTaskModalProps) => {
-  const { updateTask, projects, tags, loading } = useDashboard();
+  const { updateTask: updateTaskSync, isLoading } = useTaskSync();
+  const { tags: allTags, createTag } = useTags();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [dueDate, setDueDate] = useState<string | null>(null);
@@ -35,7 +36,19 @@ const EditTaskModal = ({ isOpen, onClose, task }: EditTaskModalProps) => {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedProject, setSelectedProject] = useState<string>('');
   const [newTag, setNewTag] = useState('');
-  const [errors, setErrors] = useState<{ title?: string }>({});
+  const [errors, setErrors] = useState<{ title?: string; description?: string }>({});
+
+  const resetForm = () => {
+    setTitle('');
+    setDescription('');
+    setDueDate(null);
+    setPriority('medium');
+    setStatus('pending');
+    setSelectedTags([]);
+    setSelectedProject('');
+    setNewTag('');
+    setErrors({});
+  };
 
   // Pre-populate form when task changes
   useEffect(() => {
@@ -52,22 +65,9 @@ const EditTaskModal = ({ isOpen, onClose, task }: EditTaskModalProps) => {
     }
   }, [task]);
 
-  const resetForm = () => {
-    setTitle('');
-    setDescription('');
-    setDueDate(null);
-    setPriority('medium');
-    setStatus('pending');
-    setSelectedTags([]);
-    setSelectedProject('');
-    setNewTag('');
-    setErrors({});
-  };
-
   const validateForm = () => {
     const newErrors: { title?: string; description?: string } = {};
 
-    // Title validation: 3-100 characters
     if (!title.trim()) {
       newErrors.title = 'Title is required';
     } else if (title.trim().length < 3) {
@@ -76,7 +76,6 @@ const EditTaskModal = ({ isOpen, onClose, task }: EditTaskModalProps) => {
       newErrors.title = 'Title must be less than 100 characters';
     }
 
-    // Description validation: max 1000 characters
     if (description.length > 1000) {
       newErrors.description = 'Description must be less than 1000 characters';
     }
@@ -93,15 +92,35 @@ const EditTaskModal = ({ isOpen, onClose, task }: EditTaskModalProps) => {
     }
 
     try {
-      await updateTask(task.id, {
+      const allTagNames = allTags.map((tag: { name: string }) => tag.name.toLowerCase());
+      const newTagPromises = selectedTags
+        .filter(tag => !allTagNames.includes(tag.toLowerCase()))
+        .map(tagName =>
+          createTag({
+            name: tagName,
+            color: '#3B82F6'
+          })
+        );
+
+      await Promise.all(newTagPromises);
+
+      const updateData: Partial<Task> = {
         title: title.trim(),
         description,
-        dueDate: dueDate || undefined,
         priority,
         status,
         tags: selectedTags,
-        projectId: selectedProject || undefined,
-      });
+      };
+
+      if (dueDate) {
+        updateData.dueDate = dueDate;
+      }
+
+      if (selectedProject) {
+        updateData.projectId = selectedProject;
+      }
+
+      await updateTaskSync(task.id, updateData);
 
       resetForm();
       onClose();
@@ -119,24 +138,6 @@ const EditTaskModal = ({ isOpen, onClose, task }: EditTaskModalProps) => {
 
   const handleRemoveTag = (tagToRemove: string) => {
     setSelectedTags(selectedTags.filter(tag => tag !== tagToRemove));
-  };
-
-  const setDueDateShortcut = (days: number) => {
-    const date = addDays(new Date(), days);
-    setDueDate(format(date, 'yyyy-MM-dd'));
-  };
-
-  const getPriorityColor = (priorityLevel: string) => {
-    switch (priorityLevel) {
-      case 'high':
-        return 'bg-red-500';
-      case 'medium':
-        return 'bg-yellow-500';
-      case 'low':
-        return 'bg-blue-500';
-      default:
-        return 'bg-gray-500';
-    }
   };
 
   if (!task) {
@@ -290,11 +291,6 @@ const EditTaskModal = ({ isOpen, onClose, task }: EditTaskModalProps) => {
                 <SelectValue placeholder="Select a project" />
               </SelectTrigger>
               <SelectContent>
-                {projects.map((project) => (
-                  <SelectItem key={project.id} value={project.id}>
-                    {project.name}
-                  </SelectItem>
-                ))}
                 <SelectItem value="">No Project</SelectItem>
               </SelectContent>
             </Select>
@@ -304,7 +300,7 @@ const EditTaskModal = ({ isOpen, onClose, task }: EditTaskModalProps) => {
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" disabled={loading.tasks}>
+            <Button type="submit" disabled={isLoading}>
               Update Task
             </Button>
           </DialogFooter>

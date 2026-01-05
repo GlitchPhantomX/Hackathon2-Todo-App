@@ -47,7 +47,16 @@ export function DashboardStats() {
   useEffect(() => {
     if (tasks && tasks.length >= 0) {
       const calculated = calculateStats(tasks)
-      setStats(calculated)
+      setStats(prevStats => {
+        // Only update if stats have actually changed
+        if (prevStats.total !== calculated.total ||
+            prevStats.completed !== calculated.completed ||
+            prevStats.pending !== calculated.pending ||
+            prevStats.overdue !== calculated.overdue) {
+          return calculated;
+        }
+        return prevStats;
+      })
     }
   }, [tasks])
 
@@ -59,7 +68,7 @@ export function DashboardStats() {
     return (
       <div className="p-6 text-center text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg">
         <AlertCircle className="w-6 h-6 mx-auto mb-2" />
-        <p>{error.message || 'Failed to load stats'}</p>
+        <p>{error || 'Failed to load stats'}</p>
         <button
           className="mt-2 text-blue-500 dark:text-blue-400 hover:underline"
           onClick={() => window.location.reload()}

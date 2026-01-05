@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar';
 import { useDashboard } from '@/contexts/DashboardContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { format, formatDistanceToNow, isToday, isYesterday } from 'date-fns'; // ✅ Add format
+import { format, isToday, isYesterday } from 'date-fns';
 import {
   CheckCircle2,
   Circle,
@@ -12,11 +12,20 @@ import {
   Trash2,
   Flag,
   Calendar,
-  Tag,
   Activity as ActivityIcon
 } from 'lucide-react';
 
-// ... interfaces same ...
+interface Activity {
+  id: string;
+  userId: string;
+  userName: string;
+  userAvatar: string;
+  action: 'created' | 'completed' | 'updated' | 'deleted' | 'priority_changed';
+  taskTitle: string;
+  field?: string;
+  newValue?: string;
+  timestamp: string;
+}
 
 const RecentActivityFeed: React.FC = () => {
   const { tasks, loading } = useDashboard();
@@ -24,23 +33,20 @@ const RecentActivityFeed: React.FC = () => {
 
   const isLoading = loading.tasks;
 
-  const getUserName = () => {
+  const getUserName = (): string => {
     if (user?.name) return user.name;
-    if (user?.email) return user.email.split('@')[0];
+    if (user?.email) return user.email.split('@')[0] || 'You';
     return 'You';
   };
 
-  const getUserAvatar = () => {
-    return (user as any)?.avatar || 
-           (user as any)?.profilePicture || 
-           (user as any)?.image || 
+  const getUserAvatar = (): string => {
+    return user?.avatar ||
            '';
   };
 
-  const userName = getUserName();
-  const userAvatar = getUserAvatar();
+  const userName: string = getUserName();
+  const userAvatar: string = getUserAvatar();
 
-  // ... generateActivities same ...
   const generateActivities = (): Activity[] => {
     const activities: Activity[] = [];
 
@@ -49,8 +55,8 @@ const RecentActivityFeed: React.FC = () => {
         activities.push({
           id: `${task.id}-created`,
           userId: task.userId,
-          userName: userName,
-          userAvatar: userAvatar,
+          userName,
+          userAvatar,
           action: 'created',
           taskTitle: task.title,
           timestamp: task.createdAt,
@@ -61,8 +67,8 @@ const RecentActivityFeed: React.FC = () => {
         activities.push({
           id: `${task.id}-completed`,
           userId: task.userId,
-          userName: userName,
-          userAvatar: userAvatar,
+          userName,
+          userAvatar,
           action: 'completed',
           taskTitle: task.title,
           timestamp: task.updatedAt,
@@ -70,17 +76,22 @@ const RecentActivityFeed: React.FC = () => {
       }
 
       if (task.updatedAt && task.createdAt && task.updatedAt !== task.createdAt) {
-        activities.push({
+        const activityData: Activity = {
           id: `${task.id}-updated`,
           userId: task.userId,
-          userName: userName,
-          userAvatar: userAvatar,
+          userName,
+          userAvatar,
           action: 'updated',
           taskTitle: task.title,
-          field: 'details',
-          newValue: task.status,
           timestamp: task.updatedAt,
-        });
+        };
+        
+        if (task.status) {
+          activityData.field = 'details';
+          activityData.newValue = task.status;
+        }
+        
+        activities.push(activityData);
       }
     });
 
@@ -91,7 +102,6 @@ const RecentActivityFeed: React.FC = () => {
 
   const activities = generateActivities();
 
-  // ... getActionIcon same ...
   const getActionIcon = (action: Activity['action']) => {
     const iconClasses = "h-4 w-4";
     
@@ -152,8 +162,7 @@ const RecentActivityFeed: React.FC = () => {
     }
   };
 
-  // ✅ NEW: Format timestamp with smart display
-  const formatTimestamp = (timestamp: string) => {
+  const formatTimestamp = (timestamp: string): string => {
     try {
       const date = new Date(timestamp);
       
@@ -164,33 +173,27 @@ const RecentActivityFeed: React.FC = () => {
       const now = new Date();
       const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
       
-      // Less than 1 minute
       if (diffInMinutes < 1) {
         return 'Just now';
       }
       
-      // Less than 60 minutes - show "X minutes ago"
       if (diffInMinutes < 60) {
         return `${diffInMinutes} minute${diffInMinutes === 1 ? '' : 's'} ago`;
       }
       
-      // Less than 24 hours - show "Today at HH:mm"
       if (isToday(date)) {
         return `Today at ${format(date, 'HH:mm')}`;
       }
       
-      // Yesterday - show "Yesterday at HH:mm"
       if (isYesterday(date)) {
         return `Yesterday at ${format(date, 'HH:mm')}`;
       }
       
-      // Within last 7 days - show "Monday at HH:mm"
       const diffInDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
       if (diffInDays < 7) {
         return format(date, 'EEEE') + ' at ' + format(date, 'HH:mm');
       }
       
-      // More than 7 days - show full date with time
       return format(date, 'MMM dd, yyyy HH:mm');
       
     } catch (error) {
@@ -251,11 +254,10 @@ const RecentActivityFeed: React.FC = () => {
                     </span>
                     {' '}
                     <span className="font-medium text-foreground">
-                      "{activity.taskTitle}"
+                      &quot;{activity.taskTitle}&quot;
                     </span>
                   </p>
                   
-                  {/* ✅ Smart timestamp display */}
                   <div className="flex items-center gap-2">
                     <Calendar className="h-3 w-3 text-muted-foreground" />
                     <p className="text-xs text-muted-foreground font-medium">

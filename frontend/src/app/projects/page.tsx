@@ -1,4 +1,7 @@
 'use client';
+export const runtime = 'edge';
+
+export const dynamic = 'force-dynamic';
 
 import React from 'react';
 import { useDashboard } from '@/contexts/DashboardContext';
@@ -14,8 +17,8 @@ const ProjectsPage = () => {
   const allProjects = Array.from(
     new Set(
       tasks
-        .filter(task => task.project)
-        .map(task => task.project)
+        .filter(task => task.projectId)
+        .map(task => task.projectId)
         .filter(Boolean) as string[]
     )
   );
@@ -23,7 +26,7 @@ const ProjectsPage = () => {
   // For demonstration, let's show tasks for the first project if any exist
   const firstProject = allProjects.length > 0 ? allProjects[0] : null;
   const projectTasks = firstProject
-    ? tasks.filter(task => task.project === firstProject)
+    ? tasks.filter(task => task.projectId === firstProject)
     : [];
 
   return (
@@ -47,7 +50,7 @@ const ProjectsPage = () => {
                 >
                   <h3 className="font-semibold">{project}</h3>
                   <p className="text-sm text-muted-foreground">
-                    {tasks.filter(t => t.project === project).length} tasks
+                    {tasks.filter(t => t.projectId === project).length} tasks
                   </p>
                 </div>
               ))}

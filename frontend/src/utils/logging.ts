@@ -7,7 +7,7 @@ interface LogEntry {
   level: 'debug' | 'info' | 'warn' | 'error';
   message: string;
   correlationId: string;
-  context?: Record<string, any>;
+  context?: Record<string, any> | undefined;
   error?: any;
 }
 

@@ -6,11 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { memo } from 'react';
+import { NotificationSettings as NotificationSettingsType } from '@/types/settings.types';
 
 const NotificationSettings = () => {
   const { settings, updateSettings } = useSettings();
 
-  const handleNotificationChange = useCallback((field: keyof any, value: boolean) => {
+  const handleNotificationChange = useCallback((field: keyof NotificationSettingsType, value: boolean) => {
     if (settings) {
       updateSettings({
         notifications: {

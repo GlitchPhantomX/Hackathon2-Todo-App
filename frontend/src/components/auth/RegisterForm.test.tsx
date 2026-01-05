@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { RegisterForm } from '@/components/auth/RegisterForm';
+import RegisterForm  from '@/components/auth/RegisterForm';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthContextType, RegisterCredentials } from '@/types/auth.types';

@@ -1,4 +1,7 @@
 'use client';
+export const runtime = 'edge';
+
+export const dynamic = 'force-dynamic';
 
 import React, { useState } from 'react';
 import PageHeader from '@/components/PageHeader';
@@ -15,7 +18,18 @@ const PrioritiesPage = () => {
   const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false);
   const [selectedPriority, setSelectedPriority] = useState<'high' | 'medium' | 'low' | null>(null);
 
-  const priorityData = [
+  type PriorityLevel = 'high' | 'medium' | 'low';
+
+  const priorityData: {
+    id: PriorityLevel;
+    title: string;
+    count: number;
+    color: string;
+    bgColor: string;
+    borderColor: string;
+    darkBgColor: string;
+    darkBorderColor: string;
+  }[] = [
     {
       id: 'high',
       title: 'High Priority',
@@ -83,7 +97,7 @@ const PrioritiesPage = () => {
                         ? `${priority.bgColor} ${priority.borderColor} ${priority.darkBgColor} ${priority.darkBorderColor}`
                         : 'hover:bg-gray-50 dark:hover:bg-gray-800'
                     }`}
-                    onClick={() => setSelectedPriority(selectedPriority === priority.id ? null : priority.id as any)}
+                    onClick={() => setSelectedPriority(selectedPriority === priority.id ? null : priority.id)}
                   >
                     <div className="flex justify-between items-center">
                       <h3 className={`font-semibold ${priority.color}`}>{priority.title}</h3>

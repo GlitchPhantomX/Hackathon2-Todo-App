@@ -19,10 +19,8 @@ import {
   FolderIcon,
   FlagIcon,
   TagIcon,
-  PlusIcon,
   ListTodoIcon,
   CalendarDaysIcon,
-  TrendingUpIcon,
   BellIcon,
   LucideIcon,
 } from 'lucide-react';

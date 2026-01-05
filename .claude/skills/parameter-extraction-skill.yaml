@@ -1,0 +1,23 @@
+name: parameter-extraction-skill
+type: agent-skill
+purpose: Extract structured parameters from natural language commands.
+
+input:
+  - user_command: string
+  - intent: classified intent
+  - conversation_context: optional object
+
+output:
+  - entity_type: generic label (todo | note | reminder | entity)
+  - action_target: extracted IDs, descriptions, or content
+  - filters: optional query constraints
+  - metadata: optional auxiliary data (priority, tags, dates)
+
+rules:
+  - Never invent missing values
+  - Extract quoted strings preferentially
+  - Normalize temporal references (today, tomorrow)
+
+reusability:
+  - Independent of database schema
+  - Applicable to any entity-based system

@@ -9,6 +9,17 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from utils.websocket_auth import websocket_auth, websocket_auth_middleware
 from models import User, Notification
 
+
+# ADD these event types (don't remove existing ones)
+class WebSocketEventType:
+    # Existing events...
+    TASK_CREATED = "task_created"
+    TASK_UPDATED = "task_updated"
+    TASK_DELETED = "task_deleted"
+    TASK_STATUS_CHANGED = "task_status_changed"
+    SYNC_REQUEST = "sync_request"
+    SYNC_RESPONSE = "sync_response"
+
 router = APIRouter(prefix="/ws", tags=["WebSocket"])
 
 # Store active connections
@@ -17,18 +28,32 @@ active_connections: List[WebSocket] = []
 
 class ConnectionManager:
     def __init__(self):
-        self.active_connections: List[WebSocket] = {}
+        self.active_connections: dict[WebSocket, User] = {}  # websocket -> user
+        self.user_connections: dict[int, List[WebSocket]] = {}  # user_id -> [websockets]
         self.notification_connections: dict[int, List[WebSocket]] = {}  # user_id -> [websockets]
 
     async def connect(self, websocket: WebSocket, user: User):
         await websocket.accept()
         self.active_connections[websocket] = user
+
+        # Add to user-specific connections for task sync
+        if user.id not in self.user_connections:
+            self.user_connections[user.id] = []
+        self.user_connections[user.id].append(websocket)
+
         active_connections.append(websocket)  # Keep backward compatibility
 
     def disconnect(self, websocket: WebSocket):
         if websocket in self.active_connections:
             user = self.active_connections[websocket]
             del self.active_connections[websocket]
+
+            # Remove from user-specific connections
+            if user.id in self.user_connections:
+                if websocket in self.user_connections[user.id]:
+                    self.user_connections[user.id].remove(websocket)
+                    if not self.user_connections[user.id]:  # Remove empty lists
+                        del self.user_connections[user.id]
 
             # Remove from notification connections if present
             if user.id in self.notification_connections:
@@ -51,14 +76,57 @@ class ConnectionManager:
                 # Handle disconnection during broadcast
                 self.disconnect(connection)
 
+    async def broadcast_to_user(self, message: str, user_id: int):
+        """Send a message to all connections of a specific user"""
+        if user_id in self.user_connections:
+            disconnected_websockets = []
+            for websocket in self.user_connections[user_id]:
+                try:
+                    await websocket.send_text(message)
+                except WebSocketDisconnect:
+                    disconnected_websockets.append(websocket)
+
+            # Remove disconnected websockets
+            for websocket in disconnected_websockets:
+                self.disconnect(websocket)
+
     async def connect_notification(self, websocket: WebSocket, user: User):
         """Connect a WebSocket specifically for notifications"""
-        await self.connect(websocket, user)
-
+        # Check if websocket is already connected
+        if websocket in self.active_connections:
+            print(f"⚠️ WebSocket already connected for user {user.id}")
+            # Just add to notification connections if not already there
+            if user.id not in self.notification_connections:
+                self.notification_connections[user.id] = []
+            if websocket not in self.notification_connections[user.id]:
+                self.notification_connections[user.id].append(websocket)
+            return
+        
+        # Accept the connection only if not already accepted
+        try:
+            await websocket.accept()
+            print(f"✅ WebSocket connection accepted for user {user.id}")
+        except RuntimeError as e:
+            print(f"⚠️ WebSocket accept error (might already be accepted): {e}")
+            # Connection might already be accepted, continue anyway
+        
+        # Store the connection
+        self.active_connections[websocket] = user
+        
+        # Add to user-specific connections for task sync
+        if user.id not in self.user_connections:
+            self.user_connections[user.id] = []
+        if websocket not in self.user_connections[user.id]:
+            self.user_connections[user.id].append(websocket)
+        
         # Add to notification connections for this user
         if user.id not in self.notification_connections:
             self.notification_connections[user.id] = []
-        self.notification_connections[user.id].append(websocket)
+        if websocket not in self.notification_connections[user.id]:
+            self.notification_connections[user.id].append(websocket)
+        
+        if websocket not in active_connections:
+            active_connections.append(websocket)
 
     async def send_notification_to_user(self, message: str, user_id: int):
         """Send a notification to a specific user's notification connections"""
@@ -78,18 +146,18 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 
-@router.websocket("/tasks/{user_id}")
-async def websocket_endpoint(websocket: WebSocket, user_id: int):
+@router.websocket("/tasks")
+async def websocket_endpoint(websocket: WebSocket):
     """
     WebSocket endpoint for real-time task updates.
-    Authenticates the user and allows real-time communication about tasks.
+    Authenticates the user with JWT token passed in query parameters and allows real-time communication about tasks.
     """
-    # Authenticate the WebSocket connection
+    # Authenticate the WebSocket connection using JWT token from query parameters
     user = await websocket_auth.authenticate_websocket(websocket)
 
-    if not user or user.id != user_id:
-        # Authentication failed or user ID mismatch
-        await websocket.close(code=1008, reason="Authentication failed or user ID mismatch")
+    if not user:
+        # Authentication failed
+        await websocket.close(code=1008, reason="Authentication failed")
         return
 
     # Run the authentication middleware
@@ -170,18 +238,18 @@ async def websocket_endpoint(websocket: WebSocket, user_id: int):
         print(f"WebSocket disconnected for user {user.id}")
 
 
-@router.websocket("/notifications/{user_id}")
-async def websocket_notifications_endpoint(websocket: WebSocket, user_id: int):
+@router.websocket("/notifications")
+async def websocket_notifications_endpoint(websocket: WebSocket):
     """
     WebSocket endpoint for real-time notifications.
-    Authenticates the user and allows real-time communication about notifications.
+    Authenticates the user with JWT token passed in query parameters and allows real-time communication about notifications.
     """
-    # Authenticate the WebSocket connection
+    # Authenticate the WebSocket connection using JWT token from query parameters
     user = await websocket_auth.authenticate_websocket(websocket)
 
-    if not user or user.id != user_id:
-        # Authentication failed or user ID mismatch
-        await websocket.close(code=1008, reason="Authentication failed or user ID mismatch")
+    if not user:
+        # Authentication failed
+        await websocket.close(code=1008, reason="Authentication failed")
         return
 
     # Run the authentication middleware
@@ -213,7 +281,6 @@ async def websocket_notifications_endpoint(websocket: WebSocket, user_id: int):
                     )
                 elif message_type == "get_unread_count":
                     # Return count of unread notifications
-                    from sqlmodel import select
                     from db import get_session
                     with next(get_session()) as session:
                         unread_count = session.query(Notification).filter(

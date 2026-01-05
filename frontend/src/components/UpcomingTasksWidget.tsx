@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '../components/ui/checkbox';
 import { useDashboard } from '@/contexts/DashboardContext';
 import { format } from 'date-fns';
-import { Calendar, CheckCircle } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 
 const UpcomingTasksWidget: React.FC = () => {
   const { tasks, toggleTaskCompletion, loading } = useDashboard();
@@ -35,7 +35,7 @@ const UpcomingTasksWidget: React.FC = () => {
 
   console.log('📅 Upcoming tasks:', upcomingTasks); // Debug log
 
-  const getPriorityColor = (priority: string) => {
+  const getPriorityColor = (priority: string | undefined) => {
     switch (priority) {
       case 'high':
         return 'bg-red-500';
@@ -98,7 +98,7 @@ const UpcomingTasksWidget: React.FC = () => {
                         }
                       </span>
                       <div className={`w-2 h-2 rounded-full ${getPriorityColor(task.priority)}`}></div>
-                      <span className="capitalize">{task.priority}</span>
+                      <span className="capitalize">{task.priority || 'none'}</span>
                     </div>
                   </div>
                 </div>

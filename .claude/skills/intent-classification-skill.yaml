@@ -1,0 +1,21 @@
+name: intent-classification-skill
+type: agent-skill
+purpose: Classify user intent for CRUD-style entity management systems.
+
+input:
+  - user_command: string
+  - conversation_context: optional object
+
+output:
+  - intent: CREATE | READ | UPDATE | DELETE | COMPLETE | LIST | FILTER | SEARCH | CLARIFY
+  - confidence: number (0.0–1.0)
+  - indicators: list of detected linguistic signals
+
+rules:
+  - Use verb and phrase indicators
+  - Prefer highest-confidence intent
+  - If multiple plausible intents exist, lower confidence
+
+reusability:
+  - Works for Todo, Notes, Reminders, Inventory, CRM
+  - No schema or tool assumptions

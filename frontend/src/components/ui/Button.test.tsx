@@ -26,10 +26,10 @@ const ButtonTest = () => {
       <div className="space-y-4">
         <h3 className="text-lg font-semibold">1. All Variants Test</h3>
         <div className="flex flex-wrap gap-2">
-          <Button variant="primary">Primary</Button>
+          <Button variant="default">Default</Button>
           <Button variant="secondary">Secondary</Button>
           <Button variant="ghost">Ghost</Button>
-          <Button variant="danger">Danger</Button>
+          <Button variant="destructive">Destructive</Button>
         </div>
       </div>
 
@@ -66,7 +66,7 @@ const ButtonTest = () => {
         <h3 className="text-lg font-semibold">5. Disabled State Test</h3>
         <div className="flex flex-wrap gap-2">
           <Button disabled>Disabled Button</Button>
-          <Button variant="danger" disabled>Danger Disabled</Button>
+          <Button variant="destructive" disabled>Destructive Disabled</Button>
         </div>
       </div>
 

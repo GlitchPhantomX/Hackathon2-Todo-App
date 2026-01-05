@@ -1,4 +1,7 @@
 'use client';
+export const runtime = 'edge';
+
+export const dynamic = 'force-dynamic';
 
 import React from 'react';
 import { useDashboard } from '@/contexts/DashboardContext';
@@ -55,7 +58,7 @@ const StatisticsPage = () => {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">{completedTasks}</div>
-            <p className="text-sm text-muted-foreground">Tasks you've finished</p>
+            <p className="text-sm text-muted-foreground">Tasks you&#39;ve finished</p>
           </CardContent>
         </Card>
 
@@ -92,7 +95,7 @@ const StatisticsPage = () => {
             </div>
             <Progress value={completionRate} className="h-3" />
             <p className="text-sm text-muted-foreground">
-              You've completed {completedTasks} out of {totalTasks} tasks
+              You&#39;ve completed {completedTasks} out of {totalTasks} tasks
             </p>
           </div>
         </CardContent>

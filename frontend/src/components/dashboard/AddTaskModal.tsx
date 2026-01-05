@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { X } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -105,7 +104,7 @@ export function AddTaskModal({ open, onClose, onSuccess }: AddTaskModalProps) {
             <Label htmlFor="priority">Priority</Label>
             <Select
               value={formData.priority}
-              onValueChange={(value: any) => setFormData({ ...formData, priority: value })}
+              onValueChange={(value: 'low' | 'medium' | 'high') => setFormData({ ...formData, priority: value })}
             >
               <SelectTrigger>
                 <SelectValue />

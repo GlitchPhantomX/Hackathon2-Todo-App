@@ -24,55 +24,91 @@ def get_task_statistics(
     """
     Get comprehensive task statistics for the current user.
     Final endpoint: GET /api/v1/tasks/stats
-    
+
     Calculation:
     - main.py adds: /api/v1/tasks
     - This router adds: /stats
     - Result: /api/v1/tasks/stats ✅
     """
     try:
-        # Get all tasks for the user
-        all_tasks = db.query(Task).filter(Task.user_id == current_user.id).all()
+        from sqlalchemy import func, and_, or_
 
-        total = len(all_tasks)
-        completed = sum(1 for task in all_tasks if task.completed)
+        # Get overall task counts efficiently
+        total_query = db.query(Task).filter(Task.user_id == current_user.id)
+        total = total_query.count()
+
+        completed = db.query(Task).filter(
+            Task.user_id == current_user.id,
+            Task.completed == True
+        ).count()
+
         pending = total - completed
 
-        # Count overdue tasks
+        # Count overdue tasks efficiently
         now = datetime.utcnow()
-        overdue = sum(1 for task in all_tasks if not task.completed and task.due_date and task.due_date < now)
+        overdue = db.query(Task).filter(
+            Task.user_id == current_user.id,
+            Task.completed == False,
+            Task.due_date != None,
+            Task.due_date < now
+        ).count()
 
-        # Count by priority
+        # Count by priority using aggregation
+        priority_counts = db.query(
+            Task.priority,
+            func.count(Task.id).label('count')
+        ).filter(
+            Task.user_id == current_user.id
+        ).group_by(Task.priority).all()
+
         by_priority = {
-            "high": sum(1 for task in all_tasks if task.priority == "high"),
-            "medium": sum(1 for task in all_tasks if task.priority == "medium"),
-            "low": sum(1 for task in all_tasks if task.priority == "low")
+            "high": 0,
+            "medium": 0,
+            "low": 0
         }
+        for priority, count in priority_counts:
+            by_priority[priority] = count
 
-        # Count by project
-        projects = db.query(Project).filter(Project.user_id == current_user.id).all()
-        by_project = []
-        for project in projects:
-            project_task_count = sum(1 for task in all_tasks if task.project_id == project.id)
-            if project_task_count > 0:
-                by_project.append({
-                    "id": project.id,
-                    "name": project.name,
-                    "count": project_task_count
-                })
+        # Count by project using efficient join
+        project_counts = db.query(
+            Project.id,
+            Project.name,
+            func.count(Task.id).label('task_count')
+        ).outerjoin(Task, and_(Task.project_id == Project.id, Task.user_id == current_user.id)).filter(
+            Project.user_id == current_user.id
+        ).group_by(Project.id, Project.name).all()
+
+        by_project = [
+            {"id": project_id, "name": name, "count": count}
+            for project_id, name, count in project_counts if count > 0
+        ]
 
         # Calculate completion rate
         completion_rate = (completed / total * 100) if total > 0 else 0.0
 
-        # Generate productivity trend (last 7 days)
+        # Generate productivity trend (last 7 days) using efficient queries
         productivity_trend = []
         for i in range(7):
             day = now - timedelta(days=i)
             day_start = day.replace(hour=0, minute=0, second=0, microsecond=0)
             day_end = day_start + timedelta(days=1)
 
-            created_today = sum(1 for task in all_tasks if day_start <= task.created_at < day_end)
-            completed_today = sum(1 for task in all_tasks if task.completed and task.updated_at and day_start <= task.updated_at < day_end)
+            # Count tasks created today
+            created_today = db.query(Task).filter(
+                Task.user_id == current_user.id,
+                Task.created_at >= day_start,
+                Task.created_at < day_end
+            ).count()
+
+            # Count tasks completed today
+            completed_today = db.query(Task).filter(
+                Task.user_id == current_user.id,
+                Task.completed == True,
+                Task.updated_at != None,
+                Task.updated_at >= day_start,
+                Task.updated_at < day_end
+            ).count()
+
             score = ((completed_today / max(created_today, 1)) * 100) if created_today > 0 else 0
 
             productivity_trend.append({

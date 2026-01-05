@@ -9,12 +9,30 @@ import { Area, AreaChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContai
 
 export function ProductivityChart() {
   const { tasks, loading } = useDashboard()
-  const [chartData, setChartData] = useState([])
+  const [chartData, setChartData] = useState<Array<{day: string; completed: number; created: number}>>([])
 
   useEffect(() => {
     if (tasks && tasks.length >= 0) {
       const processed = groupTasksByDay(tasks, 7)
-      setChartData(processed)
+      setChartData(prevData => {
+        // Only update if data has actually changed
+        if (prevData.length !== processed.length) return processed;
+        for (let i = 0; i < prevData.length; i++) {
+          const prevItem = prevData[i];
+          const processedItem = processed[i];
+          if (!prevItem || !processedItem || 
+              prevItem.completed !== processedItem.completed ||
+              prevItem.created !== processedItem.created) {
+            return processed;
+          }
+        }
+        return prevData;
+      })
+    } else {
+      setChartData(prevData => {
+        if (prevData.length === 0) return prevData;
+        return [];
+      })
     }
   }, [tasks])
 

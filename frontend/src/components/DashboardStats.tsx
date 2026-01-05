@@ -28,48 +28,50 @@ const DashboardStats = () => {
 
   // Animate the stats when they change
   useEffect(() => {
-    if (!isLoading) {  // ✅ Use isLoading instead of loading
-      const duration = 1000;
-      const steps = 30;
-      const interval = duration / steps;
-
-      const totalStep = stats.total / steps;
-      const completedStep = stats.completed / steps;
-      const pendingStep = stats.pending / steps;
-      const overdueStep = stats.overdue / steps;
-
-      let step = 0;
-      const timer = setInterval(() => {
-        step++;
-        if (step > steps) {
-          clearInterval(timer);
-          setAnimatedValues({
-            total: stats.total,
-            completed: stats.completed,
-            pending: stats.pending,
-            overdue: stats.overdue
-          });
-        } else {
-          setAnimatedValues({
-            total: Math.floor(totalStep * step),
-            completed: Math.floor(completedStep * step),
-            pending: Math.floor(pendingStep * step),
-            overdue: Math.floor(overdueStep * step)
-          });
-        }
-      }, interval);
-
-      return () => clearInterval(timer);
-    } else {
-      // Reset animated values when loading
+    if (isLoading) {
       setAnimatedValues({
         total: 0,
         completed: 0,
         pending: 0,
         overdue: 0
       });
+      return; // ✅ explicit void return
     }
-  }, [stats, isLoading]);  // ✅ Use isLoading
+  
+    const duration = 1000;
+    const steps = 30;
+    const interval = duration / steps;
+  
+    const totalStep = stats.total / steps;
+    const completedStep = stats.completed / steps;
+    const pendingStep = stats.pending / steps;
+    const overdueStep = stats.overdue / steps;
+  
+    let step = 0;
+    const timer = setInterval(() => {
+      step++;
+  
+      if (step > steps) {
+        clearInterval(timer);
+        setAnimatedValues({
+          total: stats.total,
+          completed: stats.completed,
+          pending: stats.pending,
+          overdue: stats.overdue
+        });
+      } else {
+        setAnimatedValues({
+          total: Math.floor(totalStep * step),
+          completed: Math.floor(completedStep * step),
+          pending: Math.floor(pendingStep * step),
+          overdue: Math.floor(overdueStep * step)
+        });
+      }
+    }, interval);
+  
+    return () => clearInterval(timer); // ✅ always returned in this branch
+  }, [stats, isLoading]);
+  
 
   // Calculate completion percentage
   const completionPercentage = stats.total > 0

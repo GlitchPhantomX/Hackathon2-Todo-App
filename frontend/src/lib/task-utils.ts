@@ -31,11 +31,13 @@ export function groupTasksByDay(tasks: Task[] | any, days: number = 7) {
     const date = new Date(now)
     date.setDate(date.getDate() - i)
     const dayName = date.toLocaleDateString('en-US', { weekday: 'short' })
-    const dateStr = date.toISOString().split('T')[0]
+    const dateParts = date.toISOString().split('T');
+    const dateStr = dateParts[0] || '';
 
-    const dayTasks = taskArray.filter((t: Task) =>
-      t.createdAt?.startsWith(dateStr)
-    )
+    const dayTasks = taskArray.filter((t: Task) => {
+      if (!t.createdAt) return false; // Explicitly handle undefined case
+      return (t.createdAt as string).startsWith(dateStr);
+    })
 
     result.push({
 /*************  ✨ Windsurf Command ⭐  *************/
@@ -66,6 +68,7 @@ export function groupTasksByMonth(tasks: Task[] | any, months: number = 6) {
     const month = date.getMonth()
 
     const monthTasks = taskArray.filter((t: Task) => {
+      if (!t.createdAt) return false; // Skip tasks without createdAt
       const taskDate = new Date(t.createdAt)
       return taskDate.getFullYear() === year && taskDate.getMonth() === month
     })
