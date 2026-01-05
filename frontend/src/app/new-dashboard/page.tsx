@@ -22,7 +22,7 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
-} from "@/components/ui/Tabs";
+} from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

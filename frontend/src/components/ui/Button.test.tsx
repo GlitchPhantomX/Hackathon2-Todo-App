@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Button } from './button';
-import { Spinner } from './Spinner';
+import { Spinner } from './spinner';
 
 // This is a test component to demonstrate Button functionality
 const ButtonTest = () => {

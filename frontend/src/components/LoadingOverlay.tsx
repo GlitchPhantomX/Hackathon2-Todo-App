@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Spinner } from '@/components/ui/Spinner';
+import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
 
 interface LoadingOverlayProps {

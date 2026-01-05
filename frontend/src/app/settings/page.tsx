@@ -4,11 +4,11 @@ export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
 
 import React, { lazy, Suspense, useEffect, useState } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useSettings } from '@/contexts/SettingsContext';
-import { MotionWrapper } from '@/components/ui/MotionWrapper';
+import { MotionWrapper } from '@/components/ui/motion-wrapper';
 import { Settings, Palette, Bell, ListChecks, Lock, Plug } from 'lucide-react';
 
 // Lazy load settings components for code splitting

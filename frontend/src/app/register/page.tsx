@@ -3,7 +3,7 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import RegisterForm from '@/components/auth/RegisterForm';
-import { Spinner } from '@/components/ui/Spinner';
+import { Spinner } from '@/components/ui/spinner';
 
 export default function RegisterPage() {
   return (

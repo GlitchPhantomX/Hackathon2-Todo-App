@@ -4,7 +4,7 @@ import React from 'react';
 import { Navbar } from '@/components/layout/Navbar';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { useAuth } from '@/contexts/AuthContext';
-import { Spinner } from '@/components/ui/Spinner';
+import { Spinner } from '@/components/ui/spinner';
 import ErrorBoundary from '@/components/utils/ErrorBoundary';
 
 export default function TasksLayout({

@@ -6,8 +6,8 @@ import { DashboardProvider } from '@/contexts/DashboardContext';
 import { TaskSyncProvider } from '@/contexts/TaskSyncContext';
 import { TagsProvider } from '@/contexts/TagsContext';
 import { Toaster } from 'sonner';
-import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
-import { MotionWrapper } from '@/components/ui/MotionWrapper';
+import { ErrorBoundary } from '@/components/ui/error-boundary';
+import { MotionWrapper } from '@/components/ui/motion-wrapper';
 
 export function ClientProviders({ children }: { children: React.ReactNode }) {
   return (

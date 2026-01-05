@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert } from '../../../../components/ui/Alert';
-import { Spinner } from '@/components/ui/Spinner';
+import { Spinner } from '@/components/ui/spinner';
 import { useAuth } from '@/contexts/AuthContext';
 import { getTask } from '@/services/taskService';
 import { Task } from '@/types/task.types';

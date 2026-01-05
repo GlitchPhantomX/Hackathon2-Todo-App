@@ -5,8 +5,8 @@ import { Button } from './button';
 import { Input } from './input';
 import { Alert } from './Alert';
 import { Card } from './card';
-import { Modal } from './Modal';
-import { Spinner } from './Spinner';
+import { Modal } from './modal';
+import { Spinner } from './spinner';
 
 // This is a test component to demonstrate responsive behavior of UI components
 const ResponsiveTest = () => {

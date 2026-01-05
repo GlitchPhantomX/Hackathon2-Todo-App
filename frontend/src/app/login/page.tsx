@@ -3,7 +3,7 @@ import { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import LoginForm from "@/components/auth/LoginForm";
-import { Spinner } from "@/components/ui/Spinner";
+import { Spinner } from "@/components/ui/spinner";
 
 export const metadata: Metadata = {
   title: "Login | Todo App",
