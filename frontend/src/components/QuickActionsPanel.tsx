@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button } from './ui/button';
+import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import { Plus, Upload, BarChart3, Settings, HelpCircle } from 'lucide-react';
 import ImportModal from './ImportModal';

@@ -16,7 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
-import { Badge } from "./ui/badge";
+import { Badge } from "@/components/ui/badge";
 import {
   HomeIcon,
   SunIcon,
@@ -34,7 +34,7 @@ import {
   MessageCircle,
   TestTube, // ✅ New icon for test button
 } from "lucide-react";
-import { Input } from "./ui/input";
+import { Input } from "@/components/ui/input";
 import NotificationDropdown from "./NotificationDropdown";
 import KeyboardShortcuts from "./KeyboardShortcuts";
 import { format } from "date-fns";

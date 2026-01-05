@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "../components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -24,7 +24,7 @@ import {
   CalendarIcon,
   PlusIcon,
   TagIcon,
-  CalendarDaysIcon,
+  // CalendarDaysIcon,
 } from "lucide-react";
 import { useTaskSync } from "@/contexts/TaskSyncContext";
 import { useTags } from "@/contexts/TagsContext";
