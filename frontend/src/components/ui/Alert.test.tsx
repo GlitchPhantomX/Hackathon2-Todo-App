@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Alert } from './alert';
+import { Alert } from './Alert';
 
 // This is a test component to demonstrate Alert functionality
 const AlertTest = () => {

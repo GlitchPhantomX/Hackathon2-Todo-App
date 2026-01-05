@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Button } from './button';
 import { Input } from './input';
-import { Alert } from './alert';
+import { Alert } from './Alert';
 import { Card } from './card';
 import { Modal } from './Modal';
 import { Spinner } from './Spinner';
