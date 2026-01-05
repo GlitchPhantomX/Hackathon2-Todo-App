@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '../components/ui/checkbox';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useDashboard } from '@/contexts/DashboardContext';
 import { format } from 'date-fns';
 import { Calendar } from 'lucide-react';
