@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Alert } from '@/components/ui/Alert';
+import { Alert } from '@/components/ui/alert';
 import { Task } from '@/types/task.types';
 import { CheckCircle, Circle, Edit, Trash2 } from 'lucide-react';
 

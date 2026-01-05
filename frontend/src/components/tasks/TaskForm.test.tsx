@@ -38,7 +38,7 @@ jest.mock('@/components/ui/Input', () => ({
     </div>
   )
 }));
-jest.mock('@/components/ui/Alert', () => ({
+jest.mock('@/components/ui/alert', () => ({
   Alert: ({ children, variant, onClose }: { children: React.ReactNode; variant?: string; onClose?: () => void }) => (
     <div data-testid="alert" data-variant={variant}>
       {children}

@@ -4,7 +4,7 @@ import TaskItem from '@/components/tasks/TaskItem';
 import { Task } from '@/types/task.types';
 
 // Mock the Alert component
-jest.mock('@/components/ui/Alert', () => ({
+jest.mock('@/components/ui/alert', () => ({
   Alert: ({ children, variant, onClose }: { children: React.ReactNode; variant?: string; onClose?: () => void }) => (
     <div data-testid="alert" data-variant={variant}>
       {children}
