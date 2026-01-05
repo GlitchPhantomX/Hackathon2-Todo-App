@@ -8,7 +8,7 @@ import {
   Settings, HelpCircle, Moon, Sun
 } from 'lucide-react'
 
-import { Button } from '../ui/button'
+import { Button } from '@/components/ui/button'
 import { Input } from '../ui/input'
 import {
   DropdownMenu,

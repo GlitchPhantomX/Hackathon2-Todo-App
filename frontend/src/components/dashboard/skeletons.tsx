@@ -1,4 +1,4 @@
-import { Card } from '../ui/card'
+import { Card } from '../../components/ui/card'
 import { Skeleton } from '../ui/skeleton'
 
 export function StatsCardsSkeleton() {
