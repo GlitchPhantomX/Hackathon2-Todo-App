@@ -25,7 +25,7 @@ import {
   XIcon,
   SearchIcon,
 } from "lucide-react";
-import { Input } from "./ui/input";
+import { Input } from "@/components/ui/input";
 import NotificationDropdown from "./NotificationDropdown";
 import KeyboardShortcuts from "./KeyboardShortcuts";
 

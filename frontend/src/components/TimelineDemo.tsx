@@ -7,7 +7,7 @@ import {
 } from "motion/react";
 import React, { useEffect, useRef, useState } from "react";
 import { Target, Layers, Zap, TrendingUp, CheckCircle2 } from "lucide-react";
-import Timeline from "./ui/timeline";
+import Timeline from "@/components/ui/timeline";
 interface TimelineEntry {
   title: string;
   icon: React.ReactNode;

@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 // import { Button } from '@/components/ui/button';
 // import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useDashboard } from '@/contexts/DashboardContext';
-import { Calendar } from '../components/ui/calender';
+import { Calendar } from '@/components/ui/calender';
 
 const CalendarWidget: React.FC = () => {
   const { tasks } = useDashboard();
