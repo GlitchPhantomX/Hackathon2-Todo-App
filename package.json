@@ -1,4 +1,12 @@
 {
+  "name": "hackathon2-todo-app",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "cd frontend && npm run build",
+    "install:frontend": "cd frontend && npm install",
+    "dev": "cd frontend && npm run dev"
+  },
   "dependencies": {
     "date-fns": "^4.1.0",
     "moment": "^2.30.1",
