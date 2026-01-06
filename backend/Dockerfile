@@ -1,5 +1,4 @@
 # Backend Dockerfile for Todo AI Chatbot
-# Uses python:3.13-slim as base image
 FROM python:3.13-slim
 
 # Install system dependencies including curl for health checks
@@ -22,7 +21,7 @@ RUN uv sync --frozen
 # Copy the rest of the application
 COPY . .
 
-# Create non-root user and setup permissions (FIXED - includes cache directory)
+# Create non-root user and setup permissions
 RUN groupadd -r appuser && \
     useradd -r -g appuser -m appuser && \
     mkdir -p /home/appuser/.cache/uv && \
@@ -31,12 +30,12 @@ RUN groupadd -r appuser && \
 # Switch to non-root user
 USER appuser
 
-# Expose port 8000
+# Expose port (Railway will use $PORT)
 EXPOSE 8000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
+# Health check (comment out for Railway as port is dynamic)
+# HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+#     CMD curl -f http://localhost:8000/health || exit 1
 
-# Run the application
-CMD ["uv", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run with environment variable PORT support
+CMD uv run uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}
