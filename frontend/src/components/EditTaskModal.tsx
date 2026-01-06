@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -116,7 +116,7 @@ const EditTaskModal = ({ isOpen, onClose, task }: EditTaskModalProps) => {
         updateData.dueDate = dueDate;
       }
 
-      if (selectedProject) {
+      if (selectedProject && selectedProject !== 'none') {
         updateData.projectId = selectedProject;
       }
 
@@ -149,6 +149,9 @@ const EditTaskModal = ({ isOpen, onClose, task }: EditTaskModalProps) => {
       <DialogContent className="sm:max-w-md max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Task</DialogTitle>
+          <DialogDescription>
+            Make changes to your task here. Click save when you're done.
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -196,6 +199,7 @@ const EditTaskModal = ({ isOpen, onClose, task }: EditTaskModalProps) => {
                   variant="outline"
                   size="sm"
                   onClick={() => setDueDate(null)}
+                  disabled={!dueDate}
                 >
                   <CalendarIcon className="h-4 w-4" />
                 </Button>
@@ -203,7 +207,7 @@ const EditTaskModal = ({ isOpen, onClose, task }: EditTaskModalProps) => {
             </div>
 
             <div>
-              <Label>Status</Label>
+              <Label htmlFor="status">Status</Label>
               <Select value={status} onValueChange={(value: 'pending' | 'completed') => setStatus(value)}>
                 <SelectTrigger id="status">
                   <SelectValue />
@@ -258,7 +262,7 @@ const EditTaskModal = ({ isOpen, onClose, task }: EditTaskModalProps) => {
                   <button
                     type="button"
                     onClick={() => handleRemoveTag(tag)}
-                    className="ml-1 text-xs"
+                    className="ml-1 text-xs hover:text-red-500"
                   >
                     ×
                   </button>
@@ -270,7 +274,13 @@ const EditTaskModal = ({ isOpen, onClose, task }: EditTaskModalProps) => {
                 id="tags"
                 value={newTag}
                 onChange={(e) => setNewTag(e.target.value)}
-                placeholder="Add a tag"
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddTag();
+                  }
+                }}
+                placeholder="Add a tag and press Enter"
                 className="flex-1"
               />
               <Button
@@ -286,12 +296,16 @@ const EditTaskModal = ({ isOpen, onClose, task }: EditTaskModalProps) => {
 
           <div>
             <Label htmlFor="project">Project</Label>
-            <Select value={selectedProject} onValueChange={setSelectedProject}>
+            <Select 
+              value={selectedProject || 'none'}
+              onValueChange={(value) => setSelectedProject(value === 'none' ? '' : value)}
+            >
               <SelectTrigger id="project">
-                <SelectValue placeholder="Select a project" />
+                <SelectValue placeholder="Select a project (optional)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">No Project</SelectItem>
+                <SelectItem value="none">No Project</SelectItem>
+                {/* Add your projects here when available */}
               </SelectContent>
             </Select>
           </div>
@@ -301,7 +315,7 @@ const EditTaskModal = ({ isOpen, onClose, task }: EditTaskModalProps) => {
               Cancel
             </Button>
             <Button type="submit" disabled={isLoading}>
-              Update Task
+              {isLoading ? 'Updating...' : 'Update Task'}
             </Button>
           </DialogFooter>
         </form>

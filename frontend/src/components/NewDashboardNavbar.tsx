@@ -32,7 +32,7 @@ import {
   FolderIcon,
   ArrowRight,
   MessageCircle,
-  TestTube, // ✅ New icon for test button
+  Home
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import NotificationDropdown from "./NotificationDropdown";
@@ -468,7 +468,7 @@ const NewDashboardNavbar = () => {
             <div className="container flex flex-col md:flex-row items-center h-auto md:h-16 px-4 w-full max-w-full gap-2 py-2 md:py-0">
               {/* Left section */}
               <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-start">
-                <Link href="/" className="flex items-center gap-2">
+                <Link href="/new-dashboard" className="flex items-center gap-2">
                   <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-purple-500 to-indigo-500 flex items-center justify-center">
                     <HomeIcon className="h-4 w-4 text-white" />
                   </div>
@@ -601,24 +601,23 @@ const NewDashboardNavbar = () => {
 
               {/* Right section */}
               <div className="flex items-center gap-2 ml-auto">
-                {/* ✅ TEST NOTIFICATION BUTTON - Remove this after testing */}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleTestNotification}
-                  className="h-8 px-3 gap-2 text-xs border-dashed border-2 border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950"
-                  title="Test Notification System"
-                >
-                  <TestTube className="h-3 w-3" />
-                  <span className="hidden sm:inline">Test</span>
-                </Button>
+              
                 <button
-                  onClick={() => router.push("/chat")} // ✅ Changed from /new-dashboard/chat
+                  onClick={() => router.push("/chat")} 
                   className="relative p-2 text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
                   aria-label="AI Assistant"
                   title="AI Assistant"
                 >
                   <MessageCircle className="h-6 w-6" />
+                </button>
+                <button
+                  onClick={() => router.push("/")} 
+                  className="h-7 text-xs hover:bg-primary/10 cursor-pointer"
+                  aria-label="AI Assistant"
+                  title="AI Assistant"
+                  
+                >
+                  <Home className="h-4 w-4" />
                 </button>
 
                 <NotificationDropdown />

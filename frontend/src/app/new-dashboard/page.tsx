@@ -1,6 +1,6 @@
-'use client';
-export const runtime = 'edge';
-export const dynamic = 'force-dynamic';
+"use client";
+export const runtime = "edge";
+export const dynamic = "force-dynamic";
 
 import React, { lazy, Suspense, useState } from "react";
 import DashboardHeader from "@/components/DashboardHeader";
@@ -17,12 +17,7 @@ import TagsList from "@/components/TagsList";
 import BulkActions from "@/components/BulkActions";
 import TaskDetail from "@/components/TaskDetail";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -63,6 +58,7 @@ const NewDashboardPage = () => {
     <div className="px-4 sm:px-6 lg:px-8 py-6 space-y-6">
       {/* Dashboard Header */}
       <section>
+
         <DashboardHeader />
       </section>
 
@@ -70,7 +66,9 @@ const NewDashboardPage = () => {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
         <Tabs
           value={activeView}
-          onValueChange={(value: string) => setActiveView(value as "overview" | "tasks" | "analytics")}
+          onValueChange={(value: string) =>
+            setActiveView(value as "overview" | "tasks" | "analytics")
+          }
           className="w-full"
         >
           <div className="border-b border-gray-200 dark:border-gray-700 px-6">

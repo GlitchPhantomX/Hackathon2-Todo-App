@@ -115,7 +115,7 @@ def broadcast_task_event(event_type: str, task: Task, current_user_id: int):
                         "completed": task.completed,
                         "due_date": task.due_date.isoformat() if task.due_date else None,
                         "priority": task.priority,
-                        "status": task.status,
+                        # "status": task.status,
                         "project_id": task.project_id,
                         "user_id": str(task.user_id),
                         "created_at": task.created_at.isoformat(),

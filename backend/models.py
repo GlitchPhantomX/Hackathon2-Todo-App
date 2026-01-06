@@ -64,7 +64,7 @@ class Task(TaskBase, table=True):
     completed: bool = Field(default=False)
     due_date: Optional[datetime] = Field(default=None)
     priority: str = Field(default="medium", max_length=10, nullable=False)
-    status: str = Field(default="pending", max_length=20, nullable=False)  # pending, in_progress, completed
+    # status: str = Field(default="pending", max_length=20, nullable=False)  # ❌ REMOVE THIS LINE
     project_id: Optional[int] = Field(foreign_key="projects.id", nullable=True, index=True)
     user_id: int = Field(foreign_key="users.id", nullable=False, index=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)

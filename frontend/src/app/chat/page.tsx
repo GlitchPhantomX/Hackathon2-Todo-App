@@ -11,7 +11,13 @@ import MessageArea from '@/components/chat/MessageArea';
 import ChatInput from '@/components/chat/ChatInput';
 import ChatEmptyState from '@/components/chat/ChatEmptyState';
 import ChatNavbar from '@/components/chat/ChatNavbar';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+
+// Storage keys (same as widget)
+const STORAGE_KEYS = {
+  MESSAGES: 'chatbot_messages',
+  EXPAND_FLAG: 'chatbot_expand_flag'
+};
 
 function ChatContent() {
   const {
@@ -24,13 +30,53 @@ function ChatContent() {
     loadConversation,
     deleteConversation,
     updateConversationTitle,
-    sendMessage
+    sendMessage,
+    setMessages // ✅ Make sure this exists in your ChatContext
   } = useChat();
 
+  const [hasRestoredFromWidget, setHasRestoredFromWidget] = useState(false);
   const activeConversation = conversations.find(c => c.id === activeConversationId) || null;
+
+  // ✅ First Priority: Check if user expanded from widget
+  useEffect(() => {
+    const expandFlag = localStorage.getItem(STORAGE_KEYS.EXPAND_FLAG);
+    
+    if (expandFlag === 'true' && !hasRestoredFromWidget) {
+      console.log('🔍 Detected expand from widget, restoring messages...');
+      
+      const savedMessages = localStorage.getItem(STORAGE_KEYS.MESSAGES);
+      
+      if (savedMessages) {
+        try {
+          const parsed = JSON.parse(savedMessages);
+          
+          if (parsed.length > 0) {
+            createConversation().then(() => {
+              setTimeout(() => {
+                setMessages(parsed); // Set messages in context
+                console.log('✅ Restored', parsed.length, 'messages from widget');
+              }, 300);
+            });
+            
+            setHasRestoredFromWidget(true);
+          }
+        } catch (err) {
+          console.error('❌ Failed to restore messages:', err);
+        }
+      }
+      
+      // ✅ Clear the expand flag
+      localStorage.removeItem(STORAGE_KEYS.EXPAND_FLAG);
+    }
+  }, [hasRestoredFromWidget, createConversation, setMessages]);
 
   // Auto-load conversations on mount and restore last active chat
   useEffect(() => {
+    // ✅ Skip if we're restoring from widget
+    if (hasRestoredFromWidget || localStorage.getItem(STORAGE_KEYS.EXPAND_FLAG) === 'true') {
+      return;
+    }
+
     // If conversations finished loading and none exist, create one
     if (!isLoading && conversations.length === 0 && !activeConversationId) {
       createConversation();
@@ -53,9 +99,8 @@ function ChatContent() {
     activeConversationId,
     createConversation,
     loadConversation,
+    hasRestoredFromWidget
   ]);
-  
-
 
   const handleSuggestedPromptClick = (prompt: string) => {
     if (!activeConversationId) {

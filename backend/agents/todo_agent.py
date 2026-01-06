@@ -14,7 +14,7 @@ class TodoAgent:
         self.session = session
         
         # OpenRouter Configuration
-        self.api_key = os.getenv("OPENROUTER_API_KEY", "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")
+        self.api_key = os.getenv("OPENROUTER_API_KEY", "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")
         self.base_url = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
         self.model = os.getenv("OPENROUTER_MODEL", "mistralai/devstral-2512:free")
         
@@ -171,15 +171,15 @@ class TodoAgent:
     def _task_to_dict(self, task: Task) -> Dict[str, Any]:
         """Convert task to dictionary"""
         return {
-            "id": task.id,
-            "title": task.title,
-            "description": task.description or "",
-            "status": task.status,
-            "priority": task.priority,
-            "completed": task.completed,
-            "due_date": task.due_date.isoformat() if task.due_date else None,
-            "created_at": task.created_at.isoformat() if task.created_at else None
-        }
+        "id": task.id,
+        "title": task.title,
+        "description": task.description or "",
+        "status": "completed" if task.completed else "pending",  # ✅ Derive from completed
+        "priority": task.priority,
+        "completed": task.completed,
+        "due_date": task.due_date.isoformat() if task.due_date else None,
+        "created_at": task.created_at.isoformat() if task.created_at else None
+    }
 
     def format_tasks_response(self, tasks: list) -> str:
         """
@@ -350,12 +350,12 @@ Output: {"title": "Call doctor", "priority": "high", "description": ""}
         
         # Create task in database
         new_task = Task(
-            user_id=self.user_id,
-            title=title.capitalize(),
-            description=description,
-            priority=priority,
-            status="pending"
-        )
+    user_id=self.user_id,
+    title=title.capitalize(),
+    description=description,
+    priority=priority,
+    completed=False  # ✅ Use completed field instead
+)
         
         self.session.add(new_task)
         self.session.commit()
@@ -417,7 +417,7 @@ Output: {"title": "Call doctor", "priority": "high", "description": ""}
             }
         
         # Mark as complete
-        matched_task.status = "completed"
+        # matched_task.status = "completed"
         matched_task.completed = True
         self.session.add(matched_task)
         self.session.commit()

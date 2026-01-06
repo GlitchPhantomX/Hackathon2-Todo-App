@@ -2,6 +2,7 @@
 
 import { TaskSyncProvider } from '@/contexts/TaskSyncContext';
 import { ProjectsProvider } from '@/contexts/ProjectsContext';
+import { ChatProvider } from '@/contexts/ChatContext';  // ✅ Add this import
 import DashboardLayout from '@/components/DashboardLayout';
 
 export default function NewDashboardLayout({
@@ -12,9 +13,11 @@ export default function NewDashboardLayout({
   return (
     <TaskSyncProvider>
       <ProjectsProvider>
-        <DashboardLayout>
-          {children}
-        </DashboardLayout>
+        <ChatProvider>  {/* ✅ Add ChatProvider wrapper */}
+          <DashboardLayout>
+            {children}
+          </DashboardLayout>
+        </ChatProvider>
       </ProjectsProvider>
     </TaskSyncProvider>
   );

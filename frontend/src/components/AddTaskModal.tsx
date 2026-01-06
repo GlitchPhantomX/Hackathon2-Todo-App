@@ -143,8 +143,8 @@ const AddTaskModal = ({ isOpen, onClose }: AddTaskModalProps) => {
 
       // Add optional fields only if they have values
       if (dueDate) {
-        newTask.dueDate = dueDate;
-      }
+        newTask.due_date = dueDate;  // Backend expects snake_case
+      }      
 
       if (selectedTags.length > 0) {
         newTask.tags = selectedTags;

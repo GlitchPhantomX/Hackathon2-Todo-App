@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useTaskSync } from '@/contexts/TaskSyncContext';
-import { MoreHorizontalIcon, EditIcon, TrashIcon, CopyIcon, FolderOpenIcon, WifiIcon, WifiOffIcon } from 'lucide-react';
+import { MoreHorizontalIcon, EditIcon, TrashIcon, CopyIcon, FolderOpenIcon, WifiIcon } from 'lucide-react';
 import { Task } from '@/types/types';
 import { format, isToday, isPast } from 'date-fns';
 
@@ -35,7 +35,9 @@ const TaskItem = ({
   const [isHovered, setIsHovered] = useState(false);
 
   const handleCompletionToggle = async () => {
-    await updateTask(task.id, { status: task.status === 'completed' ? 'pending' : 'completed' });
+    await updateTask(task.id, { 
+      status: task.status === 'completed' ? 'pending' : 'completed' 
+    });
   };
 
   const handleDelete = async () => {
@@ -121,13 +123,12 @@ const TaskItem = ({
         </div>
       );
     }
-    // Don't show offline/error status indicators - only show when connected
     return null;
   };
 
   return (
     <Card
-      className={`transition-all duration-200 ${
+      className={`group transition-all duration-200 ${
         isHovered ? 'shadow-md -translate-y-0.5 border-primary' : 'shadow-sm'
       } ${
         task.status === 'completed' ? 'bg-muted/30' : 'bg-card'
@@ -148,52 +149,67 @@ const TaskItem = ({
 
           {/* Task content */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between">
+            <div className="flex items-start justify-between gap-2">
               <h3
-                className={`font-medium truncate ${
+                className={`font-medium truncate flex-1 ${
                   task.status === 'completed' ? 'line-through text-muted-foreground' : ''
                 }`}
               >
                 {task.title}
               </h3>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 flex-shrink-0">
                 {/* WebSocket status indicator */}
                 {renderWebSocketStatus()}
 
-                {/* Visible edit and delete buttons */}
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7"
-                    onClick={handleEdit}
-                    title="Edit task"
-                  >
-                    <EditIcon className="h-4 w-4" />
-                    <span className="sr-only">Edit task</span>
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 text-red-600 hover:text-red-700"
-                    onClick={handleDelete}
-                    title="Delete task"
-                  >
-                    <TrashIcon className="h-4 w-4" />
-                    <span className="sr-only">Delete task</span>
-                  </Button>
-                </div>
+                {/* Edit button - shows on hover */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-blue-50 hover:text-blue-600"
+                  onClick={handleEdit}
+                  title="Edit task"
+                >
+                  <EditIcon className="h-4 w-4" />
+                  <span className="sr-only">Edit task</span>
+                </Button>
+                
+                {/* Delete button - shows on hover */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 hover:text-red-600"
+                  onClick={handleDelete}
+                  title="Delete task"
+                >
+                  <TrashIcon className="h-4 w-4" />
+                  <span className="sr-only">Delete task</span>
+                </Button>
 
-                {/* Menu dropdown */}
+                {/* Three-dot menu */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-8 w-8"
+                    >
                       <MoreHorizontalIcon className="h-4 w-4" />
                       <span className="sr-only">Task menu</span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={handleEdit}>
+                      <EditIcon className="mr-2 h-4 w-4" />
+                      Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={handleDelete}
+                      className="text-red-600 focus:text-red-600"
+                    >
+                      <TrashIcon className="mr-2 h-4 w-4" />
+                      Delete
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={handleDuplicate}>
                       <CopyIcon className="mr-2 h-4 w-4" />
                       Duplicate

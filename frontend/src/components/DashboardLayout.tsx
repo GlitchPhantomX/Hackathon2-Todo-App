@@ -22,7 +22,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       {/* Main Layout Container - Sidebar + Content */}
       <div className="flex">
         {/* Left Sidebar - Fixed Position */}
-        <aside className="w-64 fixed left-0 top-16 h-[calc(100vh-4rem)] overflow-y-auto bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 z-30">
+        <aside className=" fixed left-0 top-16 h-[calc(100vh-4rem)] overflow-y-auto bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 z-30">
           <NewDashboardSidebar />
         </aside>
 

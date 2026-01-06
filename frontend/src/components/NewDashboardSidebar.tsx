@@ -187,8 +187,8 @@ const NewDashboardSidebar = () => {
 
   return (
     <aside
-      className={`h-screen sticky top-0 z-30 hidden md:flex flex-col border-r bg-background transition-all duration-300 ${
-        isExpanded ? 'w-72' : 'w-18'
+      className={`h-screen sticky top-0 z-30 hidden md:flex flex-col border-r bg-background transition-all duration-300 overflow-hidden ${
+        isExpanded ? 'w-56' : 'w-20'
       }`}
     >
       <div className="flex h-16 items-center border-b px-4">
@@ -207,8 +207,8 @@ const NewDashboardSidebar = () => {
         </Button>
         {isExpanded && (
           <div className="flex items-center gap-2 ml-2">
-            <div className="h-6 w-6 rounded bg-linear-to-r from-purple-500 to-indigo-500" />
-            <span className="text-lg font-semibold">TodoPro</span>
+            <div className="h-6 w-6 rounded bg-gradient-to-r from-purple-500 to-indigo-500" />
+            <span className="text-lg font-semibold">TodoMaster</span>
           </div>
         )}
       </div>
