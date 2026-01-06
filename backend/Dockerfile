@@ -30,12 +30,11 @@ RUN groupadd -r appuser && \
 # Switch to non-root user
 USER appuser
 
-# Expose port (Railway will use $PORT)
+# Set Python path to include uv's virtual environment
+ENV PATH="/app/.venv/bin:$PATH"
+
+# Expose port
 EXPOSE 8000
 
-# Health check (comment out for Railway as port is dynamic)
-# HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-#     CMD curl -f http://localhost:8000/health || exit 1
-
-# Run with environment variable PORT support
-CMD uv run uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}
+# Use sh -c to properly expand $PORT environment variable
+CMD ["sh", "-c", "uv run uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]
