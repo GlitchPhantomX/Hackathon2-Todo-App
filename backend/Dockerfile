@@ -21,6 +21,10 @@ RUN uv sync --frozen
 # Copy the rest of the application
 COPY . .
 
+# Copy and make startup script executable
+COPY start.sh .
+RUN chmod +x start.sh
+
 # Create non-root user and setup permissions
 RUN groupadd -r appuser && \
     useradd -r -g appuser -m appuser && \
@@ -36,5 +40,5 @@ ENV PATH="/app/.venv/bin:$PATH"
 # Expose port
 EXPOSE 8000
 
-# Use sh -c to properly expand $PORT environment variable
-CMD ["sh", "-c", "uv run uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# Run startup script
+CMD ["./start.sh"]
