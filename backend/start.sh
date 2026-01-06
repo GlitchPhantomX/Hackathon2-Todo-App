@@ -1,8 +1,11 @@
 #!/bin/bash
 set -e
 
-# Get port from environment or use default
+# Railway provides PORT environment variable
 PORT=${PORT:-8000}
 
-echo "Starting server on port $PORT"
-uv run uvicorn main:app --host 0.0.0.0 --port $PORT
+echo "🚀 Starting server on port $PORT"
+echo "📍 DATABASE_URL available: ${DATABASE_URL:+YES}"
+
+# Start uvicorn with Railway's PORT
+exec uv run uvicorn main:app --host 0.0.0.0 --port $PORT --log-level info --access-log
