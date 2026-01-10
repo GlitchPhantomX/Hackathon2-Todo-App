@@ -14,7 +14,7 @@ class TodoAgent:
         self.session = session
         
         # OpenRouter Configuration
-        self.api_key = os.getenv("OPENROUTER_API_KEY", "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")
+        self.api_key = os.getenv("OPENROUTER_API_KEY", "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")
         self.base_url = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
         self.model = os.getenv("OPENROUTER_MODEL", "mistralai/devstral-2512:free")
         
