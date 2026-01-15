@@ -2,8 +2,9 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useDashboard } from '@/contexts/DashboardContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,7 +15,7 @@ import {
   UserIcon,
   HelpCircleIcon,
   LogOutIcon,
-  ChevronDownIcon,
+  ChevronLeftIcon,
   ChevronRightIcon,
   FolderIcon,
   FlagIcon,
@@ -23,9 +24,9 @@ import {
   CalendarDaysIcon,
   BellIcon,
   LucideIcon,
+  XIcon,
 } from 'lucide-react';
 
-// Define proper TypeScript interfaces with exact optional property types
 interface SubItem {
   title: string;
   href: string;
@@ -46,10 +47,16 @@ interface NavItem {
 interface BottomNavItem {
   title: string;
   icon: LucideIcon;
-  href: string;
+  href?: string;
+  onClick?: () => void;
 }
 
-const NewDashboardSidebar = () => {
+interface NewDashboardSidebarProps {
+  isMobileOpen?: boolean;
+  onMobileClose?: () => void;
+}
+
+const NewDashboardSidebar = ({ isMobileOpen = false, onMobileClose }: NewDashboardSidebarProps) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     tasks: true,
@@ -58,9 +65,10 @@ const NewDashboardSidebar = () => {
   });
 
   const pathname = usePathname();
+  const router = useRouter();
   const { stats } = useDashboard();
+  const { logout } = useAuth();
 
-  // Determine the base path prefix based on current route
   const basePath = pathname === '/new-dashboard' || pathname.startsWith('/new-dashboard/') ? '/new-dashboard' : '';
 
   const toggleSection = (section: string) => {
@@ -70,22 +78,26 @@ const NewDashboardSidebar = () => {
     }));
   };
 
-  // Helper function to construct route with proper base path
   const constructRoute = (path: string) => {
     if (path.startsWith('/')) {
-      // For absolute paths that don't start with base path, add the base path
       if (basePath && !path.startsWith(basePath)) {
         return `${basePath}${path}`;
       }
       return path;
     }
-    // For relative paths, add base path
     return basePath ? `${basePath}/${path}` : path;
   };
 
   const isActive = (path: string) => {
     const fullRoute = constructRoute(path);
     return pathname === fullRoute || pathname.startsWith(fullRoute + '?');
+  };
+
+  const handleLogout = () => {
+    if (logout) {
+      logout();
+    }
+    router.push("/login");
   };
 
   const navItems: NavItem[] = [
@@ -111,13 +123,13 @@ const NewDashboardSidebar = () => {
       title: 'Today',
       icon: CalendarDaysIcon,
       href: '/new-dashboard/today',
-      badge: stats.pending ?? 0, // Assuming this represents tasks due today
+      badge: stats.pending ?? 0,
     },
     {
       title: 'Upcoming',
       icon: CalendarIcon,
       href: '/new-dashboard/upcoming',
-      badge: stats.pending ?? 0, // Assuming this represents upcoming tasks
+      badge: stats.pending ?? 0,
     },
     {
       title: 'Projects',
@@ -142,7 +154,7 @@ const NewDashboardSidebar = () => {
       subItems: [
         { title: 'High', href: '/new-dashboard/priorities/high', iconColor: 'text-red-500' },
         { title: 'Medium', href: '/new-dashboard/priorities/medium', iconColor: 'text-yellow-500' },
-        { title: 'Low', href: '/new-dashboard/priorities/low', iconColor: 'text-yellow-500' },
+        { title: 'Low', href: '/new-dashboard/priorities/low', iconColor: 'text-blue-500' },
       ]
     },
     {
@@ -181,38 +193,64 @@ const NewDashboardSidebar = () => {
     {
       title: 'Logout',
       icon: LogOutIcon,
-      href: '/logout',
+      onClick: handleLogout,
     },
   ];
 
-  return (
-    <aside
-      className={`h-screen sticky top-0 z-30 hidden md:flex flex-col border-r bg-background transition-all duration-300 overflow-hidden ${
-        isExpanded ? 'w-56' : 'w-20'
-      }`}
-    >
-      <div className="flex h-16 items-center border-b px-4">
+  const sidebarContent = (
+    <>
+      {/* Header */}
+      <div 
+        className="flex h-16 items-center border-b px-4 justify-between flex-shrink-0"
+        style={{ borderColor: 'var(--border)' }}
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          {isExpanded && (
+            <div className="flex items-center gap-2 min-w-0">
+              <div 
+                className="h-6 w-6 flex-shrink-0 rounded"
+                style={{
+                  background: 'linear-gradient(to right, var(--purple-500), var(--violet-500))'
+                }}
+              />
+              <span 
+                className="text-lg font-semibold truncate"
+                style={{ color: 'var(--foreground)' }}
+              >
+                TodoMaster
+              </span>
+            </div>
+          )}
+        </div>
+        
+        {/* Toggle button for desktop */}
         <Button
           variant="ghost"
           size="icon"
           onClick={() => setIsExpanded(!isExpanded)}
-          className="h-8 w-8"
+          className="hidden md:flex h-8 w-8 flex-shrink-0"
+          style={{ color: 'var(--muted-foreground)' }}
+          title={isExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
         >
           {isExpanded ? (
-            <ChevronDownIcon className="h-4 w-4" />
+            <ChevronLeftIcon className="h-4 w-4" />
           ) : (
             <ChevronRightIcon className="h-4 w-4" />
           )}
-          <span className="sr-only">Toggle sidebar</span>
         </Button>
-        {isExpanded && (
-          <div className="flex items-center gap-2 ml-2">
-            <div className="h-6 w-6 rounded bg-gradient-to-r from-purple-500 to-indigo-500" />
-            <span className="text-lg font-semibold">TodoMaster</span>
-          </div>
-        )}
+
+        {/* Close button for mobile */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onMobileClose}
+          className="md:hidden h-8 w-8 flex-shrink-0"
+        >
+          <XIcon className="h-5 w-5" />
+        </Button>
       </div>
 
+      {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-4">
         <ul className="space-y-1 px-2">
           {navItems.map((item) => (
@@ -221,20 +259,32 @@ const NewDashboardSidebar = () => {
                 <div>
                   <Button
                     variant={isActive(item.href) ? 'secondary' : 'ghost'}
-                    className={`w-full justify-start ${!isExpanded ? 'justify-center' : ''}`}
+                    className={`w-full ${isExpanded ? 'justify-start' : 'justify-center px-2'}`}
                     onClick={item.onToggle}
+                    style={{
+                      color: isActive(item.href) ? 'var(--primary)' : 'var(--foreground)',
+                      backgroundColor: isActive(item.href) ? 'var(--muted)' : 'transparent'
+                    }}
+                    title={!isExpanded ? item.title : undefined}
                   >
-                    <item.icon className="h-4 w-4" />
+                    <item.icon className="h-4 w-4 flex-shrink-0" />
                     {isExpanded && (
                       <>
-                        <span className="ml-2">{item.title}</span>
-                        {item.badge !== undefined && item.badge !== null && (
-                          <Badge variant="secondary" className="ml-auto">
+                        <span className="ml-2 flex-1 text-left">{item.title}</span>
+                        {item.badge !== undefined && item.badge !== null && item.badge > 0 && (
+                          <Badge 
+                            variant="secondary" 
+                            className="ml-auto"
+                            style={{
+                              backgroundColor: 'var(--primary)',
+                              color: 'white'
+                            }}
+                          >
                             {item.badge}
                           </Badge>
                         )}
                         {item.expanded ? (
-                          <ChevronDownIcon className="ml-auto h-4 w-4" />
+                          <ChevronRightIcon className="ml-auto h-4 w-4 transform rotate-90" />
                         ) : (
                           <ChevronRightIcon className="ml-auto h-4 w-4" />
                         )}
@@ -247,12 +297,16 @@ const NewDashboardSidebar = () => {
                         <li key={subItem.title}>
                           <Button
                             variant={isActive(subItem.href) ? 'secondary' : 'ghost'}
-                            className="w-full justify-start"
+                            className="w-full justify-start text-sm"
                             asChild
+                            style={{
+                              color: isActive(subItem.href) ? 'var(--primary)' : 'var(--foreground)',
+                              backgroundColor: isActive(subItem.href) ? 'var(--muted)' : 'transparent'
+                            }}
                           >
                             <Link href={constructRoute(subItem.href)}>
                               {subItem.iconColor && (
-                                <FlagIcon className={`h-4 w-4 ${subItem.iconColor}`} />
+                                <FlagIcon className={`h-3 w-3 ${subItem.iconColor}`} />
                               )}
                               <span className={subItem.iconColor ? 'ml-2' : ''}>
                                 {subItem.title}
@@ -267,16 +321,28 @@ const NewDashboardSidebar = () => {
               ) : (
                 <Button
                   variant={isActive(item.href) ? 'secondary' : 'ghost'}
-                  className={`w-full justify-start ${!isExpanded ? 'justify-center' : ''}`}
+                  className={`w-full ${isExpanded ? 'justify-start' : 'justify-center px-2'}`}
                   asChild
+                  style={{
+                    color: isActive(item.href) ? 'var(--primary)' : 'var(--foreground)',
+                    backgroundColor: isActive(item.href) ? 'var(--muted)' : 'transparent'
+                  }}
+                  title={!isExpanded ? item.title : undefined}
                 >
                   <Link href={constructRoute(item.href)}>
-                    <item.icon className="h-4 w-4" />
+                    <item.icon className="h-4 w-4 flex-shrink-0" />
                     {isExpanded && (
                       <>
-                        <span className="ml-2">{item.title}</span>
-                        {item.badge !== undefined && item.badge !== null && (
-                          <Badge variant="secondary" className="ml-auto">
+                        <span className="ml-2 flex-1">{item.title}</span>
+                        {item.badge !== undefined && item.badge !== null && item.badge > 0 && (
+                          <Badge 
+                            variant="secondary" 
+                            className="ml-auto"
+                            style={{
+                              backgroundColor: 'var(--primary)',
+                              color: 'white'
+                            }}
+                          >
                             {item.badge}
                           </Badge>
                         )}
@@ -290,25 +356,90 @@ const NewDashboardSidebar = () => {
         </ul>
       </nav>
 
-      <div className="border-t p-2">
+      {/* Bottom Navigation */}
+      <div 
+        className="border-t p-2 flex-shrink-0"
+        style={{ borderColor: 'var(--border)' }}
+      >
         <ul className="space-y-1">
           {bottomNavItems.map((item) => (
             <li key={item.title}>
-              <Button
-                variant={isActive(item.href) ? 'secondary' : 'ghost'}
-                className={`w-full justify-start ${!isExpanded ? 'justify-center' : ''}`}
-                asChild
-              >
-                <Link href={constructRoute(item.href)}>
-                  <item.icon className="h-4 w-4" />
+              {item.onClick ? (
+                <Button
+                  variant={item.title === 'Logout' ? 'ghost' : (isActive(item.href || '') ? 'secondary' : 'ghost')}
+                  className={`w-full ${isExpanded ? 'justify-start' : 'justify-center px-2'} ${
+                    item.title === 'Logout' ? 'text-red-600 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950' : ''
+                  }`}
+                  onClick={item.onClick}
+                  style={{
+                    color: item.title === 'Logout' ? '#dc2626' : (isActive(item.href || '') ? 'var(--primary)' : 'var(--foreground)'),
+                    backgroundColor: isActive(item.href || '') ? 'var(--muted)' : 'transparent'
+                  }}
+                  title={!isExpanded ? item.title : undefined}
+                >
+                  <item.icon className="h-4 w-4 flex-shrink-0" />
                   {isExpanded && <span className="ml-2">{item.title}</span>}
-                </Link>
-              </Button>
+                </Button>
+              ) : (
+                <Button
+                  variant={isActive(item.href || '') ? 'secondary' : 'ghost'}
+                  className={`w-full ${isExpanded ? 'justify-start' : 'justify-center px-2'}`}
+                  asChild
+                  style={{
+                    color: isActive(item.href || '') ? 'var(--primary)' : 'var(--foreground)',
+                    backgroundColor: isActive(item.href || '') ? 'var(--muted)' : 'transparent'
+                  }}
+                  title={!isExpanded ? item.title : undefined}
+                >
+                  <Link href={constructRoute(item.href || '')}>
+                    <item.icon className="h-4 w-4 flex-shrink-0" />
+                    {isExpanded && <span className="ml-2">{item.title}</span>}
+                  </Link>
+                </Button>
+              )}
             </li>
           ))}
         </ul>
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Mobile Overlay */}
+      {isMobileOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={onMobileClose}
+        />
+      )}
+
+      {/* Desktop Sidebar */}
+      <aside
+        className={`hidden lg:flex h-screen sticky top-0 z-30 flex-col border-r transition-all duration-300 ease-in-out ${
+          isExpanded ? 'w-64' : 'w-16'
+        }`}
+        style={{
+          backgroundColor: 'var(--background)',
+          borderColor: 'var(--border)'
+        }}
+      >
+        {sidebarContent}
+      </aside>
+
+      {/* Mobile Sidebar */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 w-72 flex flex-col border-r transform transition-transform duration-300 ease-in-out lg:hidden ${
+          isMobileOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+        style={{
+          backgroundColor: 'var(--background)',
+          borderColor: 'var(--border)'
+        }}
+      >
+        {sidebarContent}
+      </aside>
+    </>
   );
 };
 

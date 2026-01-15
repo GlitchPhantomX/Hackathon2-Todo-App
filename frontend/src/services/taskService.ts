@@ -93,7 +93,12 @@ export const getTask = async (id: string): Promise<Task> => {
 // Create a new task - clears related cache entries
 export const createTask = async (data: TaskCreate): Promise<Task> => {
   try {
-    const response = await api.post('/tasks', data);
+    // Prepare the data, ensuring recurrencePattern is properly handled
+    const taskData: TaskCreate = {
+      ...data,
+    };
+
+    const response = await api.post('/tasks', taskData);
     const newTask = response.data;
 
     // Clear cache since we added a new task
@@ -108,7 +113,12 @@ export const createTask = async (data: TaskCreate): Promise<Task> => {
 // Update a task - clears related cache entries
 export const updateTask = async (id: string, data: TaskUpdate): Promise<Task> => {
   try {
-    const response = await api.put(`/tasks/${id}`, data);
+    // Prepare the data, ensuring recurrencePattern is properly handled
+    const taskData: TaskUpdate = {
+      ...data,
+    };
+
+    const response = await api.put(`/tasks/${id}`, taskData);
     const updatedTask = response.data;
 
     // Update cache with the new data

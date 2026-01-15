@@ -72,33 +72,80 @@ const SettingsPageWithProviders = () => {
         return (
           <div className="space-y-6">
             <div>
-              <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+              <h2 
+                className="text-2xl font-bold mb-2"
+                style={{ color: 'var(--foreground)' }}
+              >
                 General Settings
               </h2>
-              <p className="text-slate-600 dark:text-slate-400">
+              <p style={{ color: 'var(--muted-foreground)' }}>
                 Manage your account and general preferences
               </p>
             </div>
 
             <div className="space-y-4">
-              <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+              <div 
+                className="p-4 rounded-xl"
+                style={{ backgroundColor: 'var(--muted)' }}
+              >
                 <div className="flex items-center gap-4 mb-4">
-                  <div className="h-16 w-16 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                  <div 
+                    className="h-16 w-16 rounded-full flex items-center justify-center"
+                    style={{
+                      background: 'linear-gradient(to bottom right, var(--purple-600), var(--violet-600))'
+                    }}
+                  >
                     <User className="h-8 w-8 text-white" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-slate-900 dark:text-white">John Doe</h3>
-                    <p className="text-sm text-slate-600 dark:text-slate-400">john.doe@example.com</p>
+                    <h3 
+                      className="font-semibold"
+                      style={{ color: 'var(--foreground)' }}
+                    >
+                      John Doe
+                    </h3>
+                    <p 
+                      className="text-sm"
+                      style={{ color: 'var(--muted-foreground)' }}
+                    >
+                      john.doe@example.com
+                    </p>
                   </div>
                 </div>
-                <button className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                <button 
+                  className="w-full px-4 py-2 text-white rounded-lg transition-all"
+                  style={{
+                    background: 'linear-gradient(to right, var(--purple-600), var(--violet-600))'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'scale(1.02)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'scale(1)';
+                  }}
+                >
                   Edit Profile
                 </button>
               </div>
 
-              <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
-                <h3 className="font-medium text-slate-900 dark:text-white mb-2">Language</h3>
-                <select className="w-full px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg">
+              <div 
+                className="p-4 rounded-xl"
+                style={{ backgroundColor: 'var(--muted)' }}
+              >
+                <h3 
+                  className="font-medium mb-2"
+                  style={{ color: 'var(--foreground)' }}
+                >
+                  Language
+                </h3>
+                <select 
+                  className="w-full px-4 py-2 border rounded-lg"
+                  style={{
+                    backgroundColor: 'var(--background)',
+                    borderColor: 'var(--border)',
+                    color: 'var(--foreground)'
+                  }}
+                >
                   <option>English</option>
                   <option>Spanish</option>
                   <option>French</option>
@@ -106,9 +153,24 @@ const SettingsPageWithProviders = () => {
                 </select>
               </div>
 
-              <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
-                <h3 className="font-medium text-slate-900 dark:text-white mb-2">Timezone</h3>
-                <select className="w-full px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg">
+              <div 
+                className="p-4 rounded-xl"
+                style={{ backgroundColor: 'var(--muted)' }}
+              >
+                <h3 
+                  className="font-medium mb-2"
+                  style={{ color: 'var(--foreground)' }}
+                >
+                  Timezone
+                </h3>
+                <select 
+                  className="w-full px-4 py-2 border rounded-lg"
+                  style={{
+                    backgroundColor: 'var(--background)',
+                    borderColor: 'var(--border)',
+                    color: 'var(--foreground)'
+                  }}
+                >
                   <option>UTC-5 (Eastern Time)</option>
                   <option>UTC-6 (Central Time)</option>
                   <option>UTC-7 (Mountain Time)</option>
@@ -123,16 +185,22 @@ const SettingsPageWithProviders = () => {
         return (
           <div className="space-y-6">
             <div>
-              <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+              <h2 
+                className="text-2xl font-bold mb-2"
+                style={{ color: 'var(--foreground)' }}
+              >
                 Appearance
               </h2>
-              <p className="text-slate-600 dark:text-slate-400">
+              <p style={{ color: 'var(--muted-foreground)' }}>
                 Customize how the app looks and feels
               </p>
             </div>
 
             <div className="space-y-3">
-              <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+              <label 
+                className="text-sm font-semibold"
+                style={{ color: 'var(--foreground)' }}
+              >
                 Theme
               </label>
               <div className="grid grid-cols-3 gap-3">
@@ -142,22 +210,32 @@ const SettingsPageWithProviders = () => {
                   { value: 'system', icon: Monitor, label: 'System' },
                 ].map((theme) => {
                   const Icon = theme.icon;
+                  const isActive = settings.theme === theme.value;
                   return (
                     <button
                       key={theme.value}
                       onClick={() => updateSetting('theme', theme.value)}
-                      className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
-                        settings.theme === theme.value
-                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-950'
-                          : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
-                      }`}
+                      className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all"
+                      style={{
+                        borderColor: isActive ? 'var(--primary)' : 'var(--border)',
+                        backgroundColor: isActive ? 'var(--muted)' : 'transparent'
+                      }}
                     >
-                      <Icon className="h-6 w-6 text-slate-700 dark:text-slate-300" />
-                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                      <Icon 
+                        className="h-6 w-6"
+                        style={{ color: 'var(--foreground)' }}
+                      />
+                      <span 
+                        className="text-sm font-medium"
+                        style={{ color: 'var(--foreground)' }}
+                      >
                         {theme.label}
                       </span>
-                      {settings.theme === theme.value && (
-                        <Check className="h-4 w-4 text-blue-500" />
+                      {isActive && (
+                        <Check 
+                          className="h-4 w-4"
+                          style={{ color: 'var(--primary)' }}
+                        />
                       )}
                     </button>
                   );
@@ -166,7 +244,10 @@ const SettingsPageWithProviders = () => {
             </div>
 
             <div className="space-y-3">
-              <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+              <label 
+                className="text-sm font-semibold"
+                style={{ color: 'var(--foreground)' }}
+              >
                 Accent Color
               </label>
               <div className="flex gap-3">
@@ -175,11 +256,12 @@ const SettingsPageWithProviders = () => {
                     key={color}
                     onClick={() => updateSetting('accentColor', color)}
                     className={`h-10 w-10 rounded-full border-2 transition-all ${
-                      settings.accentColor === color
-                        ? 'border-slate-400 scale-110'
-                        : 'border-transparent hover:scale-105'
+                      settings.accentColor === color ? 'scale-110' : 'hover:scale-105'
                     }`}
-                    style={{ backgroundColor: color }}
+                    style={{ 
+                      backgroundColor: color,
+                      borderColor: settings.accentColor === color ? 'var(--foreground)' : 'transparent'
+                    }}
                   >
                     {settings.accentColor === color && (
                       <Check className="h-5 w-5 text-white mx-auto" />
@@ -190,7 +272,10 @@ const SettingsPageWithProviders = () => {
             </div>
 
             <div className="space-y-3">
-              <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+              <label 
+                className="text-sm font-semibold"
+                style={{ color: 'var(--foreground)' }}
+              >
                 Font Size
               </label>
               <div className="grid grid-cols-3 gap-3">
@@ -198,36 +283,50 @@ const SettingsPageWithProviders = () => {
                   { value: 'small', label: 'Small' },
                   { value: 'medium', label: 'Medium' },
                   { value: 'large', label: 'Large' },
-                ].map((size) => (
-                  <button
-                    key={size.value}
-                    onClick={() => updateSetting('fontSize', size.value)}
-                    className={`p-3 rounded-xl border-2 transition-all ${
-                      settings.fontSize === size.value
-                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-950'
-                        : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'
-                    }`}
-                  >
-                    <span className="text-sm font-medium">{size.label}</span>
-                  </button>
-                ))}
+                ].map((size) => {
+                  const isActive = settings.fontSize === size.value;
+                  return (
+                    <button
+                      key={size.value}
+                      onClick={() => updateSetting('fontSize', size.value)}
+                      className="p-3 rounded-xl border-2 transition-all"
+                      style={{
+                        borderColor: isActive ? 'var(--primary)' : 'var(--border)',
+                        backgroundColor: isActive ? 'var(--muted)' : 'transparent',
+                        color: 'var(--foreground)'
+                      }}
+                    >
+                      <span className="text-sm font-medium">{size.label}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+            <div 
+              className="flex items-center justify-between p-4 rounded-xl"
+              style={{ backgroundColor: 'var(--muted)' }}
+            >
               <div>
-                <h3 className="font-medium text-slate-900 dark:text-white">
+                <h3 
+                  className="font-medium"
+                  style={{ color: 'var(--foreground)' }}
+                >
                   Compact Mode
                 </h3>
-                <p className="text-sm text-slate-600 dark:text-slate-400">
+                <p 
+                  className="text-sm"
+                  style={{ color: 'var(--muted-foreground)' }}
+                >
                   Reduce spacing for a denser layout
                 </p>
               </div>
               <button
                 onClick={() => updateSetting('compactMode', !settings.compactMode)}
-                className={`relative w-14 h-7 rounded-full transition-colors ${
-                  settings.compactMode ? 'bg-blue-500' : 'bg-slate-300 dark:bg-slate-700'
-                }`}
+                className="relative w-14 h-7 rounded-full transition-colors"
+                style={{
+                  backgroundColor: settings.compactMode ? 'var(--primary)' : 'var(--border)'
+                }}
               >
                 <div
                   className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full transition-transform ${
@@ -243,10 +342,13 @@ const SettingsPageWithProviders = () => {
         return (
           <div className="space-y-6">
             <div>
-              <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+              <h2 
+                className="text-2xl font-bold mb-2"
+                style={{ color: 'var(--foreground)' }}
+              >
                 Notifications
               </h2>
-              <p className="text-slate-600 dark:text-slate-400">
+              <p style={{ color: 'var(--muted-foreground)' }}>
                 Manage how you receive updates
               </p>
             </div>
@@ -260,25 +362,41 @@ const SettingsPageWithProviders = () => {
               const Icon = item.icon;
               const isEnabled = settings[item.key as keyof typeof settings];
               return (
-                <div key={item.key} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                <div 
+                  key={item.key} 
+                  className="flex items-center justify-between p-4 rounded-xl"
+                  style={{ backgroundColor: 'var(--muted)' }}
+                >
                   <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                    <div 
+                      className="h-10 w-10 rounded-lg flex items-center justify-center"
+                      style={{
+                        background: 'linear-gradient(to bottom right, var(--purple-600), var(--violet-600))'
+                      }}
+                    >
                       <Icon className="h-5 w-5 text-white" />
                     </div>
                     <div>
-                      <h3 className="font-medium text-slate-900 dark:text-white">
+                      <h3 
+                        className="font-medium"
+                        style={{ color: 'var(--foreground)' }}
+                      >
                         {item.label}
                       </h3>
-                      <p className="text-sm text-slate-600 dark:text-slate-400">
+                      <p 
+                        className="text-sm"
+                        style={{ color: 'var(--muted-foreground)' }}
+                      >
                         {item.desc}
                       </p>
                     </div>
                   </div>
                   <button
                     onClick={() => updateSetting(item.key, !isEnabled)}
-                    className={`relative w-14 h-7 rounded-full transition-colors ${
-                      isEnabled ? 'bg-blue-500' : 'bg-slate-300 dark:bg-slate-700'
-                    }`}
+                    className="relative w-14 h-7 rounded-full transition-colors"
+                    style={{
+                      backgroundColor: isEnabled ? 'var(--primary)' : 'var(--border)'
+                    }}
                   >
                     <div
                       className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full transition-transform ${
@@ -296,16 +414,22 @@ const SettingsPageWithProviders = () => {
         return (
           <div className="space-y-6">
             <div>
-              <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+              <h2 
+                className="text-2xl font-bold mb-2"
+                style={{ color: 'var(--foreground)' }}
+              >
                 Task Defaults
               </h2>
-              <p className="text-slate-600 dark:text-slate-400">
+              <p style={{ color: 'var(--muted-foreground)' }}>
                 Set default options for new tasks
               </p>
             </div>
 
             <div className="space-y-3">
-              <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+              <label 
+                className="text-sm font-semibold"
+                style={{ color: 'var(--foreground)' }}
+              >
                 Default Priority
               </label>
               <div className="grid grid-cols-3 gap-3">
@@ -313,62 +437,88 @@ const SettingsPageWithProviders = () => {
                   { value: 'low', label: 'Low' },
                   { value: 'medium', label: 'Medium' },
                   { value: 'high', label: 'High' },
-                ].map((priority) => (
-                  <button
-                    key={priority.value}
-                    onClick={() => updateSetting('defaultPriority', priority.value)}
-                    className={`p-3 rounded-xl border-2 transition-all ${
-                      settings.defaultPriority === priority.value
-                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-950'
-                        : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'
-                    }`}
-                  >
-                    <span className="text-sm font-medium">{priority.label}</span>
-                  </button>
-                ))}
+                ].map((priority) => {
+                  const isActive = settings.defaultPriority === priority.value;
+                  return (
+                    <button
+                      key={priority.value}
+                      onClick={() => updateSetting('defaultPriority', priority.value)}
+                      className="p-3 rounded-xl border-2 transition-all"
+                      style={{
+                        borderColor: isActive ? 'var(--primary)' : 'var(--border)',
+                        backgroundColor: isActive ? 'var(--muted)' : 'transparent',
+                        color: 'var(--foreground)'
+                      }}
+                    >
+                      <span className="text-sm font-medium">{priority.label}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
             <div className="space-y-3">
-              <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+              <label 
+                className="text-sm font-semibold"
+                style={{ color: 'var(--foreground)' }}
+              >
                 Default View
               </label>
               <div className="grid grid-cols-2 gap-3">
-                {['list', 'grid'].map((view) => (
-                  <button
-                    key={view}
-                    onClick={() => updateSetting('defaultView', view)}
-                    className={`p-3 rounded-xl border-2 transition-all capitalize ${
-                      settings.defaultView === view
-                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-950'
-                        : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'
-                    }`}
-                  >
-                    <span className="text-sm font-medium">{view}</span>
-                  </button>
-                ))}
+                {['list', 'grid'].map((view) => {
+                  const isActive = settings.defaultView === view;
+                  return (
+                    <button
+                      key={view}
+                      onClick={() => updateSetting('defaultView', view)}
+                      className="p-3 rounded-xl border-2 transition-all capitalize"
+                      style={{
+                        borderColor: isActive ? 'var(--primary)' : 'var(--border)',
+                        backgroundColor: isActive ? 'var(--muted)' : 'transparent',
+                        color: 'var(--foreground)'
+                      }}
+                    >
+                      <span className="text-sm font-medium">{view}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+            <div 
+              className="flex items-center justify-between p-4 rounded-xl"
+              style={{ backgroundColor: 'var(--muted)' }}
+            >
               <div className="flex items-center gap-4">
-                <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                <div 
+                  className="h-10 w-10 rounded-lg flex items-center justify-center"
+                  style={{
+                    background: 'linear-gradient(to bottom right, var(--purple-600), var(--violet-600))'
+                  }}
+                >
                   <Archive className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <h3 className="font-medium text-slate-900 dark:text-white">
+                  <h3 
+                    className="font-medium"
+                    style={{ color: 'var(--foreground)' }}
+                  >
                     Auto Archive
                   </h3>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                  <p 
+                    className="text-sm"
+                    style={{ color: 'var(--muted-foreground)' }}
+                  >
                     Archive completed tasks after 30 days
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => updateSetting('autoArchive', !settings.autoArchive)}
-                className={`relative w-14 h-7 rounded-full transition-colors ${
-                  settings.autoArchive ? 'bg-blue-500' : 'bg-slate-300 dark:bg-slate-700'
-                }`}
+                className="relative w-14 h-7 rounded-full transition-colors"
+                style={{
+                  backgroundColor: settings.autoArchive ? 'var(--primary)' : 'var(--border)'
+                }}
               >
                 <div
                   className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full transition-transform ${
@@ -384,38 +534,87 @@ const SettingsPageWithProviders = () => {
         return (
           <div className="space-y-6">
             <div>
-              <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+              <h2 
+                className="text-2xl font-bold mb-2"
+                style={{ color: 'var(--foreground)' }}
+              >
                 Security
               </h2>
-              <p className="text-slate-600 dark:text-slate-400">
+              <p style={{ color: 'var(--muted-foreground)' }}>
                 Manage your account security settings
               </p>
             </div>
 
             <div className="space-y-4">
-              <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
-                <h3 className="font-medium text-slate-900 dark:text-white mb-2">Change Password</h3>
-                <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+              <div 
+                className="p-4 rounded-xl"
+                style={{ backgroundColor: 'var(--muted)' }}
+              >
+                <h3 
+                  className="font-medium mb-2"
+                  style={{ color: 'var(--foreground)' }}
+                >
+                  Change Password
+                </h3>
+                <p 
+                  className="text-sm mb-4"
+                  style={{ color: 'var(--muted-foreground)' }}
+                >
                   Update your password regularly to keep your account secure
                 </p>
-                <button className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                <button 
+                  className="px-4 py-2 text-white rounded-lg transition-all"
+                  style={{
+                    background: 'linear-gradient(to right, var(--purple-600), var(--violet-600))'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'scale(1.02)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'scale(1)';
+                  }}
+                >
                   Change Password
                 </button>
               </div>
 
-              <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
-                <h3 className="font-medium text-slate-900 dark:text-white mb-2">Two-Factor Authentication</h3>
-                <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+              <div 
+                className="p-4 rounded-xl"
+                style={{ backgroundColor: 'var(--muted)' }}
+              >
+                <h3 
+                  className="font-medium mb-2"
+                  style={{ color: 'var(--foreground)' }}
+                >
+                  Two-Factor Authentication
+                </h3>
+                <p 
+                  className="text-sm mb-4"
+                  style={{ color: 'var(--muted-foreground)' }}
+                >
                   Add an extra layer of security to your account
                 </p>
-                <button className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
+                <button 
+                  className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                >
                   Enable 2FA
                 </button>
               </div>
 
-              <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
-                <h3 className="font-medium text-slate-900 dark:text-white mb-2">Active Sessions</h3>
-                <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+              <div 
+                className="p-4 rounded-xl"
+                style={{ backgroundColor: 'var(--muted)' }}
+              >
+                <h3 
+                  className="font-medium mb-2"
+                  style={{ color: 'var(--foreground)' }}
+                >
+                  Active Sessions
+                </h3>
+                <p 
+                  className="text-sm mb-4"
+                  style={{ color: 'var(--muted-foreground)' }}
+                >
                   Manage devices where you&#39;re currently logged in
                 </p>
                 <button className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors">
@@ -430,33 +629,51 @@ const SettingsPageWithProviders = () => {
         return (
           <div className="space-y-6">
             <div>
-              <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+              <h2 
+                className="text-2xl font-bold mb-2"
+                style={{ color: 'var(--foreground)' }}
+              >
                 Privacy & Data
               </h2>
-              <p className="text-slate-600 dark:text-slate-400">
+              <p style={{ color: 'var(--muted-foreground)' }}>
                 Control your data and privacy settings
               </p>
             </div>
 
-            <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+            <div 
+              className="flex items-center justify-between p-4 rounded-xl"
+              style={{ backgroundColor: 'var(--muted)' }}
+            >
               <div className="flex items-center gap-4">
-                <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                <div 
+                  className="h-10 w-10 rounded-lg flex items-center justify-center"
+                  style={{
+                    background: 'linear-gradient(to bottom right, var(--purple-600), var(--violet-600))'
+                  }}
+                >
                   <Eye className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <h3 className="font-medium text-slate-900 dark:text-white">
+                  <h3 
+                    className="font-medium"
+                    style={{ color: 'var(--foreground)' }}
+                  >
                     Activity Tracking
                   </h3>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                  <p 
+                    className="text-sm"
+                    style={{ color: 'var(--muted-foreground)' }}
+                  >
                     Track your usage patterns for analytics
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => updateSetting('activityTracking', !settings.activityTracking)}
-                className={`relative w-14 h-7 rounded-full transition-colors ${
-                  settings.activityTracking ? 'bg-blue-500' : 'bg-slate-300 dark:bg-slate-700'
-                }`}
+                className="relative w-14 h-7 rounded-full transition-colors"
+                style={{
+                  backgroundColor: settings.activityTracking ? 'var(--primary)' : 'var(--border)'
+                }}
               >
                 <div
                   className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full transition-transform ${
@@ -466,25 +683,40 @@ const SettingsPageWithProviders = () => {
               </button>
             </div>
 
-            <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+            <div 
+              className="flex items-center justify-between p-4 rounded-xl"
+              style={{ backgroundColor: 'var(--muted)' }}
+            >
               <div className="flex items-center gap-4">
-                <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                <div 
+                  className="h-10 w-10 rounded-lg flex items-center justify-center"
+                  style={{
+                    background: 'linear-gradient(to bottom right, var(--purple-600), var(--violet-600))'
+                  }}
+                >
                   <Database className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <h3 className="font-medium text-slate-900 dark:text-white">
+                  <h3 
+                    className="font-medium"
+                    style={{ color: 'var(--foreground)' }}
+                  >
                     Data Sharing
                   </h3>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                  <p 
+                    className="text-sm"
+                    style={{ color: 'var(--muted-foreground)' }}
+                  >
                     Share anonymized usage data
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => updateSetting('dataSharing', !settings.dataSharing)}
-                className={`relative w-14 h-7 rounded-full transition-colors ${
-                  settings.dataSharing ? 'bg-blue-500' : 'bg-slate-300 dark:bg-slate-700'
-                }`}
+                className="relative w-14 h-7 rounded-full transition-colors"
+                style={{
+                  backgroundColor: settings.dataSharing ? 'var(--primary)' : 'var(--border)'
+                }}
               >
                 <div
                   className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full transition-transform ${
@@ -494,33 +726,64 @@ const SettingsPageWithProviders = () => {
               </button>
             </div>
 
-            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+            <div 
+              className="p-4 rounded-xl"
+              style={{ backgroundColor: 'var(--muted)' }}
+            >
               <div className="flex items-center gap-4">
-                <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                <div 
+                  className="h-10 w-10 rounded-lg flex items-center justify-center"
+                  style={{
+                    background: 'linear-gradient(to bottom right, var(--purple-600), var(--violet-600))'
+                  }}
+                >
                   <Download className="h-5 w-5 text-white" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-medium text-slate-900 dark:text-white">
+                  <h3 
+                    className="font-medium"
+                    style={{ color: 'var(--foreground)' }}
+                  >
                     Export Data
                   </h3>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                  <p 
+                    className="text-sm"
+                    style={{ color: 'var(--muted-foreground)' }}
+                  >
                     Download all your personal data
                   </p>
                 </div>
-                <button className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                <button 
+                  className="px-4 py-2 text-white rounded-lg transition-all"
+                  style={{
+                    background: 'linear-gradient(to right, var(--purple-600), var(--violet-600))'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'scale(1.02)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'scale(1)';
+                  }}
+                >
                   Export
                 </button>
               </div>
             </div>
 
-            <div className="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl">
+            <div 
+              className="p-4 border rounded-xl"
+              style={{
+                backgroundColor: '#fef3c7',
+                borderColor: '#fbbf24'
+              }}
+            >
               <div className="flex items-start gap-3">
-                <Shield className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5" />
+                <Shield className="h-5 w-5 text-amber-600 mt-0.5" />
                 <div>
-                  <h3 className="font-medium text-amber-900 dark:text-amber-200 mb-1">
+                  <h3 className="font-medium text-amber-900 mb-1">
                     Data Protection
                   </h3>
-                  <p className="text-sm text-amber-700 dark:text-amber-300">
+                  <p className="text-sm text-amber-700">
                     Your data is encrypted and stored securely. We never share your information with third parties.
                   </p>
                 </div>
@@ -533,10 +796,13 @@ const SettingsPageWithProviders = () => {
         return (
           <div className="space-y-6">
             <div>
-              <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+              <h2 
+                className="text-2xl font-bold mb-2"
+                style={{ color: 'var(--foreground)' }}
+              >
                 Integrations
               </h2>
-              <p className="text-slate-600 dark:text-slate-400">
+              <p style={{ color: 'var(--muted-foreground)' }}>
                 Connect with your favorite apps and services
               </p>
             </div>
@@ -549,27 +815,47 @@ const SettingsPageWithProviders = () => {
               const Icon = item.icon;
               const isConnected = settings[item.key as keyof typeof settings];
               return (
-                <div key={item.key} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                <div 
+                  key={item.key} 
+                  className="flex items-center justify-between p-4 rounded-xl"
+                  style={{ backgroundColor: 'var(--muted)' }}
+                >
                   <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                    <div 
+                      className="h-10 w-10 rounded-lg flex items-center justify-center"
+                      style={{
+                        background: 'linear-gradient(to bottom right, var(--purple-600), var(--violet-600))'
+                      }}
+                    >
                       <Icon className="h-5 w-5 text-white" />
                     </div>
                     <div>
-                      <h3 className="font-medium text-slate-900 dark:text-white">
+                      <h3 
+                        className="font-medium"
+                        style={{ color: 'var(--foreground)' }}
+                      >
                         {item.label}
                       </h3>
-                      <p className="text-sm text-slate-600 dark:text-slate-400">
+                      <p 
+                        className="text-sm"
+                        style={{ color: 'var(--muted-foreground)' }}
+                      >
                         {item.desc}
                       </p>
                     </div>
                   </div>
                   <button
                     onClick={() => updateSetting(item.key, !isConnected)}
-                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                      isConnected
-                        ? 'bg-red-500 text-white hover:bg-red-600'
-                        : 'bg-blue-500 text-white hover:bg-blue-600'
-                    }`}
+                    className="px-4 py-2 rounded-lg font-medium transition-colors text-white"
+                    style={{
+                      backgroundColor: isConnected ? '#ef4444' : 'var(--primary)'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = isConnected ? '#dc2626' : 'var(--purple-700)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = isConnected ? '#ef4444' : 'var(--primary)';
+                    }}
                   >
                     {isConnected ? 'Disconnect' : 'Connect'}
                   </button>
@@ -585,18 +871,29 @@ const SettingsPageWithProviders = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 p-6">
+    <div 
+      className="min-h-screen p-6"
+      style={{ backgroundColor: 'var(--background)' }}
+    >
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <div className="flex items-center gap-4 mb-3">
-            <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
+            <div 
+              className="h-14 w-14 rounded-2xl flex items-center justify-center shadow-lg"
+              style={{
+                background: 'linear-gradient(to bottom right, var(--purple-600), var(--violet-600))'
+              }}
+            >
               <Settings className="h-7 w-7 text-white" />
             </div>
             <div>
-              <h1 className="text-4xl font-bold text-slate-900 dark:text-white">
+              <h1 
+                className="text-4xl font-bold"
+                style={{ color: 'var(--foreground)' }}
+              >
                 Settings
               </h1>
-              <p className="text-slate-600 dark:text-slate-400">
+              <p style={{ color: 'var(--muted-foreground)' }}>
                 Customize your dashboard experience and preferences
               </p>
             </div>
@@ -605,22 +902,39 @@ const SettingsPageWithProviders = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <div className="lg:col-span-1">
-            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-2xl border border-slate-200 dark:border-slate-800 p-2 shadow-xl">
+            <div 
+              className="backdrop-blur-xl rounded-2xl border p-2 shadow-xl"
+              style={{
+                backgroundColor: 'var(--card)',
+                borderColor: 'var(--border)'
+              }}
+            >
               {tabs.map((tab) => {
                 const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
                 return (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 mb-1 ${
-                      activeTab === tab.id
-                        ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/30'
-                        : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-                    }`}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 mb-1"
+                    style={{
+                      backgroundColor: isActive ? 'var(--primary)' : 'transparent',
+                      color: isActive ? 'white' : 'var(--foreground)'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isActive) {
+                        e.currentTarget.style.backgroundColor = 'var(--muted)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isActive) {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                      }
+                    }}
                   >
                     <Icon className="h-5 w-5" />
                     <span className="font-medium">{tab.label}</span>
-                    {activeTab === tab.id && (
+                    {isActive && (
                       <ChevronRight className="h-4 w-4 ml-auto" />
                     )}
                   </button>
@@ -630,7 +944,13 @@ const SettingsPageWithProviders = () => {
           </div>
 
           <div className="lg:col-span-3">
-            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-2xl border border-slate-200 dark:border-slate-800 p-8 shadow-xl">
+            <div 
+              className="backdrop-blur-xl rounded-2xl border p-8 shadow-xl"
+              style={{
+                backgroundColor: 'var(--card)',
+                borderColor: 'var(--border)'
+              }}
+            >
               {renderContent()}
             </div>
           </div>

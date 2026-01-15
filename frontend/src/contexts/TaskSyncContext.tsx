@@ -202,7 +202,10 @@ export const TaskSyncProvider: React.FC<TaskSyncProviderProps> = ({ children }) 
         status: task.status || 'pending',
         due_date: task.due_date || null,
         project_id: task.projectId ? parseInt(task.projectId) : null,
-        tag_ids: []
+        tag_ids: [],
+        // Map recurrence pattern to backend fields
+        is_recurring: task.recurrencePattern && task.recurrencePattern !== 'none',
+        frequency: task.recurrencePattern && task.recurrencePattern !== 'none' ? task.recurrencePattern : null
       };
 
       console.log('📤 Sending to backend:', taskData);
@@ -217,6 +220,7 @@ export const TaskSyncProvider: React.FC<TaskSyncProviderProps> = ({ children }) 
       });
 
       console.log('✅ Task created successfully:', newTask);
+      console.log('📡 API Response:', newTask);
 
       // Replace the temporary task with the actual one from backend
       dispatch({ type: 'DELETE_TASK', payload: tempId });

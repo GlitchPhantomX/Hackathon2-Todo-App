@@ -29,6 +29,18 @@ class Settings(BaseSettings):
     # Application Configuration
     APP_ENV: str = "development"
 
+    # ✅ NEW: Multi-language Support Configuration
+    SUPPORTED_LANGUAGES: List[str] = ["en", "ur"]  # English, Urdu
+    DEFAULT_LANGUAGE: str = "en"
+    
+    # ✅ NEW: Translation Configuration (Optional - for Google Translate API)
+    GOOGLE_TRANSLATE_API_KEY: str = ""  # Optional: Add if using Google Translate
+    USE_TRANSLATION_API: bool = False  # Set to True if you have API key
+    
+    # ✅ NEW: Voice Configuration
+    ENABLE_VOICE_COMMANDS: bool = True
+    VOICE_LANGUAGES: List[str] = ["en-US", "ur-PK"]  # English (US), Urdu (Pakistan)
+
     # Computed Properties
     @property
     def cors_origins(self) -> List[str]:

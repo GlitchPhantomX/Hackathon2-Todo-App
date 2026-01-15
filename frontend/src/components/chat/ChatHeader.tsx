@@ -33,14 +33,30 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
   if (!conversation) return null;
 
   return (
-    <div className="border-b border-border p-4 flex items-center justify-between">
+    <div 
+      className="border-b p-4 flex items-center justify-between"
+      style={{
+        borderColor: 'var(--border)',
+        backgroundColor: 'var(--card)'
+      }}
+    >
       {isEditing ? (
         <div className="flex items-center gap-2 flex-1">
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="flex-1 bg-transparent border-b border-gray-400 focus:outline-none focus:border-blue-500 px-2 py-1"
+            className="flex-1 bg-transparent border-b focus:outline-none px-2 py-1 transition-colors"
+            style={{
+              borderColor: 'var(--border)',
+              color: 'var(--foreground)'
+            }}
+            onFocus={(e) => {
+              e.currentTarget.style.borderColor = 'var(--primary)';
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.borderColor = 'var(--border)';
+            }}
             autoFocus
             onKeyDown={(e) => {
               if (e.key === 'Enter') handleSave();
@@ -49,13 +65,27 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
           />
           <button
             onClick={handleSave}
-            className="text-green-600 hover:text-green-800"
+            className="px-3 py-1 rounded-lg transition-colors"
+            style={{ color: '#10b981' }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#10b98120';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
           >
             Save
           </button>
           <button
             onClick={handleCancel}
-            className="text-gray-500 hover:text-gray-700"
+            className="px-3 py-1 rounded-lg transition-colors"
+            style={{ color: 'var(--muted-foreground)' }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--muted)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
           >
             Cancel
           </button>
@@ -64,6 +94,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
         <h2
           className="font-semibold text-lg truncate cursor-pointer"
           onClick={() => setIsEditing(true)}
+          style={{ color: 'var(--foreground)' }}
         >
           {conversation.title}
         </h2>
@@ -71,15 +102,31 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
       <div className="flex items-center gap-2">
         <button
           onClick={onArchive}
-          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
+          className="p-2 rounded-full transition-colors"
           title="Archive conversation"
+          style={{ color: 'var(--foreground)' }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = 'var(--muted)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'transparent';
+          }}
         >
           <Archive className="w-4 h-4" />
         </button>
         <button
           onClick={onDelete}
-          className="p-2 hover:bg-red-100 dark:hover:bg-red-900 hover:text-red-600 rounded-full"
+          className="p-2 rounded-full transition-colors"
           title="Delete conversation"
+          style={{ color: 'var(--foreground)' }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = '#ef444420';
+            e.currentTarget.style.color = '#ef4444';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'transparent';
+            e.currentTarget.style.color = 'var(--foreground)';
+          }}
         >
           <Trash2 className="w-4 h-4" />
         </button>

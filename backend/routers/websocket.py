@@ -238,10 +238,106 @@ async def websocket_endpoint(websocket: WebSocket):
         print(f"WebSocket disconnected for user {user.id}")
 
 
-@router.websocket("/notifications")
-async def websocket_notifications_endpoint(websocket: WebSocket):
+@router.websocket("/notifications/{user_id}")
+async def websocket_notifications_endpoint(websocket: WebSocket, user_id: str):
     """
-    WebSocket endpoint for real-time notifications.
+    WebSocket endpoint for real-time notifications for a specific user.
+    Authenticates the user with JWT token passed in query parameters and allows real-time communication about notifications.
+    """
+    # Authenticate the WebSocket connection using JWT token from query parameters
+    user = await websocket_auth.authenticate_websocket(websocket)
+
+    if not user:
+        # Authentication failed
+        await websocket.close(code=1008, reason="Authentication failed")
+        return
+
+    # Verify that the authenticated user matches the requested user_id (or has admin privileges)
+    if str(user.id) != user_id:
+        await websocket.close(code=1008, reason="Access denied - user ID mismatch")
+        return
+
+    # Run the authentication middleware
+    if not await websocket_auth_middleware(websocket, user):
+        await websocket.close(code=1008, reason="Access denied")
+        return
+
+    # Add to notification connections
+    await manager.connect_notification(websocket, user)
+
+    try:
+        while True:
+            # Receive message from client
+            data = await websocket.receive_text()
+
+            # Parse the received data
+            try:
+                message_data = json.loads(data)
+                message_type = message_data.get("type")
+
+                if message_type == "ping":
+                    # Respond to ping messages
+                    await manager.send_personal_message(
+                        json.dumps({
+                            "type": "pong",
+                            "timestamp": datetime.utcnow().isoformat()
+                        }),
+                        websocket
+                    )
+                elif message_type == "get_unread_count":
+                    # Return count of unread notifications
+                    from db import get_session
+                    with next(get_session()) as session:
+                        unread_count = session.query(Notification).filter(
+                            Notification.user_id == user.id,
+                            Notification.read == False
+                        ).count()
+                        await manager.send_personal_message(
+                            json.dumps({
+                                "type": "unread_count",
+                                "count": unread_count
+                            }),
+                            websocket
+                        )
+                elif message_type == "subscribe_to_notifications":
+                    # Confirm subscription to notifications
+                    await manager.send_personal_message(
+                        json.dumps({
+                            "type": "subscribed",
+                            "message": "Subscribed to notification updates"
+                        }),
+                        websocket
+                    )
+                else:
+                    # Echo back the message with an acknowledgment
+                    await manager.send_personal_message(
+                        json.dumps({
+                            "type": "ack",
+                            "original_message": message_data,
+                            "timestamp": datetime.utcnow().isoformat()
+                        }),
+                        websocket
+                    )
+
+            except json.JSONDecodeError:
+                await manager.send_personal_message(
+                    json.dumps({
+                        "type": "error",
+                        "message": "Invalid JSON format"
+                    }),
+                    websocket
+                )
+
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+        # Log the disconnection if needed
+        print(f"WebSocket notification disconnected for user {user.id}")
+
+
+@router.websocket("/notifications")
+async def websocket_notifications_legacy_endpoint(websocket: WebSocket):
+    """
+    Legacy WebSocket endpoint for real-time notifications.
     Authenticates the user with JWT token passed in query parameters and allows real-time communication about notifications.
     """
     # Authenticate the WebSocket connection using JWT token from query parameters

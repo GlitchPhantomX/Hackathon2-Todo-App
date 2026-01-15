@@ -36,7 +36,7 @@ export interface Tag {
 export interface Notification {
   id: string;
   userId: string;
-  type: string;
+  type: string | 'reminder' | 'task_created' | 'task_completed' | 'task_updated' | 'task_deleted' | 'overdue';
   title: string;
   message: string;
   taskId?: string;

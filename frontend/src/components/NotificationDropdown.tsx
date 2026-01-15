@@ -140,6 +140,7 @@ const NotificationDropdown = () => {
           </div>
         );
       case 'reminder':
+      case 'reminder-sent':
         return (
           <div className="p-2 rounded-full bg-purple-100 dark:bg-purple-900/30">
             <Bell className={`${iconClasses} text-purple-600 dark:text-purple-400`} />

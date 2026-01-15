@@ -1,5 +1,9 @@
+"""
+Enhanced Chat Router with Multi-language and Voice Support
+"""
+
 from fastapi import APIRouter, Depends, HTTPException, status, Request
-from typing import List
+from typing import List, Optional
 from datetime import datetime
 import re
 
@@ -13,6 +17,7 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 import os
+from pydantic import BaseModel
 
 # Initialize rate limiter
 limiter = Limiter(key_func=get_remote_address)
@@ -26,28 +31,33 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
+
+# ✅ NEW: Enhanced Message Schema with language and voice support
+class EnhancedMessageCreate(BaseModel):
+    """Enhanced message creation with language and voice support"""
+    conversation_id: int
+    content: str
+    metadata_json: Optional[str] = None
+    language: Optional[str] = "auto"  # 'en', 'ur', or 'auto'
+    voice_input: Optional[bool] = False  # Flag for voice commands
+
+
 async def get_current_user_dev_optional(request: Request, session: Session = Depends(get_session)):
-    """
-    Get user ID from request state (for dev mode) or from auth (for prod)
-    ✅ ENHANCED: Better logging and token validation
-    """
+    """Get user ID from request state (for dev mode) or from auth (for prod)"""
     print("=" * 60)
     print("🔐 AUTH DEBUG: get_current_user_dev_optional called")
     print(f"📍 DEV_MODE: {DEV_MODE}")
     
-    # First try to get user from request state (dev mode)
     if hasattr(request.state, 'user') and DEV_MODE:
         print(f"✅ Found user in request.state: {request.state.user}")
         return request.state.user
 
-    # Try to extract token from headers
     auth_header = request.headers.get("Authorization", "")
     print(f"🔑 Authorization header: {auth_header[:20]}..." if auth_header else "❌ No Authorization header")
     
     if auth_header.startswith("Bearer "):
         token = auth_header.replace("Bearer ", "")
         
-        # Decode token to get user_id
         try:
             from jose import jwt
             from config import settings
@@ -61,11 +71,9 @@ async def get_current_user_dev_optional(request: Request, session: Session = Dep
             print(f"🔓 Token decoded successfully!")
             print(f"📦 Payload: {payload}")
             
-            # Try both 'sub' and 'user_id' keys
             user_id = payload.get("sub") or payload.get("user_id")
             
             if user_id:
-                # Get user from database
                 user = session.get(User, int(user_id))
                 
                 if user:
@@ -85,14 +93,11 @@ async def get_current_user_dev_optional(request: Request, session: Session = Dep
             import traceback
             traceback.print_exc()
 
-    # ❌ If we reach here, authentication failed
     print("⚠️ Authentication failed, using fallback...")
     
     if DEV_MODE:
-        # In dev mode, try to find user by email
         print("🔍 Checking for known users in database...")
         
-        # Try Areesha's account
         areesha_user = session.exec(
             select(User).where(User.email == "areesha99@gmail.com")
         ).first()
@@ -104,8 +109,6 @@ async def get_current_user_dev_optional(request: Request, session: Session = Dep
             print("=" * 60)
             return {"user_id": areesha_user.id, "email": areesha_user.email, "name": areesha_user.name}
         
-        # If Areesha not found, try demo user (LAST RESORT)
-        print("⚠️ Areesha not found, trying demo user...")
         demo_user = session.exec(
             select(User).where(User.email == "demo@example.com")
         ).first()
@@ -117,12 +120,10 @@ async def get_current_user_dev_optional(request: Request, session: Session = Dep
             print("=" * 60)
             return {"user_id": demo_user.id, "email": demo_user.email, "name": demo_user.name}
         
-        # Absolute last resort
         print("❌ CRITICAL: No users found! Using user_id=1")
         print("=" * 60)
         return {"user_id": 1, "email": "unknown@example.com", "name": "Unknown"}
     else:
-        # In production, raise exception if no auth
         print("❌ PRODUCTION: Authentication required!")
         print("=" * 60)
         raise HTTPException(
@@ -137,17 +138,25 @@ async def send_message(
     request: Request,
     message_create: MessageCreate,
     session: Session = Depends(get_session),
-    current_user: dict = Depends(get_current_user_dev_optional)
+    current_user: dict = Depends(get_current_user_dev_optional),
+    language: Optional[str] = "auto",  # ✅ NEW: Language parameter
+    voice_input: Optional[bool] = False  # ✅ NEW: Voice input flag
 ):
     """
-    Send message to AI and get response
-    ✅ ENHANCED: Better logging for debugging
+    Send message to AI with multi-language and voice support
+    
+    ✅ NEW FEATURES:
+    - Language detection and translation
+    - Voice command support
+    - Urdu language support
     """
     print("\n" + "=" * 60)
     print("💬 SEND MESSAGE ENDPOINT CALLED")
     print(f"👤 Current User: {current_user}")
     print(f"📝 Message: {message_create.content[:50]}...")
     print(f"🔢 Conversation ID: {message_create.conversation_id}")
+    print(f"🌍 Language: {language}")
+    print(f"🎤 Voice Input: {voice_input}")
     print("=" * 60)
     
     # Verify user owns the conversation
@@ -158,19 +167,18 @@ async def send_message(
     
     if conversation.user_id != current_user["user_id"]:
         print(f"❌ User {current_user['user_id']} doesn't own conversation {message_create.conversation_id}")
-        print(f"   Conversation belongs to user: {conversation.user_id}")
         raise HTTPException(status_code=403, detail="Access denied")
     
     print(f"✅ Conversation verified for user {current_user['user_id']}")
 
-    # Validate content length (max 4000 chars)
+    # Validate content length
     if len(message_create.content) > 4000:
         raise HTTPException(
             status_code=400, 
             detail="Message content exceeds maximum length of 4000 characters"
         )
 
-    # Sanitize input to prevent XSS
+    # Sanitize input
     content = message_create.content
     sanitized_content = re.sub(
         r'<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>', 
@@ -185,7 +193,7 @@ async def send_message(
         flags=re.IGNORECASE
     )
 
-    # Save user message to database
+    # Save user message
     user_message = ChatMessage(
         conversation_id=message_create.conversation_id,
         role="user",
@@ -197,11 +205,11 @@ async def send_message(
     session.refresh(user_message)
     print(f"💾 User message saved (ID: {user_message.id})")
 
-    # ✅ PROCESS WITH AI AGENT
+    # ✅ PROCESS WITH ENHANCED AI AGENT
     try:
         from agents.todo_agent import TodoAgent
         
-        # Get conversation history (last 20 messages)
+        # Get conversation history
         history_messages = session.exec(
             select(ChatMessage)
             .where(ChatMessage.conversation_id == message_create.conversation_id)
@@ -209,46 +217,51 @@ async def send_message(
             .limit(20)
         ).all()
         
-        # Format conversation history for AI
         conversation_history = [
             {"role": msg.role, "content": msg.content}
-            for msg in history_messages[:-1]  # Exclude the message we just added
+            for msg in history_messages[:-1]
         ]
         
-        # ✅ Initialize AI agent with CORRECT user_id
+        # ✅ Initialize AI agent with language support
         print("\n" + "🤖" * 30)
-        print(f"🔍 INITIALIZING TODO AGENT")
+        print(f"🔍 INITIALIZING ENHANCED TODO AGENT")
         print(f"   👤 User ID: {current_user['user_id']}")
-        print(f"   📧 Email: {current_user['email']}")
-        print(f"   📛 Name: {current_user.get('name', 'N/A')}")
+        print(f"   🌍 Language: {language}")
+        print(f"   🎤 Voice Input: {voice_input}")
         print("🤖" * 30 + "\n")
         
-        agent = TodoAgent(user_id=current_user["user_id"], session=session)
-        
-        # Process message with AI
-        ai_result = await agent.process_message(
-            message=sanitized_content,
-            conversation_history=conversation_history
+        agent = TodoAgent(
+            user_id=current_user["user_id"], 
+            session=session,
+            language=language  # ✅ Pass language preference
         )
         
-        # Extract AI response
+        # ✅ Process message with language and voice support
+        ai_result = await agent.process_message(
+            message=sanitized_content,
+            conversation_history=conversation_history,
+            voice_input=voice_input  # ✅ Pass voice input flag
+        )
+        
         ai_content = ai_result.get("response", "I'm sorry, I couldn't process that request.")
         ai_metadata = ai_result.get("metadata", {})
+        detected_language = ai_result.get("language", "en")
         
         print(f"✅ AI response generated ({len(ai_content)} chars)")
+        print(f"🌍 Response language: {detected_language}")
         
     except Exception as e:
-        # Fallback if AI agent fails
         print(f"\n❌ AI AGENT ERROR!")
         print(f"   Error: {str(e)}")
         import traceback
         traceback.print_exc()
         print("\n")
         
-        ai_content = f"I encountered an error processing your request. However, I'm here to help you manage your tasks! Try asking me to show your tasks or create a new one."
+        ai_content = "I encountered an error processing your request. Please try again."
         ai_metadata = {"error": str(e)}
+        detected_language = "en"
 
-    # Save AI response to database
+    # Save AI response
     ai_message = ChatMessage(
         conversation_id=message_create.conversation_id,
         role="assistant",
@@ -257,7 +270,6 @@ async def send_message(
     )
     session.add(ai_message)
     
-    # Update conversation timestamp
     conversation.updated_at = datetime.utcnow()
     session.add(conversation)
     
@@ -267,14 +279,16 @@ async def send_message(
     print(f"💾 AI message saved (ID: {ai_message.id})")
     print("=" * 60 + "\n")
 
-    # Return AI response
+    # ✅ Return response with language metadata
     return {
         "id": ai_message.id,
         "conversation_id": ai_message.conversation_id,
         "role": ai_message.role,
         "content": ai_message.content,
         "timestamp": ai_message.timestamp.isoformat(),
-        "metadata_json": ai_message.metadata_json
+        "metadata_json": ai_message.metadata_json,
+        "language": detected_language,  # ✅ Include detected language
+        "voice_input": voice_input  # ✅ Include voice input flag
     }
 
 
@@ -284,12 +298,9 @@ async def get_conversations(
     session: Session = Depends(get_session),
     current_user: dict = Depends(get_current_user_dev_optional)
 ):
-    """
-    List user conversations
-    """
+    """List user conversations"""
     print(f"📋 Fetching conversations for user {current_user['user_id']}")
     
-    # Filter by user_id and order by updated_at DESC
     conversations = session.exec(
         select(Conversation)
         .where(Conversation.user_id == current_user["user_id"])
@@ -311,9 +322,7 @@ async def create_conversation(
     session: Session = Depends(get_session),
     current_user: dict = Depends(get_current_user_dev_optional)
 ):
-    """
-    Create new conversation for user
-    """
+    """Create new conversation"""
     print(f"➕ Creating new conversation for user {current_user['user_id']}")
     
     conversation = Conversation(
@@ -338,18 +347,14 @@ async def get_conversation_messages(
     session: Session = Depends(get_session),
     current_user: dict = Depends(get_current_user_dev_optional)
 ):
-    """
-    Get messages for a specific conversation
-    """
+    """Get messages for a specific conversation"""
     print(f"📨 Fetching messages for conversation {conversation_id}")
     
-    # Verify user owns the conversation
     conversation = session.get(Conversation, conversation_id)
     if not conversation or conversation.user_id != current_user["user_id"]:
         print(f"❌ Conversation {conversation_id} not found or access denied")
         raise HTTPException(status_code=404, detail="Conversation not found")
 
-    # Fetch messages ordered by timestamp ASC
     messages = session.exec(
         select(ChatMessage)
         .where(ChatMessage.conversation_id == conversation_id)
@@ -369,9 +374,7 @@ async def update_conversation(
     session: Session = Depends(get_session),
     current_user: dict = Depends(get_current_user_dev_optional)
 ):
-    """
-    Update conversation (title and/or is_archived)
-    """
+    """Update conversation"""
     print(f"✏️ Updating conversation {conversation_id}")
     
     conversation = session.get(Conversation, conversation_id)
@@ -379,7 +382,6 @@ async def update_conversation(
         print(f"❌ Conversation {conversation_id} not found or access denied")
         raise HTTPException(status_code=404, detail="Conversation not found")
 
-    # Update fields if provided
     if conversation_update.title is not None:
         conversation.title = conversation_update.title
         print(f"   Updated title: {conversation_update.title}")
@@ -403,9 +405,7 @@ async def delete_conversation(
     session: Session = Depends(get_session),
     current_user: dict = Depends(get_current_user_dev_optional)
 ):
-    """
-    Delete conversation
-    """
+    """Delete conversation"""
     print(f"🗑️ Deleting conversation {conversation_id}")
     
     conversation = session.get(Conversation, conversation_id)
@@ -419,3 +419,36 @@ async def delete_conversation(
     print(f"✅ Conversation {conversation_id} deleted")
 
     return {"message": "Conversation deleted successfully"}
+
+
+# ✅ NEW: Language detection endpoint
+@router.post("/detect-language")
+async def detect_language_endpoint(
+    request: Request,
+    text: str,
+    session: Session = Depends(get_session),
+    current_user: dict = Depends(get_current_user_dev_optional)
+):
+    """
+    Detect language of input text
+    
+    Returns: {'language': 'en' or 'ur'}
+    """
+    try:
+        from utils.translation_service import TranslationService
+        
+        detected_lang = TranslationService.detect_language(text)
+        
+        return {
+            "text": text,
+            "language": detected_lang,
+            "supported": detected_lang in ["en", "ur"]
+        }
+    except Exception as e:
+        print(f"❌ Language detection error: {e}")
+        return {
+            "text": text,
+            "language": "en",
+            "supported": True,
+            "error": str(e)
+        }

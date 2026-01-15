@@ -21,16 +21,29 @@ class ChatService {
     return headers;
   }
 
-  async sendMessage(conversationId: string, content: string): Promise<ChatMessage> {
+  // ✅ ENHANCED: Send message with language and voice support
+  async sendMessage(
+    conversationId: string, 
+    content: string,
+    language: 'en' | 'ur' | 'auto' = 'auto',
+    voiceInput: boolean = false
+  ): Promise<ChatMessage> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/chat/message`, {
+      console.log('📤 Sending message with params:', {
+        conversationId,
+        content: content.substring(0, 50) + '...',
+        language,
+        voiceInput
+      });
+
+      const response = await fetch(`${this.baseUrl}/api/chat/message?language=${language}&voice_input=${voiceInput}`, {
         method: 'POST',
         headers: this.getHeaders(),
         body: JSON.stringify({
-          conversation_id: parseInt(conversationId), // ✅ Convert to int
+          conversation_id: parseInt(conversationId),
           content: content,
-          role: 'user', // ✅ Required by backend schema
-          metadata_json: null // ✅ Required by backend schema
+          role: 'user',
+          metadata_json: JSON.stringify({ language, voiceInput })  // ✅ Include metadata
         }),
       });
 
@@ -40,7 +53,10 @@ class ChatService {
         throw new Error(errorData.detail || 'Failed to send message');
       }
 
-      return await response.json();
+      const result = await response.json();
+      console.log('✅ Message sent successfully:', result);
+      
+      return result;
     } catch (error) {
       console.error('Error sending message:', error);
       throw error;
@@ -143,6 +159,26 @@ class ChatService {
     } catch (error) {
       console.error('Error updating conversation title:', error);
       throw error;
+    }
+  }
+
+  // ✅ NEW: Detect language of text
+  async detectLanguage(text: string): Promise<{ language: 'en' | 'ur'; supported: boolean }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/chat/detect-language?text=${encodeURIComponent(text)}`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+      });
+
+      if (!response.ok) {
+        console.warn('Language detection failed, defaulting to English');
+        return { language: 'en', supported: true };
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error detecting language:', error);
+      return { language: 'en', supported: true };
     }
   }
 }

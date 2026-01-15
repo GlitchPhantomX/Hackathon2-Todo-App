@@ -37,8 +37,6 @@ type NotificationAction =
   | { type: 'UPDATE_NOTIFICATION'; payload: NotificationType }
   | { type: 'REMOVE_NOTIFICATION'; payload: string };
 
-const ENABLE_WEBSOCKET = false;
-
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
 const notificationReducer = (state: NotificationState, action: NotificationAction): NotificationState => {
@@ -70,7 +68,7 @@ const notificationReducer = (state: NotificationState, action: NotificationActio
         unreadCount: 0,
       };
     case 'ADD_NOTIFICATION':
-      const newNotifications = [action.payload, ...state.notifications].slice(0, 50); // Keep last 50
+      const newNotifications = [action.payload, ...state.notifications].slice(0, 50);
       return {
         ...state,
         notifications: newNotifications,
@@ -104,18 +102,34 @@ interface NotificationProviderProps {
 }
 
 export const NotificationProvider: React.FC<NotificationProviderProps> = ({ children }) => {
-  const { user } = useAuth();
-  const { preferences } = useUserPreferences();
+  let user;
+  let preferences;
+  
+  try {
+    const auth = useAuth();
+    user = auth?.user;
+  } catch (error) {
+    user = null;
+  }
+
+  try {
+    const prefs = useUserPreferences();
+    preferences = prefs?.preferences;
+  } catch (error) {
+    preferences = null;
+  }
+
   const [state, dispatch] = useReducer(notificationReducer, {
     notifications: [],
     unreadCount: 0,
     loading: false,
     error: null,
   });
+  
+  // const { showToast } = useToast();
   const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const hasRequestedPermission = useRef(false);
 
-  // ✅ Request browser notification permission on mount
   useEffect(() => {
     if (typeof window !== 'undefined' && 'Notification' in window && !hasRequestedPermission.current) {
       if (Notification.permission === 'default') {
@@ -127,7 +141,6 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     }
   }, []);
 
-  // ✅ Show browser notification
   const showBrowserNotification = useCallback((title: string, body: string, icon?: string) => {
     if (typeof window === 'undefined' || !('Notification' in window)) return;
 
@@ -142,7 +155,6 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
           silent: false,
         });
 
-        // Auto-close after 5 seconds
         setTimeout(() => {
           notification.close();
         }, 5000);
@@ -152,12 +164,28 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     }
   }, []);
 
-  // ✅ Show toast notification with sound
-  const showToast = useCallback((notification: NotificationType) => {
+  const handleShowToast = useCallback((notification: NotificationType) => {
     const notificationsEnabled = preferences?.notificationsEnabled !== false;
     
     if (notificationsEnabled) {
-      // Play sound based on notification type
+      // Map notification types to toast types
+      let toastType: 'success' | 'info' | 'warning' | 'error' | 'reminder' = 'info';
+      
+      if (notification.type === 'task_created' || notification.type === 'task_completed') {
+        toastType = 'success';
+      } else if (notification.type === 'task_deleted') {
+        toastType = 'warning';
+      } else if (notification.type === 'reminder' || notification.type === 'due_today') {
+        toastType = 'reminder';
+      } else if (notification.type === 'overdue') {
+        toastType = 'error';
+      } else if (notification.type === 'task_updated') {
+        toastType = 'info';
+      }
+
+      
+
+      // Play sound
       const soundMap: Record<string, string> = {
         'task_created': 'taskCreated',
         'task_completed': 'taskCompleted',
@@ -182,7 +210,6 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     }
   }, [preferences?.notificationsEnabled, showBrowserNotification]);
 
-  // Fetch notifications
   const fetchNotifications = useCallback(async () => {
     if (!user?.id) return;
 
@@ -196,7 +223,6 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     }
   }, [user?.id]);
 
-  // Mark as read
   const markAsRead = useCallback(async (notificationId: string) => {
     if (!user?.id) return;
 
@@ -208,7 +234,6 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     }
   }, [user?.id]);
 
-  // Mark all as read
   const markAllAsRead = useCallback(async () => {
     if (!user?.id) return;
 
@@ -224,10 +249,9 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     }
   }, [user?.id, state.notifications]);
 
-  // Add notification - MUST be declared before createTaskNotification
   const addNotification = useCallback((notification: NotificationType) => {
     dispatch({ type: 'ADD_NOTIFICATION', payload: notification });
-    showToast(notification);
+    handleShowToast(notification);
 
     if (toastTimeoutRef.current) {
       clearTimeout(toastTimeoutRef.current);
@@ -235,9 +259,8 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     toastTimeoutRef.current = setTimeout(() => {
       // Auto-dismiss logic if needed
     }, 5000);
-  }, [showToast]);
+  }, [handleShowToast]);
 
-  // ✅ Create task-related notification - now uses addNotification which is declared above
   const createTaskNotification = useCallback((
     type: 'created' | 'updated' | 'completed' | 'deleted',
     taskTitle: string,
@@ -245,28 +268,28 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   ) => {
     const notificationMessages = {
       created: {
-        title: '✅ Task Created',
+        title: 'Task Created',
         message: `"${taskTitle}" has been added to your list`,
         type: 'task_created',
         icon: '✅',
         color: '#10b981',
       },
       updated: {
-        title: '📝 Task Updated',
+        title: 'Task Updated',
         message: `"${taskTitle}" has been modified`,
         type: 'task_updated',
         icon: '📝',
         color: '#3b82f6',
       },
       completed: {
-        title: '🎉 Task Completed!',
-        message: `Awesome! "${taskTitle}" is done`,
+        title: 'Task Completed',
+        message: `"${taskTitle}" is done`,
         type: 'task_completed',
         icon: '🎉',
         color: '#22c55e',
       },
       deleted: {
-        title: '🗑️ Task Deleted',
+        title: 'Task Deleted',
         message: `"${taskTitle}" has been removed`,
         type: 'task_deleted',
         icon: '🗑️',
@@ -275,10 +298,10 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     };
 
     const config = notificationMessages[type];
-
     const timestamp = Date.now();
     const randomId = Math.random().toString(36).substr(2, 9);
-    const baseNotification = {
+    
+    const notification: NotificationType = {
       id: `notif_${timestamp}_${randomId}`,
       userId: user?.id || '',
       type: config.type,
@@ -288,39 +311,37 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       createdAt: new Date().toISOString(),
       icon: config.icon,
       color: config.color,
+      taskId,
+      taskTitle,
     };
-
-    const notification: NotificationType = { ...baseNotification };
-
-    if (taskId) {
-      notification.taskId = taskId;
-    }
-
-    if (taskTitle) {
-      notification.taskTitle = taskTitle;
-    }
 
     addNotification(notification);
   }, [user?.id, addNotification]);
 
-  // Polling for notifications
+  // Polling for notifications (fallback when WebSocket is not available)
   useEffect(() => {
-    if (!user?.id) return; // Early return if no user
+    if (!user?.id) return;
 
     fetchNotifications();
+    
+    // Poll every 30 seconds as fallback
     const interval = setInterval(() => {
       fetchNotifications();
-    }, 30000); // 30 seconds
+    }, 30000);
 
     return () => clearInterval(interval);
   }, [user?.id, fetchNotifications]);
 
-  // WebSocket connection
+  // Try WebSocket connection (optional)
   useEffect(() => {
-    if (!user?.id || !ENABLE_WEBSOCKET) {
+    if (!user?.id) return;
+    
+    const wsEnabled = process.env.NEXT_PUBLIC_ENABLE_WEBSOCKET === 'true';
+    if (!wsEnabled) {
+      console.log('ℹ️ WebSocket disabled, using polling only');
       return;
     }
-  
+
     const connectWebSocket = async () => {
       try {
         const token = localStorage.getItem('token') ||
@@ -339,7 +360,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
         });
 
       } catch (error) {
-        console.warn('WebSocket failed:', error);
+        console.log('ℹ️ WebSocket not available, using polling fallback');
       }
     };
 

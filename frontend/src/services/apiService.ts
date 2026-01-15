@@ -42,6 +42,7 @@ const convertBackendTaskToFrontend = (backendTask: any): Task => {
     tags: backendTask.tags || [],
     createdAt: backendTask.created_at || new Date().toISOString(),
     updatedAt: backendTask.updated_at || new Date().toISOString(),
+    recurrencePattern: backendTask.recurrence_pattern || undefined,
   };
 };
 
@@ -53,6 +54,7 @@ const convertFrontendTaskToBackend = (frontendTask: Partial<Task>) => {
     due_date: frontendTask.dueDate || null,
     priority: frontendTask.priority || 'medium',
     project_id: frontendTask.projectId ? parseInt(frontendTask.projectId) : null,
+    recurrence_pattern: frontendTask.recurrencePattern || null,
   };
 };
 
@@ -755,10 +757,10 @@ export const statsService = {
 
 export const notificationService = {
   getNotifications: async (userId: string, unreadOnly: boolean = false, limit: number = 10): Promise<Notification[]> => {
-    // ✅ CHANGED: Use /users/me/notifications instead of /users/{userId}/notifications
-    const cacheKey = generateCacheKey(`/users/me/notifications`, { unread_only: unreadOnly, limit });
+    // ✅ CHANGED: Use /notifications instead of /users/me/notifications (matches backend route)
+    const cacheKey = generateCacheKey(`/notifications`, { unread_only: unreadOnly, limit });
     return withCachingAndCircuitBreaker(async () => {
-      const response = await api.get(`/users/me/notifications`, {
+      const response = await api.get(`/notifications`, {
         params: { unread_only: unreadOnly, limit },
       });
       return response.data;
@@ -766,10 +768,10 @@ export const notificationService = {
   },
 
   getNotification: async (userId: string, notificationId: string): Promise<Notification> => {
-    // ✅ CHANGED: Use /users/me/notifications
-    const cacheKey = generateCacheKey(`/users/me/notifications/${notificationId}`);
+    // ✅ CHANGED: Use /notifications/{id} instead of /users/me/notifications/{id} (matches backend route)
+    const cacheKey = generateCacheKey(`/notifications/${notificationId}`);
     return withCachingAndCircuitBreaker(async () => {
-      const response = await api.get(`/users/me/notifications/${notificationId}`);
+      const response = await api.get(`/notifications/${notificationId}`);
       return response.data;
     }, cacheKey, notificationCircuitBreaker, 5 * 60 * 1000);
   },
@@ -779,8 +781,8 @@ export const notificationService = {
       // ✅ Keep as /notifications for POST
       const response = await api.post(`/notifications`, data);
 
-      apiCache.delete(generateCacheKey(`/users/me/notifications`, { unread_only: true, limit: 10 }));
-      apiCache.delete(generateCacheKey(`/users/me/notifications`, { unread_only: false, limit: 10 }));
+      apiCache.delete(generateCacheKey(`/notifications`, { unread_only: true, limit: 10 }));
+      apiCache.delete(generateCacheKey(`/notifications`, { unread_only: false, limit: 10 }));
 
       return response.data;
     }, notificationCircuitBreaker);
@@ -788,12 +790,12 @@ export const notificationService = {
 
   markNotificationAsRead: async (userId: string, notificationId: string): Promise<Notification> => {
     return withCircuitBreakerAndRetry(async () => {
-      // ✅ CHANGED: Use /users/me/notifications
-      const response = await api.post(`/users/me/notifications/${notificationId}/read`);
+      // ✅ CHANGED: Use /notifications/{id}/read instead of /users/me/notifications/{id}/read (matches backend route)
+      const response = await api.post(`/notifications/${notificationId}/read`);
 
-      apiCache.delete(generateCacheKey(`/users/me/notifications`, { unread_only: true, limit: 10 }));
-      apiCache.delete(generateCacheKey(`/users/me/notifications`, { unread_only: false, limit: 10 }));
-      apiCache.delete(generateCacheKey(`/users/me/notifications/${notificationId}`));
+      apiCache.delete(generateCacheKey(`/notifications`, { unread_only: true, limit: 10 }));
+      apiCache.delete(generateCacheKey(`/notifications`, { unread_only: false, limit: 10 }));
+      apiCache.delete(generateCacheKey(`/notifications/${notificationId}`));
 
       return response.data;
     }, notificationCircuitBreaker);
@@ -804,9 +806,9 @@ export const notificationService = {
       // ✅ Keep as /notifications for DELETE
       await api.delete(`/notifications/${notificationId}`);
 
-      apiCache.delete(generateCacheKey(`/users/me/notifications`, { unread_only: true, limit: 10 }));
-      apiCache.delete(generateCacheKey(`/users/me/notifications`, { unread_only: false, limit: 10 }));
-      apiCache.delete(generateCacheKey(`/users/me/notifications/${notificationId}`));
+      apiCache.delete(generateCacheKey(`/notifications`, { unread_only: true, limit: 10 }));
+      apiCache.delete(generateCacheKey(`/notifications`, { unread_only: false, limit: 10 }));
+      apiCache.delete(generateCacheKey(`/notifications/${notificationId}`));
     }, notificationCircuitBreaker);
   },
 };

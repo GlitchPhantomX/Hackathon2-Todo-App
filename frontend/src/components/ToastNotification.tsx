@@ -52,6 +52,8 @@ export const ToastNotification: React.FC<ToastProps> = ({
         return 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800';
       case 'warning':
         return 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800';
+      case 'reminder':
+        return 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800';
       default:
         return 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800';
     }
@@ -67,6 +69,8 @@ export const ToastNotification: React.FC<ToastProps> = ({
         return <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />;
       case 'warning':
         return <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />;
+      case 'reminder':
+        return <Info className="h-5 w-5 text-purple-600 dark:text-purple-400" />;
       default:
         return <Info className="h-5 w-5 text-blue-600 dark:text-blue-400" />;
     }

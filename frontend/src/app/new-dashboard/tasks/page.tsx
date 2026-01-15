@@ -34,48 +34,69 @@ const TasksPage = () => {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <PageHeader
-        title="All Tasks"
-        description="View and manage all your tasks in one place"
-      />
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-50 to-blue-50/30 dark:from-gray-950 dark:via-gray-950 dark:to-blue-950/20">
+      {/* Main Container */}
+      <div className="mx-auto max-w-[1800px] px-3 sm:px-4 lg:px-6 xl:px-8 py-4 sm:py-6 space-y-6">
+        
+        {/* Page Header */}
+        <PageHeader
+          title="All Tasks"
+          description="View and manage all your tasks in one place"
+        />
 
-      <DashboardStats />
+        {/* Dashboard Stats */}
+        <DashboardStats />
 
-      <div className="flex flex-col lg:flex-row gap-6">
-        {/* Filters sidebar */}
-        <div className="lg:w-1/4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Filters</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <TaskFilters />
-            </CardContent>
-          </Card>
-        </div>
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          
+          {/* Left Sidebar - Filters (3 cols) */}
+          <aside className="lg:col-span-3 space-y-4">
+            <Card className="border-gray-200/60 dark:border-gray-700/60 shadow-sm hover:shadow-md transition-shadow">
+              <CardHeader className="border-b border-gray-100 dark:border-gray-800 pb-3">
+                <CardTitle className="text-base font-semibold text-gray-900 dark:text-gray-100">
+                  Filters
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4">
+                <TaskFilters />
+              </CardContent>
+            </Card>
+          </aside>
 
-        {/* Main content */}
-        <div className="lg:w-3/4 space-y-6">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold">Task List</h2>
-            <Button
-              onClick={() => setIsAddTaskModalOpen(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              <PlusIcon className="h-4 w-4 mr-2" />
-              Add Task
-            </Button>
-          </div>
-
-          <Card>
-            <CardContent className="p-6">
-              <TaskList 
-                onEditTask={handleEditTask}
-                onTaskClick={handleTaskClick}
-              />
-            </CardContent>
-          </Card>
+          {/* Main Content Area (9 cols) */}
+          <main className="lg:col-span-9 space-y-6">
+            
+            {/* Task List Card */}
+            <Card className="border-gray-200/60 dark:border-gray-700/60 shadow-sm hover:shadow-md transition-shadow">
+              <CardHeader className="border-b border-gray-100 dark:border-gray-800">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div>
+                    <CardTitle className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                      Task List
+                    </CardTitle>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                      Manage and organize your tasks
+                    </p>
+                  </div>
+                  <Button
+                    onClick={() => setIsAddTaskModalOpen(true)}
+                    className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg shadow-blue-600/20 hover:shadow-xl hover:shadow-blue-600/30 transition-all duration-200"
+                    size="default"
+                  >
+                    <PlusIcon className="h-4 w-4 mr-2" />
+                    Add Task
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6">
+                <TaskList 
+                  onEditTask={handleEditTask}
+                  onTaskClick={handleTaskClick}
+                />
+              </CardContent>
+            </Card>
+          </main>
         </div>
       </div>
 
@@ -96,8 +117,8 @@ const TasksPage = () => {
 
       {/* Task Detail Modal */}
       {viewingTaskDetail && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200">
             <TaskDetail
               task={viewingTaskDetail}
               onClose={() => setViewingTaskDetail(null)}

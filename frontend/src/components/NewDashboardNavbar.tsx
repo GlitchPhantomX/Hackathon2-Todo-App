@@ -78,8 +78,7 @@ const NewDashboardNavbar = () => {
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
   const { user, logout } = useAuth();
-  const { tasks, projects, createTaskNotification, notifications } =
-    useDashboard(); // ✅ Added createTaskNotification and notifications
+  const { tasks, projects, createTaskNotification, notifications } = useDashboard();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<(
@@ -98,12 +97,6 @@ const NewDashboardNavbar = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  // ✅ Debug notifications on mount and changes
-  useEffect(() => {
-    console.log("🎯 NAVBAR: Notifications updated:", notifications);
-    console.log("🎯 NAVBAR: Notifications count:", notifications?.length || 0);
-  }, [notifications]);
-
   const basePath = pathname.startsWith("/new-dashboard")
     ? "/new-dashboard"
     : "";
@@ -118,30 +111,7 @@ const NewDashboardNavbar = () => {
     return path;
   }, [basePath]);
 
-  // ✅ Test notification function
-  const handleTestNotification = () => {
-    console.log("🧪 TEST BUTTON CLICKED - Creating test notification");
-    const notificationTypes = [
-      "created",
-      "updated",
-      "completed",
-      "deleted",
-    ] as const;
-    const randomIndex = Math.floor(Math.random() * notificationTypes.length);
-    // Use a type assertion since we know the array is non-empty and index is valid
-    const randomType = notificationTypes[randomIndex] as "created" | "updated" | "completed" | "deleted";
-    const testTaskTitle = `Test Task ${Date.now()}`;
-
-    console.log(
-      "🧪 Calling createTaskNotification with:",
-      randomType,
-      testTaskTitle
-    );
-    createTaskNotification(randomType, testTaskTitle, `test_${Date.now()}`);
-    console.log("🧪 createTaskNotification called successfully");
-  };
-
-  // ✅ Enhanced search function with multiple result types
+  // Enhanced search function
   const performSearch = useCallback(
     (query: string) => {
       if (!query.trim()) {
@@ -155,36 +125,23 @@ const NewDashboardNavbar = () => {
     | { type: 'task'; id: string; title: string; description?: string; status: string; priority?: string; dueDate?: string }
     | { type: 'project'; id: string; title: string; description?: string; color?: string }
     | { type: 'action'; id: string; title: string; icon?: string; action: () => void }
-  )[] = [] as (
-    | { type: 'task'; id: string; title: string; description?: string; status: string; priority?: string; dueDate?: string }
-    | { type: 'project'; id: string; title: string; description?: string; color?: string }
-    | { type: 'action'; id: string; title: string; icon?: string; action: () => void }
-  )[];
+  )[] = [];
 
       // Search tasks
-      const matchedTasks: (
-    | { type: 'task'; id: string; title: string; description?: string; status: string; priority?: string; dueDate?: string }
-    | { type: 'project'; id: string; title: string; description?: string; color?: string }
-    | { type: 'action'; id: string; title: string; icon?: string; action: () => void }
-  )[] = tasks
+      const matchedTasks = tasks
         .filter((task) => {
           const matchesTitle = task.title.toLowerCase().includes(lowerQuery);
-          const matchesDescription =
-            task.description?.toLowerCase().includes(lowerQuery) || false;
-          const matchesTags =
-            task.tags?.some((tag: string | { name: string }) =>
+          const matchesDescription = task.description?.toLowerCase().includes(lowerQuery) || false;
+          const matchesTags = task.tags?.some((tag: string | { name: string }) =>
               typeof tag === "string"
                 ? tag.toLowerCase().includes(lowerQuery)
                 : typeof tag === "object" && tag.name
                   ? tag.name.toLowerCase().includes(lowerQuery)
                   : false
             ) || false;
-          const matchesPriority =
-            task.priority?.toLowerCase().includes(lowerQuery) || false;
+          const matchesPriority = task.priority?.toLowerCase().includes(lowerQuery) || false;
 
-          return (
-            matchesTitle || matchesDescription || matchesTags || matchesPriority
-          );
+          return matchesTitle || matchesDescription || matchesTags || matchesPriority;
         })
         .slice(0, 5)
         .map((task) => ({
@@ -195,16 +152,12 @@ const NewDashboardNavbar = () => {
           status: task.status as string,
           priority: task.priority as string | undefined,
           dueDate: task.dueDate,
-        })) as any; // Cast to avoid exactOptionalPropertyTypes issues
+        })) as any;
 
       results.push(...matchedTasks);
 
       // Search projects
-      const matchedProjects: (
-    | { type: 'task'; id: string; title: string; description?: string; status: string; priority?: string; dueDate?: string }
-    | { type: 'project'; id: string; title: string; description?: string; color?: string }
-    | { type: 'action'; id: string; title: string; icon?: string; action: () => void }
-  )[] = projects
+      const matchedProjects = projects
         .filter(
           (project) =>
             project.name.toLowerCase().includes(lowerQuery) ||
@@ -217,7 +170,7 @@ const NewDashboardNavbar = () => {
           title: project.name,
           description: project.description as string | undefined,
           color: project.color,
-        })) as any; // Cast to avoid exactOptionalPropertyTypes issues
+        })) as any;
 
       results.push(...matchedProjects);
 
@@ -252,14 +205,12 @@ const NewDashboardNavbar = () => {
   // Debounced search
   const debouncedSearch = useDebouncedCallback(performSearch, 300);
 
-  // Handle search input changes
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
     setSearchQuery(query);
     debouncedSearch(query);
   };
 
-  // Handle keyboard navigation in search results
   const handleSearchKeyDown = (e: React.KeyboardEvent) => {
     if (searchResults.length === 0) return;
 
@@ -288,7 +239,6 @@ const NewDashboardNavbar = () => {
     }
   };
 
-  // Handle result click
   const handleResultClick = (result: { type: 'task'; id: string; title: string; description?: string; status: string; priority?: string; dueDate?: string } | { type: 'project'; id: string; title: string; description?: string; color?: string } | { type: 'action'; id: string; title: string; icon?: string; action: () => void }) => {
     if (result.type === "task") {
       console.log("Open task:", result.id);
@@ -308,7 +258,6 @@ const NewDashboardNavbar = () => {
     }
   };
 
-  // Handle search submission
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim() && searchResults.length > 0) {
@@ -319,14 +268,12 @@ const NewDashboardNavbar = () => {
     }
   };
 
-  // Handle clearing search
   const handleClearSearch = () => {
     setSearchQuery("");
     setSearchResults([]);
     setSelectedIndex(-1);
   };
 
-  // Handle click outside to close search
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -343,15 +290,12 @@ const NewDashboardNavbar = () => {
     };
   }, []);
 
-  // Toggle theme
   const toggleTheme = () => {
     setTheme(theme === "dark" ? "light" : "dark");
   };
 
-  // Keyboard shortcuts state
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
 
-  // Handle keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
@@ -405,7 +349,6 @@ const NewDashboardNavbar = () => {
     };
   }, [theme, setTheme, setIsSearchOpen, setShowShortcutsModal, handleClearSearch]);
 
-  // Get user initials
   const getUserInitials = () => {
     if (!user) return "U";
     if (user.name) return user.name.charAt(0).toUpperCase();
@@ -413,40 +356,33 @@ const NewDashboardNavbar = () => {
     return "U";
   };
 
-  // Get user avatar
   const getUserAvatar = () => {
     if (!user) return "";
-    return (
-      user.avatar ||
-      ""
-    );
+    return user.avatar || "";
   };
 
-  // Handle logout
   const handleLogout = () => {
     if (logout) {
       logout();
     }
-    window.location.href = "/login";
+    router.push("/login");
   };
 
-  // ✅ Get icon for search result
   const getResultIcon = (result: { type: 'task'; id: string; title: string; description?: string; status: string; priority?: string; dueDate?: string } | { type: 'project'; id: string; title: string; description?: string; color?: string } | { type: 'action'; id: string; title: string; icon?: string; action: () => void }) => {
     if (result.type === "task") {
       return result.status === "completed" ? (
-        <CheckCircle2 className="h-4 w-4 text-green-500" />
+        <CheckCircle2 className="h-4 w-4" style={{ color: 'var(--primary)' }} />
       ) : (
-        <Circle className="h-4 w-4 text-muted-foreground" />
+        <Circle className="h-4 w-4" style={{ color: 'var(--muted-foreground)' }} />
       );
     } else if (result.type === "project") {
-      return <FolderIcon className="h-4 w-4 text-blue-500" />;
+      return <FolderIcon className="h-4 w-4" style={{ color: 'var(--primary)' }} />;
     } else if (result.type === "action") {
-      return <ArrowRight className="h-4 w-4 text-purple-500" />;
+      return <ArrowRight className="h-4 w-4" style={{ color: 'var(--primary)' }} />;
     }
     return <SearchIcon className="h-4 w-4" />;
   };
 
-  // ✅ Get priority badge color
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case "high":
@@ -464,15 +400,40 @@ const NewDashboardNavbar = () => {
     <>
       {!mounted ? null : (
         <>
-          <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
+          <header 
+            className="sticky top-0 z-50 w-full border-b backdrop-blur supports-backdrop-filter:backdrop-blur"
+            style={{
+              backgroundColor: 'var(--background)',
+              borderColor: 'var(--border)'
+            }}
+          >
             <div className="container flex flex-col md:flex-row items-center h-auto md:h-16 px-4 w-full max-w-full gap-2 py-2 md:py-0">
               {/* Left section */}
               <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-start">
-                <Link href="/new-dashboard" className="flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-purple-500 to-indigo-500 flex items-center justify-center">
-                    <HomeIcon className="h-4 w-4 text-white" />
+                <Link href="/new-dashboard" className="flex items-center gap-2 group">
+                  <div className="relative">
+                    <div 
+                      className="absolute inset-0 rounded-lg blur-lg opacity-50 group-hover:opacity-75 transition-opacity duration-300"
+                      style={{
+                        background: 'linear-gradient(to right, var(--purple-600), var(--violet-600))'
+                      }}
+                    />
+                    <div 
+                      className="relative h-8 w-8 rounded-lg flex items-center justify-center transition-all duration-300 group-hover:scale-110"
+                      style={{
+                        background: 'linear-gradient(to bottom right, var(--purple-600), var(--violet-600), var(--purple-500))'
+                      }}
+                    >
+                      <HomeIcon className="h-4 w-4 text-white" />
+                    </div>
                   </div>
-                  <span className="text-xl font-bold bg-gradient-to-r from-purple-500 to-indigo-500 bg-clip-text text-transparent">
+                  <span 
+                    className="text-xl font-bold bg-clip-text text-transparent"
+                    style={{
+                      backgroundImage: 'linear-gradient(to right, var(--purple-600), var(--violet-600))',
+                      fontFamily: "'Inter', 'SF Pro Display', -apple-system, sans-serif"
+                    }}
+                  >
                     TodoMaster
                   </span>
                 </Link>
@@ -483,12 +444,13 @@ const NewDashboardNavbar = () => {
                   size="icon"
                   onClick={() => setIsSearchOpen(!isSearchOpen)}
                   className="h-8 w-8 md:hidden"
+                  style={{ color: 'var(--foreground)' }}
                 >
                   <SearchIcon className="h-4 w-4" />
                 </Button>
               </div>
 
-              {/* ✅ Enhanced search bar with dropdown */}
+              {/* Search bar */}
               <div
                 className={`${
                   isSearchOpen ? "flex" : "hidden md:flex"
@@ -503,34 +465,58 @@ const NewDashboardNavbar = () => {
                     onChange={handleSearchChange}
                     onKeyDown={handleSearchKeyDown}
                     onFocus={() => setIsSearchOpen(true)}
-                    className="w-full h-11 pl-10 pr-10 py-2 rounded-lg border bg-background"
+                    className="w-full h-11 pl-10 pr-10 py-2 rounded-lg border"
+                    style={{
+                      backgroundColor: 'var(--background)',
+                      borderColor: 'var(--border)',
+                      color: 'var(--foreground)'
+                    }}
                     autoComplete="off"
                   />
                   <div className="absolute left-3 top-1/2 -translate-y-1/2">
-                    <SearchIcon className="h-4 w-4 text-muted-foreground" />
+                    <SearchIcon className="h-4 w-4" style={{ color: 'var(--muted-foreground)' }} />
                   </div>
                   {searchQuery && (
                     <button
                       type="button"
                       onClick={handleClearSearch}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
+                      style={{ color: 'var(--muted-foreground)' }}
+                      onMouseEnter={(e) => e.currentTarget.style.color = 'var(--foreground)'}
+                      onMouseLeave={(e) => e.currentTarget.style.color = 'var(--muted-foreground)'}
                     >
                       <XIcon className="h-4 w-4" />
                     </button>
                   )}
                 </form>
 
-                {/* ✅ Search Results Dropdown */}
+                {/* Search Results Dropdown */}
                 {isSearchOpen && searchQuery && searchResults.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-background border rounded-lg shadow-lg max-h-96 overflow-y-auto z-50">
+                  <div 
+                    className="absolute top-full left-0 right-0 mt-2 border rounded-lg shadow-lg max-h-96 overflow-y-auto z-50"
+                    style={{
+                      backgroundColor: 'var(--background)',
+                      borderColor: 'var(--border)'
+                    }}
+                  >
                     {searchResults.map((result, index) => (
                       <button
                         key={`${result.type}-${result.id}`}
                         type="button"
                         onClick={() => handleResultClick(result)}
-                        className={`w-full flex items-start gap-3 p-3 hover:bg-muted/50 transition-colors border-b last:border-b-0 text-left ${
-                          index === selectedIndex ? "bg-muted/50" : ""
+                        className={`w-full flex items-start gap-3 p-3 transition-colors border-b last:border-b-0 text-left ${
+                          index === selectedIndex ? "opacity-80" : ""
                         }`}
+                        style={{
+                          borderColor: 'var(--border)',
+                          backgroundColor: index === selectedIndex ? 'var(--muted)' : 'transparent'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--muted)'}
+                        onMouseLeave={(e) => {
+                          if (index !== selectedIndex) {
+                            e.currentTarget.style.backgroundColor = 'transparent'
+                          }
+                        }}
                       >
                         {/* Icon */}
                         <div className="flex-shrink-0 mt-1">
@@ -540,7 +526,10 @@ const NewDashboardNavbar = () => {
                         {/* Content */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <p className="font-medium text-sm truncate">
+                            <p 
+                              className="font-medium text-sm truncate"
+                              style={{ color: 'var(--foreground)' }}
+                            >
                               {result.title}
                             </p>
                             {result.type === 'task' && result.priority && (
@@ -555,14 +544,20 @@ const NewDashboardNavbar = () => {
                             )}
                           </div>
                           {(result.type !== 'action' && result.description) && (
-                            <p className="text-xs text-muted-foreground line-clamp-1">
+                            <p 
+                              className="text-xs line-clamp-1"
+                              style={{ color: 'var(--muted-foreground)' }}
+                            >
                               {result.description}
                             </p>
                           )}
                           {result.type === 'task' && result.dueDate && (
                             <div className="flex items-center gap-1 mt-1">
-                              <Clock className="h-3 w-3 text-muted-foreground" />
-                              <span className="text-xs text-muted-foreground">
+                              <Clock className="h-3 w-3" style={{ color: 'var(--muted-foreground)' }} />
+                              <span 
+                                className="text-xs"
+                                style={{ color: 'var(--muted-foreground)' }}
+                              >
                                 {format(
                                   new Date(result.dueDate),
                                   "MMM dd, yyyy"
@@ -586,13 +581,28 @@ const NewDashboardNavbar = () => {
 
                 {/* No results message */}
                 {isSearchOpen && searchQuery && searchResults.length === 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-background border rounded-lg shadow-lg p-8 text-center z-50">
-                    <SearchIcon className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
-                    <p className="text-sm text-muted-foreground">
+                  <div 
+                    className="absolute top-full left-0 right-0 mt-2 border rounded-lg shadow-lg p-8 text-center z-50"
+                    style={{
+                      backgroundColor: 'var(--background)',
+                      borderColor: 'var(--border)'
+                    }}
+                  >
+                    <SearchIcon 
+                      className="h-12 w-12 mx-auto mb-3 opacity-50"
+                      style={{ color: 'var(--muted-foreground)' }}
+                    />
+                    <p 
+                      className="text-sm"
+                      style={{ color: 'var(--muted-foreground)' }}
+                    >
                       No results found for "
                       <span className="font-medium">{searchQuery}</span>"
                     </p>
-                    <p className="text-xs text-muted-foreground/70 mt-1">
+                    <p 
+                      className="text-xs mt-1 opacity-70"
+                      style={{ color: 'var(--muted-foreground)' }}
+                    >
                       Try different keywords
                     </p>
                   </div>
@@ -601,21 +611,32 @@ const NewDashboardNavbar = () => {
 
               {/* Right section */}
               <div className="flex items-center gap-2 ml-auto">
-              
                 <button
                   onClick={() => router.push("/chat")} 
-                  className="relative p-2 text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
+                  className="relative p-2 transition-colors cursor-pointer"
+                  style={{ color: 'var(--muted-foreground)' }}
+                  onMouseEnter={(e) => e.currentTarget.style.color = 'var(--primary)'}
+                  onMouseLeave={(e) => e.currentTarget.style.color = 'var(--muted-foreground)'}
                   aria-label="AI Assistant"
                   title="AI Assistant"
                 >
                   <MessageCircle className="h-6 w-6" />
                 </button>
+                
                 <button
                   onClick={() => router.push("/")} 
-                  className="h-7 text-xs hover:bg-primary/10 cursor-pointer"
-                  aria-label="AI Assistant"
-                  title="AI Assistant"
-                  
+                  className="h-7 text-xs cursor-pointer p-2 rounded transition-colors"
+                  style={{ color: 'var(--muted-foreground)' }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--muted)'
+                    e.currentTarget.style.color = 'var(--primary)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent'
+                    e.currentTarget.style.color = 'var(--muted-foreground)'
+                  }}
+                  aria-label="Home"
+                  title="Home"
                 >
                   <Home className="h-4 w-4" />
                 </button>
@@ -627,6 +648,7 @@ const NewDashboardNavbar = () => {
                   size="icon"
                   onClick={toggleTheme}
                   className="h-8 w-8"
+                  style={{ color: 'var(--foreground)' }}
                 >
                   {mounted &&
                     (theme === "dark" ? (
@@ -639,12 +661,17 @@ const NewDashboardNavbar = () => {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="h-8 w-auto px-3 gap-2">
-                      <Avatar className="h-8 w-8 border border-primary">
+                      <Avatar className="h-8 w-8 border" style={{ borderColor: 'var(--primary)' }}>
                         <AvatarImage
                           src={getUserAvatar()}
                           alt={user?.name || user?.email || "User"}
                         />
-                        <AvatarFallback className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white">
+                        <AvatarFallback 
+                          className="text-white"
+                          style={{
+                            background: 'linear-gradient(to right, var(--purple-500), var(--violet-500))'
+                          }}
+                        >
                           {getUserInitials()}
                         </AvatarFallback>
                       </Avatar>
@@ -656,7 +683,10 @@ const NewDashboardNavbar = () => {
                         <p className="text-sm font-medium leading-none">
                           {user?.name || "User"}
                         </p>
-                        <p className="text-xs leading-none text-muted-foreground">
+                        <p 
+                          className="text-xs leading-none"
+                          style={{ color: 'var(--muted-foreground)' }}
+                        >
                           {user?.email || "user@example.com"}
                         </p>
                       </div>
@@ -690,7 +720,10 @@ const NewDashboardNavbar = () => {
                     >
                       <span className="mr-2">⌨️</span>
                       <span>Keyboard Shortcuts</span>
-                      <span className="ml-auto text-xs text-muted-foreground">
+                      <span 
+                        className="ml-auto text-xs"
+                        style={{ color: 'var(--muted-foreground)' }}
+                      >
                         Ctrl+/
                       </span>
                     </DropdownMenuItem>

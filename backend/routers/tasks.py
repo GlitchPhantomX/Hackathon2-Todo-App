@@ -6,7 +6,7 @@ import logging
 from datetime import datetime
 import json
 
-from models import Task, User, Project, Tag, TaskTagLink
+from models import Task, User, Project, Tag, TaskTagLink, Notification
 from schemas import TaskResponse, TaskCreate, TaskUpdate, TaskFilter
 from db import get_session
 from dependencies import get_current_user
@@ -160,7 +160,7 @@ def create_my_task(
     Create a new task for the current authenticated user.
     """
     logger.info(f"[TASKS] Creating task for user {current_user.id}")
-    
+
     # Verify project access if project_id is provided
     if task_data.project_id:
         verify_project_access(task_data.project_id, current_user.id, db)
@@ -170,10 +170,14 @@ def create_my_task(
         sanitized_title = sanitize_input(task_data.title, context="general")
         sanitized_description = sanitize_input(task_data.description, context="general") if task_data.description else None
 
+        # Convert due_date to UTC if it exists
+        from utils.timezone_utils import ensure_utc_datetime
+        utc_due_date = ensure_utc_datetime(task_data.due_date)
+
         task = Task(
             title=sanitized_title,
             description=sanitized_description,
-            due_date=task_data.due_date,
+            due_date=utc_due_date,
             priority=task_data.priority,
             project_id=task_data.project_id,
             user_id=current_user.id
@@ -191,11 +195,73 @@ def create_my_task(
 
         logger.info(f"✅ Task created successfully - user_id: {current_user.id}, task_id: {task.id}")
 
-        # Broadcast WebSocket event
+        # Send TASK_CREATED event to Redpanda - Consumer will handle notification
+        print(f"KAFKA ATTEMPT: Sending task {task.id}")
+        try:
+            from aiokafka import AIOKafkaProducer
+            import json
+            from datetime import datetime
+            import asyncio
+            from concurrent.futures import ThreadPoolExecutor
+
+            async def send_kafka_event():
+                kafka_producer = AIOKafkaProducer(
+                    bootstrap_servers=['d5k1l0mudu05l9vrg3lg.any.us-east-1.mpx.prd.cloud.redpanda.com:9092'],
+                    security_protocol='SASL_SSL',
+                    sasl_mechanism='SCRAM-SHA-256',
+                    ssl_context=True,
+                    sasl_plain_username='todo-app-user',
+                    sasl_plain_password='Admin12345',
+                    value_serializer=lambda v: json.dumps(v).encode('utf-8')
+                )
+
+                await kafka_producer.start()
+
+                task_created_event = {
+                    "event_type": "TASK_CREATED",
+                    "task_id": task.id,
+                    "title": task.title,
+                    "description": task.description,
+                    "due_date": task.due_date.isoformat() if task.due_date else None,
+                    "completed": task.completed,
+                    "priority": task.priority,
+                    "user_id": task.user_id,
+                    "project_id": task.project_id,
+                    "is_recurring": getattr(task, 'is_recurring', False),
+                    "frequency": getattr(task, 'frequency', None),
+                    "created_at": task.created_at.isoformat(),
+                    "timestamp": datetime.utcnow().isoformat()
+                }
+
+                await kafka_producer.send_and_wait('task-events', task_created_event)
+                await kafka_producer.stop()
+
+            def run_kafka_producer():
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                try:
+                    loop.run_until_complete(send_kafka_event())
+                finally:
+                    loop.close()
+
+            executor = ThreadPoolExecutor(max_workers=1)
+            executor.submit(run_kafka_producer)
+            executor.shutdown(wait=False)
+
+            logger.info(f"✅ TASK_CREATED event sent to task-events topic - task_id: {task.id}")
+
+        except Exception as kafka_error:
+            logger.error(f"❌ Error sending TASK_CREATED event to Redpanda: {str(kafka_error)}")
+
+        # Broadcast WebSocket event for real-time sync
         broadcast_task_event(WebSocketEventType.TASK_CREATED, task, current_user.id)
 
+        # ❌ REMOVED: Direct notification creation
+        # Let the Kafka consumer handle notification creation
+        # This prevents duplicate notifications
+
         return task
-        
+
     except IntegrityError as e:
         db.rollback()
         logger.error(f"❌ Error creating task: {str(e)} - user_id: {current_user.id}")
@@ -355,9 +421,19 @@ def update_my_task(
         if 'description' in update_data:
             update_data['description'] = sanitize_input(update_data['description'], context="general")
 
-        # Update other attributes
+        # Check if the task is being marked as completed and if it's recurring
+        was_completed = task.completed
+        is_now_completed = update_data.get('completed', task.completed)
+
+        # Update other attributes with timezone conversion for due_date
         for field, value in update_data.items():
-            setattr(task, field, value)
+            if field == 'due_date':
+                # Convert due_date to UTC if it exists
+                from utils.timezone_utils import ensure_utc_datetime
+                utc_due_date = ensure_utc_datetime(value)
+                setattr(task, field, utc_due_date)
+            else:
+                setattr(task, field, value)
 
         # Update tags if provided
         if tag_ids is not None:
@@ -367,6 +443,40 @@ def update_my_task(
         db.refresh(task)
 
         logger.info(f"✅ Task updated - user_id: {current_user.id}, task_id: {task.id}")
+
+        # Handle recurring task logic if task was just marked as completed
+        if not was_completed and is_now_completed and task.is_recurring and task.frequency:
+            from datetime import timedelta
+
+            # Calculate next due date based on frequency
+            next_due_date = task.due_date
+            if next_due_date:
+                if task.frequency.lower() == 'daily':
+                    next_due_date = next_due_date + timedelta(days=1)
+                elif task.frequency.lower() == 'weekly':
+                    next_due_date = next_due_date + timedelta(weeks=1)
+                elif task.frequency.lower() == 'monthly':
+                    # Simple monthly calculation (adding ~30 days)
+                    next_due_date = next_due_date + timedelta(days=30)
+
+            # Create a new recurring task with the same properties
+            new_task = Task(
+                title=task.title,
+                description=task.description,
+                completed=False,  # New task is not completed
+                due_date=next_due_date,
+                priority=task.priority,
+                project_id=task.project_id,
+                user_id=task.user_id,
+                is_recurring=task.is_recurring,
+                frequency=task.frequency
+            )
+
+            db.add(new_task)
+            db.commit()
+            db.refresh(new_task)
+
+            logger.info(f"🔄 Recurring task created - new task_id: {new_task.id}, due_date: {next_due_date}")
 
         # Broadcast WebSocket event
         broadcast_task_event(WebSocketEventType.TASK_UPDATED, task, current_user.id)
@@ -555,6 +665,10 @@ def create_task(
 
         logger.info(f"Task created - user_id: {current_user.id}, task_id: {task.id}")
         broadcast_task_event(WebSocketEventType.TASK_CREATED, task, current_user.id)
+
+        # ❌ REMOVED: Direct notification creation
+        # Let the Kafka consumer handle notification creation
+        # This prevents duplicate notifications
 
         return task
     except IntegrityError as e:

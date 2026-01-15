@@ -1,9 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-// import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
@@ -51,7 +50,7 @@ const TaskList: React.FC<TaskListProps> = ({
     filters,
     setFilter,
     setSortBy: setContextSortBy,
-    sortBy, // Extract sortBy separately
+    sortBy,
     tags
   } = useDashboard();
   const { tasks: syncTasks } = useTaskSync();
@@ -59,121 +58,133 @@ const TaskList: React.FC<TaskListProps> = ({
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
 
-  // ✅ Fixed: Use dashboardTasks as primary source to ensure consistent Task type
-  const allTasks: Task[] = propTasks || dashboardTasks || [];
+  // ✅ Use propTasks if provided, otherwise dashboardTasks
+  const allTasks: Task[] = useMemo(() => {
+    return propTasks || dashboardTasks || [];
+  }, [propTasks, dashboardTasks]);
 
   console.log('📋 TaskList render:', {
     propTasks: propTasks?.length || 0,
     syncTasks: syncTasks?.length || 0,
     dashboardTasks: dashboardTasks?.length || 0,
-    allTasks: allTasks.length
+    allTasks: allTasks.length,
+    filters,
+    sortBy
   });
 
-  // Filter tasks based on criteria
-  const filteredTasks: Task[] = allTasks
-    .filter((task: Task) => {
-      // Apply filter prop first if provided
-      if (filter) {
-        if (filter.status && task.status !== filter.status) {
-          return false;
-        }
+  // ✅ Helper: Check if date matches filter
+  const matchesDateFilter = (task: Task, dateFilter: string): boolean => {
+    if (!task.dueDate) return false;
 
-        if (filter.priority && task.priority !== filter.priority) {
-          return false;
-        }
+    const taskDate = new Date(task.dueDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    taskDate.setHours(0, 0, 0, 0);
 
-        if (filter.dueDate) {
-          const taskDate = task.dueDate ? new Date(task.dueDate) : null;
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
+    const taskTime = taskDate.getTime();
+    const todayTime = today.getTime();
 
-          switch (filter.dueDate) {
-            case 'today':
-              if (!taskDate || taskDate.toDateString() !== today.toDateString()) {
-                return false;
-              }
-              break;
-            case 'upcoming':
-              if (!taskDate || taskDate < today) {
-                return false;
-              }
-              const nextWeek = new Date();
-              nextWeek.setDate(today.getDate() + 7);
-              if (taskDate > nextWeek) {
-                return false;
-              }
-              break;
-            case 'overdue':
-              if (!taskDate || taskDate >= today) {
-                return false;
-              }
-              break;
-          }
-        }
+    if (dateFilter === 'today') {
+      return taskTime === todayTime;
+    }
 
-        if (filter.project && task.projectId !== filter.project) {
-          return false;
-        }
+    if (dateFilter === 'upcoming') {
+      const nextWeek = new Date(today);
+      nextWeek.setDate(today.getDate() + 7);
+      return taskTime > todayTime && taskTime <= nextWeek.getTime();
+    }
 
-        if (filter.tag && task.tags && !task.tags.includes(filter.tag)) {
-          return false;
-        }
+    if (dateFilter === 'overdue') {
+      return taskTime < todayTime;
+    }
+
+    return true;
+  };
+
+  // ✅ Filter and sort tasks
+  const filteredTasks: Task[] = useMemo(() => {
+    let result = [...allTasks];
+
+    // 1. Apply prop filter (if provided)
+    if (filter) {
+      if (filter.status) {
+        result = result.filter(task => task.status === filter.status);
+      }
+      if (filter.priority) {
+        result = result.filter(task => task.priority === filter.priority);
+      }
+      if (filter.dueDate) {
+        result = result.filter(task => matchesDateFilter(task, filter.dueDate!));
+      }
+      if (filter.project) {
+        result = result.filter(task => task.projectId === filter.project);
+      }
+      if (filter.tag) {
+        result = result.filter(task => task.tags?.includes(filter.tag!));
+      }
+    }
+
+    // 2. Apply context filters (only if no prop filter)
+    if (!filter && filters) {
+      // Status filter
+      if (filters.status && filters.status !== 'all') {
+        result = result.filter(task => task.status === filters.status);
       }
 
-      // Apply context filters from DashboardContext
-      if (filters.status !== 'all' && task.status !== filters.status) {
-        return false;
+      // Priority filter
+      if (filters.priority && filters.priority !== 'all') {
+        result = result.filter(task => task.priority === filters.priority);
       }
 
-      if (filters.priority !== 'all' && task.priority !== filters.priority) {
-        return false;
+      // Project filter
+      if (filters.project && filters.project !== 'all') {
+        result = result.filter(task => task.projectId === filters.project);
       }
 
-      if (filters.project && task.projectId !== filters.project) {
-        return false;
+      // Tags filter
+      if (filters.tags && filters.tags.length > 0) {
+        result = result.filter(task => 
+          task.tags?.some(tag => filters.tags?.includes(tag))
+        );
       }
+    }
 
-      if (filters.tags && filters.tags.length > 0 && task.tags) {
-        return filters.tags.some((tag: string) => task.tags?.includes(tag));
-      }
-
-      // Filter by search query
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase();
+    // 3. Apply search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(task => {
         const titleMatch = task.title?.toLowerCase().includes(query);
         const descriptionMatch = task.description?.toLowerCase().includes(query);
-        const tagsMatch = task.tags?.some((tag: string) => tag.toLowerCase().includes(query));
-        
-        if (!titleMatch && !descriptionMatch && !tagsMatch) {
-          return false;
-        }
+        const tagsMatch = task.tags?.some(tag => tag.toLowerCase().includes(query));
+        return titleMatch || descriptionMatch || tagsMatch;
+      });
+    }
+
+    // 4. Sort tasks
+    const currentSort = sortBy || 'date';
+    result.sort((a, b) => {
+      if (currentSort === 'priority') {
+        const priorityOrder: Record<string, number> = { high: 3, medium: 2, low: 1 };
+        const aPriority = priorityOrder[a.priority || 'low'] || 0;
+        const bPriority = priorityOrder[b.priority || 'low'] || 0;
+        return bPriority - aPriority;
       }
 
-      return true;
-    })
-    .sort((a: Task, b: Task) => {
-      // Sort tasks based on selected sort option
-      switch (sortBy || 'date') {
-        case 'priority': {
-          const priorityOrder: Record<string, number> = { high: 3, medium: 2, low: 1 };
-          const aPriority = priorityOrder[a.priority || 'low'] || 0;
-          const bPriority = priorityOrder[b.priority || 'low'] || 0;
-          return bPriority - aPriority;
-        }
-        case 'title':
-          return (a.title || '').localeCompare(b.title || '');
-        case 'date':
-        default:
-          if (a.dueDate && b.dueDate) {
-            return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
-          } else if (a.dueDate) {
-            return -1;
-          } else if (b.dueDate) {
-            return 1;
-          }
-          return 0;
+      if (currentSort === 'title') {
+        return (a.title || '').localeCompare(b.title || '');
       }
+
+      // Default: sort by date
+      if (a.dueDate && b.dueDate) {
+        return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+      }
+      if (a.dueDate) return -1;
+      if (b.dueDate) return 1;
+      return 0;
     });
+
+    return result;
+  }, [allTasks, filter, filters, searchQuery, sortBy]);
 
   return (
     <Card className="mb-8">
@@ -197,7 +208,7 @@ const TaskList: React.FC<TaskListProps> = ({
             </div>
 
             <Select
-              value={filters.status}
+              value={filters.status || 'all'}
               onValueChange={(value: string) => setFilter('status', value)}
             >
               <SelectTrigger className="w-[140px]">
@@ -211,7 +222,7 @@ const TaskList: React.FC<TaskListProps> = ({
             </Select>
 
             <Select
-              value={filters.priority}
+              value={filters.priority || 'all'}
               onValueChange={(value: string) => setFilter('priority', value)}
             >
               <SelectTrigger className="w-[140px]">
@@ -226,7 +237,7 @@ const TaskList: React.FC<TaskListProps> = ({
             </Select>
 
             <Select
-              value={sortBy}
+              value={sortBy || 'date'}
               onValueChange={(value: string) => setContextSortBy(value as 'date' | 'priority' | 'title')}
             >
               <SelectTrigger className="w-[140px]">
@@ -258,7 +269,7 @@ const TaskList: React.FC<TaskListProps> = ({
           </div>
         )}
 
-        {/* ✅ SCROLL AREA - Task List with Scroll */}
+        {/* Task List with Scroll */}
         <ScrollArea className="h-[600px] pr-4">
           <div className={`space-y-3 ${viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' : ''}`}>
             {filteredTasks.map((task: Task) => (

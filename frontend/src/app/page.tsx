@@ -7,6 +7,7 @@ import CTASection from '@/components/NewCTASection'
 import { NewFooter } from '@/components/layout/NewFooter'
 import TimeLineDemo from '@/components/TimelineDemo'
 import TestimonialsSection from '@/components/NewTestimonialsSection'
+import ChatbotCommandsSection from '@/components/Chatbotcommandssection'
 
 const HomePage = () => {
   return (
@@ -16,6 +17,7 @@ const HomePage = () => {
       <NewFeaturesSection />
       {/* <NewHowItWorksSection /> */}
       <TimeLineDemo/>
+      <ChatbotCommandsSection/>
       <TestimonialsSection/>
       <CTASection />
       <NewFooter />

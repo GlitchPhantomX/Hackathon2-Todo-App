@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { ArrowRight, CheckCircle, Star, Users, Zap } from 'lucide-react'
+import { ArrowRight, CheckCircle, Star, Users, Zap, Sparkles, TrendingUp } from 'lucide-react'
 
 export function NewHeroSection() {
   const features = [
@@ -11,88 +11,165 @@ export function NewHeroSection() {
     { icon: Star, text: 'Top Rated' },
   ]
 
-
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900">
-      {/* Animated Background Elements */}
+    <section 
+      className="relative min-h-screen flex items-center justify-center overflow-hidden"
+      style={{ background: 'var(--background)' }}
+    >
+      {/* Animated Background Elements with CSS Variables */}
       <div className="absolute inset-0 overflow-hidden">
         <motion.div
-          className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-200 dark:bg-indigo-900 rounded-full blur-3xl opacity-20"
+          className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full blur-3xl"
+          style={{ 
+            backgroundColor: 'var(--purple-200)',
+            opacity: 0.2
+          }}
           animate={{
             y: [-20, 20, -20],
             x: [-10, 10, -10],
+            scale: [1, 1.1, 1],
             opacity: [0.15, 0.25, 0.15]
           }}
           transition={{
-            duration: 6,
+            duration: 8,
             repeat: Infinity,
             ease: "easeInOut"
           }}
         />
         <motion.div
-          className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-200 dark:bg-purple-900 rounded-full blur-3xl opacity-20"
+          className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full blur-3xl"
+          style={{ 
+            backgroundColor: 'var(--violet-300)',
+            opacity: 0.2
+          }}
           animate={{
             y: [20, -20, 20],
             x: [10, -10, 10],
+            scale: [1, 1.2, 1],
             opacity: [0.2, 0.3, 0.2]
           }}
           transition={{
-            duration: 8,
+            duration: 10,
             repeat: Infinity,
             ease: "easeInOut",
             delay: 1
           }}
         />
         <motion.div
-          className="absolute top-1/2 left-1/2 w-96 h-96 bg-pink-200 dark:bg-pink-900 rounded-full blur-3xl opacity-15"
+          className="absolute top-1/2 left-1/2 w-96 h-96 rounded-full blur-3xl"
+          style={{ 
+            backgroundColor: 'var(--purple-300)',
+            opacity: 0.15
+          }}
           animate={{
             y: [-10, 10, -10],
             x: [20, -20, 20],
+            scale: [1, 1.15, 1],
             opacity: [0.1, 0.2, 0.1]
           }}
           transition={{
-            duration: 10,
+            duration: 12,
             repeat: Infinity,
             ease: "easeInOut",
             delay: 2
           }}
         />
+        
+        {/* Extra floating particles for more aesthetic look */}
+        <motion.div
+          className="absolute top-20 right-20 w-32 h-32 rounded-full blur-2xl"
+          style={{ 
+            backgroundColor: 'var(--violet-400)',
+            opacity: 0.15
+          }}
+          animate={{
+            y: [0, -30, 0],
+            x: [0, 20, 0],
+          }}
+          transition={{
+            duration: 6,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+        <motion.div
+          className="absolute bottom-20 left-20 w-40 h-40 rounded-full blur-2xl"
+          style={{ 
+            backgroundColor: 'var(--purple-400)',
+            opacity: 0.15
+          }}
+          animate={{
+            y: [0, 30, 0],
+            x: [0, -20, 0],
+          }}
+          transition={{
+            duration: 7,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: 0.5
+          }}
+        />
       </div>
 
       {/* Content */}
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
-        {/* Badge */}
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 text-center">
+        {/* Enhanced Badge with gradient border */}
         <motion.div
-          className="inline-flex items-center gap-2 px-4 py-[2px] rounded-full bg-indigo-100 dark:bg-indigo-950 border border-indigo-200 dark:border-indigo-800 mt-14"
+          className="inline-flex items-center gap-2 px-5 py-2 rounded-full border backdrop-blur-sm relative overflow-hidden group"
+          style={{ 
+            backgroundColor: 'var(--secondary)',
+            borderColor: 'var(--border)'
+          }}
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          <Zap className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-          <span className="text-sm font-[18px] text-indigo-700 dark:text-indigo-300">
+          {/* Gradient overlay on hover */}
+          <div 
+            className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-300"
+            style={{ 
+              background: 'linear-gradient(to right, var(--purple-400), var(--violet-400))'
+            }}
+          />
+          <Sparkles className="w-4 h-4 relative z-10" style={{ color: 'var(--primary)' }} />
+          <span className="text-sm font-semibold relative z-10" style={{ color: 'var(--primary)' }}>
             Powered by AI • Built for Productivity
           </span>
+          <TrendingUp className="w-4 h-4 relative z-10" style={{ color: 'var(--primary)' }} />
         </motion.div>
 
-        {/* Headline */}
+        {/* Enhanced Headline with better gradient and aesthetic font */}
         <motion.h1
-          className="font-heading text-display-lg md:text-display-xl mb-6 bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 dark:from-indigo-400 dark:via-purple-400 dark:to-indigo-400"
+          className="text-4xl sm:text-5xl md:text-5xl mb-2 lg:text-7xl leading-tight tracking-tight"
+          style={{ 
+            fontFamily: "'Inter', 'SF Pro Display', -apple-system, sans-serif",
+            fontWeight: 800,
+            letterSpacing: '-0.02em'
+          }}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
         >
-          <span className="text-gray-900 dark:text-gray-50">
+          <span style={{ color: 'var(--foreground)' }}>
             Organize Your Life,
           </span>
           <br />
-          <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 dark:from-indigo-400 dark:via-purple-400 dark:to-indigo-400">
+          <span 
+            className="bg-clip-text text-transparent inline-block"
+            style={{ 
+              backgroundImage: 'linear-gradient(135deg, var(--purple-600), var(--violet-600), var(--purple-500))',
+              backgroundSize: '200% 200%',
+              animation: 'gradient-shift 3s ease infinite'
+            }}
+          >
             Achieve Your Goals
           </span>
         </motion.h1>
 
         {/* Subheadline */}
         <motion.p
-          className="text-[19px] text-gray-600 dark:text-gray-400 max-w-3xl mx-auto mb-8"
+          className="text-base md:text-lg max-w-2xl mx-auto mb-8 leading-relaxed"
+          style={{ color: 'var(--muted-foreground)' }}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
@@ -101,9 +178,9 @@ export function NewHeroSection() {
           Stay organized, boost productivity, and never miss a deadline.
         </motion.p>
 
-        {/* Features List */}
+        {/* Enhanced Features List with glass effect */}
         <motion.div
-          className="flex flex-wrap justify-center gap-4 mb-5"
+          className="flex flex-wrap justify-center gap-2.5 mb-8"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.6 }}
@@ -111,88 +188,125 @@ export function NewHeroSection() {
           {features.map((feature, index) => (
             <motion.div
               key={feature.text}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm"
+              className="flex items-center gap-2 px-3.5 py-2 rounded-xl border backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-300 cursor-default group"
+              style={{ 
+                backgroundColor: 'var(--card)',
+                borderColor: 'var(--border)'
+              }}
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.4, delay: 0.8 + index * 0.1 }}
+              whileHover={{ scale: 1.05, y: -2 }}
             >
-              <feature.icon className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              <feature.icon 
+                className="w-4 h-4 group-hover:scale-110 transition-transform duration-300" 
+                style={{ color: 'var(--primary)' }}
+              />
+              <span 
+                className="text-sm font-medium"
+                style={{ color: 'var(--foreground)' }}
+              >
                 {feature.text}
               </span>
             </motion.div>
           ))}
         </motion.div>
 
-        {/* CTAs */}
+        {/* Enhanced CTAs with better styling */}
         <motion.div
-          className="flex flex-col sm:flex-row gap-4 justify-center"
+          className="flex flex-col sm:flex-row gap-3 justify-center items-center mb-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 1 }}
         >
           <Link href="/register">
             <motion.button
-              className="px-5 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-lg font-medium transition-all duration-300 shadow-lg hover:shadow-indigo-500/20 flex items-center gap-2 group"
+              className="group relative px-7 py-3.5 text-white rounded-xl font-semibold transition-all duration-300 shadow-lg overflow-hidden"
+              style={{ 
+                background: 'linear-gradient(135deg, var(--purple-600), var(--violet-600))',
+                boxShadow: '0 10px 30px -5px rgba(139, 92, 246, 0.3)'
+              }}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              Get Started Free
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              {/* Animated gradient overlay */}
+              <div 
+                className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                style={{ 
+                  background: 'linear-gradient(135deg, var(--violet-600), var(--purple-600))'
+                }}
+              />
+              <span className="relative z-10 flex items-center gap-2">
+                Get Started Free
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
+              </span>
+              
+              {/* Shine effect */}
+              <motion.div
+                className="absolute inset-0 w-full h-full"
+                style={{
+                  background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
+                }}
+                animate={{
+                  x: [-200, 200],
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                  repeatDelay: 1,
+                }}
+              />
             </motion.button>
           </Link>
-          <Link href="#features">
+          
+          <Link href="/demo">
             <motion.button
-              className="px-5 py-3 bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 rounded-lg font-medium transition-all duration-300 hover:shadow-lg flex items-center gap-2"
+              className="px-7 py-3.5 rounded-xl font-semibold transition-all duration-300 border-2 backdrop-blur-sm hover:shadow-lg"
+              style={{ 
+                backgroundColor: 'var(--card)',
+                color: 'var(--foreground)',
+                borderColor: 'var(--border)'
+              }}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = 'var(--primary)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = 'var(--border)'
+              }}
             >
               Watch Demo
             </motion.button>
           </Link>
         </motion.div>
 
-        {/* Stats */}
-        {/* <motion.div
-          className="grid grid-cols-2 md:grid-cols-4 gap-8 mt-20"
+        {/* Mouse Scroll Indicator */}
+        <motion.div
+          className="flex justify-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.8, delay: 1.2 }}
+          transition={{ duration: 0.8, delay: 1.4 }}
         >
-          {stats.map((stat, index) => (
+          <div className="relative w-7 h-11 rounded-full border-2 flex items-start justify-center p-2"
+            style={{ borderColor: 'var(--border)' }}
+          >
             <motion.div
-              key={stat.label}
-              className="text-center"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 1.4 + index * 0.1 }}
-            >
-              <div className="font-heading text-h1 bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 mb-2">
-                {stat.value}
-              </div>
-              <div className="text-body-sm text-gray-600 dark:text-gray-400">
-                {stat.label}
-              </div>
-            </motion.div>
-          ))}
-        </motion.div> */}
+              className="w-1.5 h-2.5 rounded-full"
+              style={{ backgroundColor: 'var(--primary)' }}
+              animate={{
+                y: [0, 12, 0],
+                opacity: [1, 0.5, 1]
+              }}
+              transition={{
+                duration: 1.5,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+            />
+          </div>
+        </motion.div>
       </div>
-
-      {/* Scroll Indicator */}
-      {/* <motion.div
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 2, duration: 0.5 }}
-      >
-        <div className="w-6 h-10 rounded-full border-2 border-gray-300 dark:border-gray-700 flex items-start justify-center p-2">
-          <motion.div
-            className="w-1.5 h-3 rounded-full bg-gray-400 dark:bg-gray-600"
-            animate={{ y: [0, 8, 0] }}
-            transition={{ repeat: Infinity, duration: 1.5 }}
-          />
-        </div>
-      </motion.div> */}
     </section>
   )
 }

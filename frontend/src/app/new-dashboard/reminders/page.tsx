@@ -1,6 +1,5 @@
 'use client';
 export const runtime = 'edge';
-
 export const dynamic = 'force-dynamic';
 
 import React, { useState } from 'react';
@@ -24,7 +23,10 @@ const RemindersPage = () => {
   );
 
   return (
-    <div className="p-6 space-y-6">
+    <div 
+      className="p-6 space-y-6"
+      style={{ backgroundColor: 'var(--background)' }}
+    >
       <div className="flex justify-between items-center">
         <PageHeader
           title="Reminders"
@@ -32,7 +34,10 @@ const RemindersPage = () => {
         />
         <Button
           onClick={() => setIsAddTaskModalOpen(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white"
+          className="text-white shadow-sm"
+          style={{
+            background: 'linear-gradient(to right, var(--purple-600), var(--violet-600))'
+          }}
         >
           <PlusIcon className="h-4 w-4 mr-2" />
           New Reminder
@@ -44,9 +49,20 @@ const RemindersPage = () => {
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Reminders sidebar */}
         <div className="lg:w-1/4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Your Reminders</CardTitle>
+          <Card 
+            className="border shadow-sm"
+            style={{
+              backgroundColor: 'var(--card)',
+              borderColor: 'var(--border)'
+            }}
+          >
+            <CardHeader 
+              className="border-b"
+              style={{ borderColor: 'var(--border)' }}
+            >
+              <CardTitle style={{ color: 'var(--foreground)' }}>
+                Your Reminders
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
@@ -54,22 +70,40 @@ const RemindersPage = () => {
                   reminderNotifications.map((notification) => (
                     <div
                       key={notification.id}
-                      className={`border rounded-lg p-4 cursor-pointer transition-colors ${
+                      className={`border rounded-lg p-4 cursor-pointer transition-all duration-200 ${
                         selectedReminder === notification.id
-                          ? 'bg-blue-50 border-blue-200 dark:bg-blue-900/30 dark:border-blue-700'
-                          : 'hover:bg-gray-50 dark:hover:bg-gray-800'
+                          ? 'border-2'
+                          : ''
                       }`}
+                      style={{
+                        backgroundColor: selectedReminder === notification.id ? 'var(--muted)' : 'transparent',
+                        borderColor: selectedReminder === notification.id ? 'var(--primary)' : 'var(--border)'
+                      }}
                       onClick={() => setSelectedReminder(notification.id === selectedReminder ? null : notification.id)}
                     >
                       <div className="flex justify-between items-start">
                         <div className="flex items-start">
-                          <BellIcon className="h-5 w-5 text-blue-500 mt-0.5 mr-3 flex-shrink-0" />
+                          <BellIcon 
+                            className="h-5 w-5 mt-0.5 mr-3 flex-shrink-0" 
+                            style={{ color: 'var(--primary)' }}
+                          />
                           <div>
-                            <h3 className="font-medium">{notification.title}</h3>
-                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                            <h3 
+                              className="font-medium"
+                              style={{ color: 'var(--foreground)' }}
+                            >
+                              {notification.title}
+                            </h3>
+                            <p 
+                              className="text-sm mt-1"
+                              style={{ color: 'var(--muted-foreground)' }}
+                            >
                               {notification.message}
                             </p>
-                            <p className="text-xs text-gray-500 mt-1">
+                            <p 
+                              className="text-xs mt-1"
+                              style={{ color: 'var(--muted-foreground)' }}
+                            >
                               {new Date(notification.createdAt).toLocaleString()}
                             </p>
                           </div>
@@ -79,7 +113,6 @@ const RemindersPage = () => {
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
-                            // Handle reminder actions
                           }}
                         >
                           <MoreHorizontalIcon className="h-4 w-4" />
@@ -87,15 +120,28 @@ const RemindersPage = () => {
                       </div>
                       {!notification.read && (
                         <div className="mt-2 flex items-center">
-                          <div className="w-2 h-2 rounded-full bg-blue-500 mr-2"></div>
-                          <span className="text-xs text-blue-500">Unread</span>
+                          <div 
+                            className="w-2 h-2 rounded-full mr-2"
+                            style={{ backgroundColor: 'var(--primary)' }}
+                          />
+                          <span 
+                            className="text-xs"
+                            style={{ color: 'var(--primary)' }}
+                          >
+                            Unread
+                          </span>
                         </div>
                       )}
                     </div>
                   ))
                 ) : (
-                  <div className="text-center py-8 text-gray-500">
+                  <div 
+                    className="text-center py-8"
+                    style={{ color: 'var(--muted-foreground)' }}
+                  >
+                    <BellIcon className="h-12 w-12 mx-auto mb-3 opacity-30" />
                     <p>No reminders scheduled.</p>
+                    <p className="text-xs mt-1">Create a task with a reminder to get started</p>
                   </div>
                 )}
               </div>
@@ -106,10 +152,21 @@ const RemindersPage = () => {
         {/* Main content - Tasks with reminders */}
         <div className="lg:w-3/4 space-y-6">
           <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold">Tasks with Reminders</h2>
+            <h2 
+              className="text-xl font-semibold"
+              style={{ color: 'var(--foreground)' }}
+            >
+              Tasks with Reminders
+            </h2>
           </div>
 
-          <Card>
+          <Card 
+            className="border shadow-sm"
+            style={{
+              borderColor: 'var(--border)',
+              backgroundColor: 'var(--card)'
+            }}
+          >
             <CardContent className="p-6">
               <TaskList filter={{ dueDate: 'upcoming' }} />
             </CardContent>

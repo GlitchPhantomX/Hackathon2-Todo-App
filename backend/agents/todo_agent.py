@@ -1,3 +1,7 @@
+"""
+Enhanced TodoAgent with Multi-language Support (English + Urdu)
+"""
+
 import os
 import json
 import asyncio
@@ -6,15 +10,46 @@ from sqlmodel import Session, select, col
 from models import Task
 from datetime import datetime, timedelta
 
+# ✅ Import translation service
+import sys
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+try:
+    from utils.translation_service import TranslationService
+except ImportError:
+    # Fallback if in different directory structure
+    class TranslationService:
+        @staticmethod
+        def detect_language(text):
+            return 'en'
+        @staticmethod
+        def translate_to_english(text):
+            return text
+        @staticmethod
+        def translate_to_urdu(text):
+            return text
+        @staticmethod
+        def get_system_prompt_for_language(lang):
+            return "You are a helpful assistant."
+
+
 class TodoAgent:
-    """AI Agent for managing todo tasks through natural conversation with LLM"""
+    """
+    AI Agent for managing todo tasks through natural conversation
     
-    def __init__(self, user_id: int, session: Session):
+    ✅ NEW FEATURES:
+    - Multi-language support (English + Urdu)
+    - Voice command support
+    - Language auto-detection
+    - Translated responses
+    """
+    
+    def __init__(self, user_id: int, session: Session, language: str = "auto"):
         self.user_id = user_id
         self.session = session
+        self.language = language  # 'en', 'ur', or 'auto'
         
         # OpenRouter Configuration
-        self.api_key = os.getenv("OPENROUTER_API_KEY", "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")
+        self.api_key = os.getenv("OPENROUTER_API_KEY", "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")
         self.base_url = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
         self.model = os.getenv("OPENROUTER_MODEL", "mistralai/devstral-2512:free")
         
@@ -45,120 +80,169 @@ class TodoAgent:
             self.websocket_manager = None
             self.WebSocketEventType = None
     
-    def _extract_task_name_from_delete_message(self, message: str) -> str:
+    def _detect_and_translate_message(self, message: str) -> tuple[str, str]:
         """
-        Extract clean task name from delete message
+        Detect message language and translate to English if needed
         
-        Examples:
-        "remove Add tasks" -> "add tasks"
-        'remove "Remove"' -> "remove"
-        "delete the task called Buy groceries" -> "buy groceries"
+        Returns:
+            (translated_message, detected_language)
         """
+        # Auto-detect language if not specified
+        if self.language == "auto":
+            detected_lang = TranslationService.detect_language(message)
+            print(f"🌍 Detected language: {detected_lang}")
+        else:
+            detected_lang = self.language
+        
+        # Translate to English for processing
+        if detected_lang == 'ur':
+            translated = TranslationService.translate_to_english(message)
+            print(f"🔄 Translated from Urdu: '{message}' -> '{translated}'")
+            return translated, 'ur'
+        
+        return message, 'en'
+    
+    def _translate_response(self, response: str, target_language: str) -> str:
+        """
+        Translate response to target language if needed
+        
+        Args:
+            response: Response text in English
+            target_language: Target language ('en' or 'ur')
+            
+        Returns:
+            Translated response
+        """
+        if target_language == 'ur':
+            translated = TranslationService.translate_to_urdu(response)
+            print(f"🔄 Translated to Urdu: '{response}' -> '{translated}'")
+            return translated
+        
+        return response
+    
+    async def process_message(
+        self,
+        message: str,
+        conversation_history: List[Dict[str, str]],
+        voice_input: bool = False  # ✅ NEW: Flag for voice commands
+    ) -> Dict[str, Any]:
+        """
+        Process user message with multi-language support
+        
+        Args:
+            message: User message (in any supported language)
+            conversation_history: Previous messages
+            voice_input: Whether message came from voice input
+            
+        Returns:
+            Response dict with translated content
+        """
+        
+        # ✅ STEP 1: Detect language and translate to English
+        english_message, detected_lang = self._detect_and_translate_message(message)
+        
+        print(f"🗣️ Original message: {message}")
+        print(f"🌍 Detected language: {detected_lang}")
+        print(f"📝 Processing in English: {english_message}")
+        
+        # ✅ STEP 2: Process message in English
+        message_lower = english_message.lower()
+
+        # ✅ DETECT DELETE INTENT
+        delete_keywords = ['remove', 'delete', 'get rid of', 'erase', 'حذف کریں']
+        if any(keyword in message_lower for keyword in delete_keywords):
+            task_title = self._extract_task_name_from_delete_message(english_message)
+            
+            if not task_title or len(task_title) < 2:
+                response = "Please specify which task you want to delete."
+                return {
+                    "response": self._translate_response(response, detected_lang),
+                    "language": detected_lang,
+                    "metadata": {
+                        "action": "delete_task",
+                        "success": False,
+                        "voice_input": voice_input
+                    }
+                }
+            
+            result = await self.delete_task_by_title(task_title)
+            
+            return {
+                "response": self._translate_response(result["message"], detected_lang),
+                "language": detected_lang,
+                "metadata": {
+                    "action": "delete_task",
+                    "success": result["success"],
+                    "task_title": task_title,
+                    "voice_input": voice_input
+                }
+            }
+
+        # ✅ DETECT LIST INTENT
+        list_keywords = ['show', 'list', 'what are', "what's", 'display', 'view', 'my tasks', 'see tasks', 'دکھائیں']
+        if any(keyword in message_lower for keyword in list_keywords):
+            tasks = self.session.exec(
+                select(Task).where(Task.user_id == self.user_id).order_by(Task.created_at.desc())
+            ).all()
+
+            response = self.format_tasks_response(tasks)
+
+            return {
+                "response": self._translate_response(response, detected_lang),
+                "language": detected_lang,
+                "metadata": {
+                    "action": "list_tasks",
+                    "count": len(tasks),
+                    "voice_input": voice_input
+                }
+            }
+
+        # ✅ DETECT CREATE INTENT
+        create_keywords = ['add', 'create', 'new task', 'make a task', 'todo', 'remind me', 'شامل کریں', 'بنائیں']
+        if any(keyword in message_lower for keyword in create_keywords):
+            result = await self._create_task(english_message, await self._get_task_context("create_task", english_message))
+            result["response"] = self._translate_response(result["response"], detected_lang)
+            result["language"] = detected_lang
+            result["metadata"]["voice_input"] = voice_input
+            return result
+
+        # ✅ DETECT COMPLETE INTENT
+        complete_keywords = ['complete', 'finish', 'done', 'mark as done', 'finished', 'completed', 'مکمل کریں']
+        if any(keyword in message_lower for keyword in complete_keywords):
+            result = await self._complete_task(english_message, await self._get_task_context("complete_task", english_message))
+            result["response"] = self._translate_response(result["response"], detected_lang)
+            result["language"] = detected_lang
+            result["metadata"]["voice_input"] = voice_input
+            return result
+
+        # ✅ Default: General response with language support
+        result = await self._general_response(english_message, conversation_history, {}, detected_lang)
+        result["metadata"]["voice_input"] = voice_input
+        return result
+    
+    def _extract_task_name_from_delete_message(self, message: str) -> str:
+        """Extract clean task name from delete message"""
         message_lower = message.lower()
         
-        # Remove delete keywords
         for keyword in ['remove', 'delete', 'get rid of', 'erase']:
             message_lower = message_lower.replace(keyword, '')
         
-        # Remove common phrases
         phrases_to_remove = [
-            'tasks from my list',
-            'from my list',
-            'the task called',
-            'the task',
-            'task called',
-            'task named',
-            'task',
-            'from',
-            'my',
-            'list'
+            'tasks from my list', 'from my list', 'the task called',
+            'the task', 'task called', 'task named', 'task', 'from', 'my', 'list'
         ]
         
         for phrase in phrases_to_remove:
             message_lower = message_lower.replace(phrase, '')
         
-        # Remove all quotes and extra spaces
         task_name = message_lower.strip().strip('"').strip("'").strip()
-        
         print(f"🔍 Extracted task name: '{task_name}'")
         return task_name
     
-    async def process_message(
-        self,
-        message: str,
-        conversation_history: List[Dict[str, str]]
-    ) -> Dict[str, Any]:
-        """Process user message and determine intent"""
-        message_lower = message.lower()
-
-        # ✅ DETECT DELETE INTENT FIRST - HIGHEST PRIORITY
-        delete_keywords = ['remove', 'delete', 'get rid of', 'erase']
-        if any(keyword in message_lower for keyword in delete_keywords):
-            # Extract task title using improved logic
-            task_title = self._extract_task_name_from_delete_message(message)
-            
-            if not task_title or len(task_title) < 2:
-                return {
-                    "response": "Please specify which task you want to delete. For example: 'remove Add tasks'",
-                    "metadata": {
-                        "action": "delete_task",
-                        "success": False
-                    }
-                }
-            
-            print(f"🗑️ DELETE INTENT DETECTED: '{task_title}'")
-
-            # Call delete function
-            result = await self.delete_task_by_title(task_title)
-
-            return {
-                "response": result["message"],
-                "metadata": {
-                    "action": "delete_task",
-                    "success": result["success"],
-                    "task_title": task_title
-                }
-            }
-
-        # ✅ DETECT LIST INTENT
-        list_keywords = ['show', 'list', 'what are', "what's", 'display', 'view', 'my tasks', 'see tasks']
-        if any(keyword in message_lower for keyword in list_keywords):
-            # Fetch and list tasks
-            tasks = self.session.exec(
-                select(Task).where(Task.user_id == self.user_id).order_by(Task.created_at.desc())
-            ).all()
-
-            # Format tasks concisely
-            response = self.format_tasks_response(tasks)
-
-            return {
-                "response": response,
-                "metadata": {
-                    "action": "list_tasks",
-                    "count": len(tasks)
-                }
-            }
-
-        # ✅ DETECT CREATE INTENT
-        create_keywords = ['add', 'create', 'new task', 'make a task', 'todo', 'remind me']
-        if any(keyword in message_lower for keyword in create_keywords):
-            # Extract task details and create
-            return await self._create_task(message, await self._get_task_context("create_task", message))
-
-        # ✅ DETECT COMPLETE INTENT
-        complete_keywords = ['complete', 'finish', 'done', 'mark as done', 'finished', 'completed']
-        if any(keyword in message_lower for keyword in complete_keywords):
-            return await self._complete_task(message, await self._get_task_context("complete_task", message))
-
-        # Default: General response
-        return await self._general_response(message, conversation_history, {})
-    
     async def _get_task_context(self, intent: str, message: str) -> Dict[str, Any]:
         """Get relevant task data for context"""
-        
         context = {"user_id": self.user_id}
         
-        # Get tasks based on intent
         if intent in ["list_tasks", "search_tasks", "get_statistics"]:
             tasks = list(self.session.exec(
                 select(Task).where(Task.user_id == self.user_id).order_by(Task.created_at.desc())
@@ -171,30 +255,21 @@ class TodoAgent:
     def _task_to_dict(self, task: Task) -> Dict[str, Any]:
         """Convert task to dictionary"""
         return {
-        "id": task.id,
-        "title": task.title,
-        "description": task.description or "",
-        "status": "completed" if task.completed else "pending",  # ✅ Derive from completed
-        "priority": task.priority,
-        "completed": task.completed,
-        "due_date": task.due_date.isoformat() if task.due_date else None,
-        "created_at": task.created_at.isoformat() if task.created_at else None
-    }
+            "id": task.id,
+            "title": task.title,
+            "description": task.description or "",
+            "status": "completed" if task.completed else "pending",
+            "priority": task.priority,
+            "completed": task.completed,
+            "due_date": task.due_date.isoformat() if task.due_date else None,
+            "created_at": task.created_at.isoformat() if task.created_at else None
+        }
 
     def format_tasks_response(self, tasks: list) -> str:
-        """
-        Format tasks in a concise, readable way
-
-        Args:
-            tasks: List of Task objects
-
-        Returns:
-            str: Formatted task list
-        """
+        """Format tasks in a concise, readable way"""
         if not tasks:
             return "You don't have any tasks yet. Want to add one? 😊"
 
-        # Group by priority
         high_priority = [t for t in tasks if t.priority == 'high' and not t.completed]
         medium_priority = [t for t in tasks if t.priority == 'medium' and not t.completed]
         low_priority = [t for t in tasks if t.priority == 'low' and not t.completed]
@@ -202,7 +277,6 @@ class TodoAgent:
 
         response = f"You have {len(tasks)} task{'s' if len(tasks) != 1 else ''}:\n\n"
 
-        # High priority
         if high_priority:
             response += "**High Priority** 🔴\n"
             for i, task in enumerate(high_priority, 1):
@@ -210,7 +284,6 @@ class TodoAgent:
                 response += f"{i}. {task.title}{due}\n"
             response += "\n"
 
-        # Medium priority
         if medium_priority:
             response += "**Medium Priority** 🟡\n"
             for i, task in enumerate(medium_priority, 1):
@@ -218,7 +291,6 @@ class TodoAgent:
                 response += f"{i}. {task.title}{due}\n"
             response += "\n"
 
-        # Low priority
         if low_priority:
             response += "**Low Priority** 🟢\n"
             for i, task in enumerate(low_priority, 1):
@@ -226,7 +298,6 @@ class TodoAgent:
                 response += f"{i}. {task.title}{due}\n"
             response += "\n"
 
-        # Completed
         if completed:
             response += f"**Completed** ✓ ({len(completed)} tasks)\n\n"
 
@@ -244,19 +315,16 @@ class TodoAgent:
             return "I'm your task assistant! (OpenRouter API not configured)"
         
         try:
-            # Build messages
             messages = [
                 {"role": "system", "content": system_prompt}
             ]
             
-            # Add context if available
             if context:
                 context_str = f"\n\nContext:\n{json.dumps(context, indent=2)}"
                 messages.append({"role": "system", "content": context_str})
             
             messages.append({"role": "user", "content": user_message})
             
-            # Call OpenAI
             response = self.client.chat.completions.create(
                 model=self.model,
                 messages=messages,
@@ -273,7 +341,6 @@ class TodoAgent:
     async def _create_task(self, message: str, context: Dict[str, Any]) -> Dict[str, Any]:
         """Create a new task from user message"""
         
-        # Use LLM to extract task details
         system_prompt = """You are a task extraction assistant.
 Extract the task title, priority (low/medium/high), and description from the user's message.
 
@@ -284,15 +351,7 @@ IMPORTANT RULES:
 4. Otherwise → priority = "medium"
 
 Respond ONLY with valid JSON (no markdown, no backticks):
-{"title": "clean task title", "priority": "high/medium/low", "description": ""}
-
-Examples:
-Input: "add task buy groceries"
-Output: {"title": "Buy groceries", "priority": "medium", "description": ""}
-
-Input: "create urgent task call doctor"
-Output: {"title": "Call doctor", "priority": "high", "description": ""}
-"""
+{"title": "clean task title", "priority": "high/medium/low", "description": ""}"""
         
         extraction_response = await self._generate_llm_response(
             system_prompt,
@@ -301,27 +360,23 @@ Output: {"title": "Call doctor", "priority": "high", "description": ""}
         )
         
         try:
-            # Clean response - remove markdown code blocks if present
             clean_response = extraction_response.strip()
             if clean_response.startswith("```"):
                 clean_response = clean_response.split("```")[1]
                 if clean_response.startswith("json"):
                     clean_response = clean_response[4:].strip()
             
-            # Parse extracted data
             task_data = json.loads(clean_response)
             title = task_data.get("title", "").strip()
             priority = task_data.get("priority", "medium").lower()
             description = task_data.get("description", "")
             
-            # Validate priority
             if priority not in ["low", "medium", "high"]:
                 priority = "medium"
             
         except (json.JSONDecodeError, Exception) as e:
             print(f"⚠️ LLM extraction failed: {e}")
             
-            # Fallback: simple extraction
             title = message
             for trigger in ['create', 'add', 'new task', 'make a task', 'todo', 'remind me', 'tasks', 'task']:
                 if trigger in message.lower():
@@ -330,10 +385,8 @@ Output: {"title": "Call doctor", "priority": "high", "description": ""}
                         title = parts[1].strip()
                     break
             
-            # Remove quotes and punctuation
             title = title.strip('.,!?\'"')
             
-            # Detect priority from message
             priority = "medium"
             if any(word in message.lower() for word in ['urgent', 'important', 'high priority', 'asap', 'critical']):
                 priority = "high"
@@ -344,24 +397,22 @@ Output: {"title": "Call doctor", "priority": "high", "description": ""}
         
         if not title or len(title) < 2:
             return {
-                "response": "Please tell me what task you want to add. For example: 'add task buy milk'",
+                "response": "Please tell me what task you want to add.",
                 "metadata": {"action": "create_task", "success": False}
             }
         
-        # Create task in database
         new_task = Task(
-    user_id=self.user_id,
-    title=title.capitalize(),
-    description=description,
-    priority=priority,
-    completed=False  # ✅ Use completed field instead
-)
+            user_id=self.user_id,
+            title=title.capitalize(),
+            description=description,
+            priority=priority,
+            completed=False
+        )
         
         self.session.add(new_task)
         self.session.commit()
         self.session.refresh(new_task)
 
-        # Broadcast task creation event
         await self._broadcast_task_created(new_task)
 
         return {
@@ -377,7 +428,6 @@ Output: {"title": "Call doctor", "priority": "high", "description": ""}
     async def _complete_task(self, message: str, context: Dict[str, Any]) -> Dict[str, Any]:
         """Mark task as complete"""
         
-        # Extract task name
         task_name = message.lower()
         for keyword in ['complete', 'finish', 'done', 'mark as done', 'mark', 'finished', 'completed']:
             task_name = task_name.replace(keyword, '')
@@ -389,7 +439,6 @@ Output: {"title": "Call doctor", "priority": "high", "description": ""}
                 "metadata": {"action": "complete_task", "success": False}
             }
         
-        # Find matching task
         tasks = self.session.exec(
             select(Task).where(
                 Task.user_id == self.user_id,
@@ -397,7 +446,6 @@ Output: {"title": "Call doctor", "priority": "high", "description": ""}
             )
         ).all()
         
-        # Try exact match first, then partial
         matched_task = None
         for task in tasks:
             if task.title.lower() == task_name:
@@ -412,17 +460,14 @@ Output: {"title": "Call doctor", "priority": "high", "description": ""}
         
         if not matched_task:
             return {
-                "response": f"I couldn't find a task matching '{task_name}'. Please check the task name.",
+                "response": f"I couldn't find a task matching '{task_name}'.",
                 "metadata": {"action": "complete_task", "success": False}
             }
         
-        # Mark as complete
-        # matched_task.status = "completed"
         matched_task.completed = True
         self.session.add(matched_task)
         self.session.commit()
 
-        # Broadcast task update event
         await self._broadcast_task_updated(matched_task)
 
         return {
@@ -439,21 +484,13 @@ Output: {"title": "Call doctor", "priority": "high", "description": ""}
         self,
         message: str,
         conversation_history: List[Dict[str, str]],
-        context: Dict[str, Any]
+        context: Dict[str, Any],
+        language: str = 'en'
     ) -> Dict[str, Any]:
-        """General conversational response"""
+        """General conversational response with language support"""
 
-        system_prompt = """You are Task Buddy, a friendly and professional AI task assistant.
-
-Keep responses SHORT (under 100 words), HELPFUL, and NATURAL.
-
-Your capabilities:
-- Create tasks: "add task [name]"
-- Show tasks: "show my tasks"  
-- Delete tasks: "remove [task name]"
-- Complete tasks: "mark [task name] as done"
-
-Be friendly but professional. No excessive emojis or encouragement."""
+        # ✅ Get language-appropriate system prompt
+        system_prompt = TranslationService.get_system_prompt_for_language(language)
         
         response_text = await self._generate_llm_response(
             system_prompt,
@@ -461,8 +498,12 @@ Be friendly but professional. No excessive emojis or encouragement."""
             context
         )
         
+        # ✅ Translate response if needed
+        translated_response = self._translate_response(response_text, language)
+        
         return {
-            "response": response_text,
+            "response": translated_response,
+            "language": language,
             "metadata": {"action": "general"}
         }
 
@@ -495,15 +536,7 @@ Be friendly but professional. No excessive emojis or encouragement."""
         await self._broadcast_task_event(self.WebSocketEventType.TASK_UPDATED, task_dict)
 
     async def delete_task_by_title(self, title: str) -> Dict[str, Any]:
-        """
-        Delete a task by matching its title with improved matching logic
-        
-        Args:
-            title: The title of the task to delete (case-insensitive)
-        
-        Returns:
-            dict: Success/failure message
-        """
+        """Delete a task by matching its title"""
         try:
             if not title or len(title) < 2:
                 return {
@@ -511,7 +544,6 @@ Be friendly but professional. No excessive emojis or encouragement."""
                     "message": "Please specify which task you want to delete."
                 }
             
-            # Get all user tasks
             all_tasks = self.session.exec(
                 select(Task).where(Task.user_id == self.user_id)
             ).all()
@@ -522,66 +554,36 @@ Be friendly but professional. No excessive emojis or encouragement."""
                     "message": "You don't have any tasks to delete."
                 }
             
-            # Try exact match first (case-insensitive)
             matched_task = None
             title_lower = title.lower().strip()
             
-            print(f"🔍 Searching for task: '{title_lower}'")
-            print(f"📋 Available tasks: {[t.title for t in all_tasks]}")
-            
-            # Strategy 1: Exact match
+            # Exact match
             for task in all_tasks:
                 if task.title.lower() == title_lower:
                     matched_task = task
-                    print(f"✅ Exact match found: '{task.title}'")
                     break
             
-            # Strategy 2: Partial match (title in task or task in title)
+            # Partial match
             if not matched_task:
                 for task in all_tasks:
                     task_title_lower = task.title.lower()
                     if title_lower in task_title_lower or task_title_lower in title_lower:
                         matched_task = task
-                        print(f"✅ Partial match found: '{task.title}'")
                         break
             
-            # Strategy 3: Word-based match
             if not matched_task:
-                title_words = set(title_lower.split())
-                best_match = None
-                best_score = 0
-                
-                for task in all_tasks:
-                    task_words = set(task.title.lower().split())
-                    common_words = title_words & task_words
-                    score = len(common_words)
-                    
-                    if score > best_score and score > 0:
-                        best_score = score
-                        best_match = task
-                
-                if best_match and best_score >= len(title_words) * 0.5:  # At least 50% match
-                    matched_task = best_match
-                    print(f"✅ Word-based match found: '{matched_task.title}' (score: {best_score})")
-            
-            if not matched_task:
-                # List available tasks for user
                 task_list = "\n".join([f"- {t.title}" for t in all_tasks[:5]])
                 return {
                     "success": False,
                     "message": f"Task '{title}' not found. Your tasks:\n{task_list}"
                 }
             
-            # Delete the task
             task_title = matched_task.title
             task_id = matched_task.id
             
             self.session.delete(matched_task)
             self.session.commit()
             
-            print(f"✅ Task deleted: {task_title} (ID: {task_id})")
-            
-            # Broadcast WebSocket event
             await self._broadcast_task_deleted(task_id)
             
             return {
@@ -591,8 +593,6 @@ Be friendly but professional. No excessive emojis or encouragement."""
             
         except Exception as e:
             print(f"❌ Error deleting task: {e}")
-            import traceback
-            traceback.print_exc()
             return {
                 "success": False,
                 "message": f"Failed to delete task: {str(e)}"

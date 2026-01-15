@@ -220,16 +220,41 @@ const ImportModal: React.FC<ImportModalProps> = ({ open, onOpenChange }) => {
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-5xl max-h-[90vh] overflow-hidden flex flex-col bg-black border border-gray-800">
-        <DialogHeader className="pb-4 border-b border-gray-800">
+      <DialogContent 
+        className="sm:max-w-5xl max-h-[90vh] overflow-hidden flex flex-col border"
+        style={{
+          backgroundColor: 'var(--card)',
+          borderColor: 'var(--border)'
+        }}
+      >
+        <DialogHeader 
+          className="pb-4 border-b"
+          style={{ borderColor: 'var(--border)' }}
+        >
           <div className="flex items-center justify-between">
             <div>
-              <DialogTitle className="text-2xl font-bold text-white">Import Tasks</DialogTitle>
-              <p className="text-sm text-gray-400 mt-1">
+              <DialogTitle 
+                className="text-2xl font-bold"
+                style={{ color: 'var(--foreground)' }}
+              >
+                Import Tasks
+              </DialogTitle>
+              <p 
+                className="text-sm mt-1"
+                style={{ color: 'var(--muted-foreground)' }}
+              >
                 Upload CSV or JSON files to bulk import tasks
               </p>
             </div>
-            <Badge variant={activeTab === 'result' ? 'default' : 'secondary'} className="text-xs bg-gray-800 text-white border border-gray-700">
+            <Badge 
+              variant={activeTab === 'result' ? 'default' : 'secondary'} 
+              className="text-xs border"
+              style={{
+                backgroundColor: activeTab === 'result' ? 'var(--primary)' : 'var(--muted)',
+                color: activeTab === 'result' ? 'white' : 'var(--foreground)',
+                borderColor: 'var(--border)'
+              }}
+            >
               {activeTab === 'upload' && '📁 Upload'}
               {activeTab === 'preview' && '👁️ Preview'}
               {activeTab === 'result' && '✅ Complete'}
@@ -238,36 +263,80 @@ const ImportModal: React.FC<ImportModalProps> = ({ open, onOpenChange }) => {
         </DialogHeader>
 
         {/* Progress Steps */}
-        <div className="flex items-center justify-center py-4 border-b border-gray-800 bg-gray-900">
+        <div 
+          className="flex items-center justify-center py-4 border-b"
+          style={{
+            borderColor: 'var(--border)',
+            backgroundColor: 'var(--muted)'
+          }}
+        >
           <div className="flex items-center gap-2">
-            <div className={`flex items-center gap-2 ${activeTab === 'upload' ? 'text-blue-400' : 'text-gray-500'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
-                activeTab === 'upload' ? 'border-blue-400 bg-blue-500 text-white' : 
-                ['preview', 'result'].includes(activeTab) ? 'border-green-500 bg-green-600 text-white' : 'border-gray-700 bg-gray-800'
-              }`}>
+            <div 
+              className="flex items-center gap-2"
+              style={{ 
+                color: activeTab === 'upload' ? 'var(--primary)' : 'var(--muted-foreground)' 
+              }}
+            >
+              <div 
+                className="w-8 h-8 rounded-full flex items-center justify-center border-2"
+                style={{
+                  borderColor: activeTab === 'upload' ? 'var(--primary)' : 
+                              ['preview', 'result'].includes(activeTab) ? '#10b981' : 'var(--border)',
+                  backgroundColor: activeTab === 'upload' ? 'var(--primary)' : 
+                                  ['preview', 'result'].includes(activeTab) ? '#10b981' : 'transparent',
+                  color: ['upload', 'preview', 'result'].includes(activeTab) ? 'white' : 'var(--muted-foreground)'
+                }}
+              >
                 {['preview', 'result'].includes(activeTab) ? <CheckCircle2 className="h-4 w-4" /> : '1'}
               </div>
               <span className="text-sm font-medium">Upload</span>
             </div>
             
-            <ArrowRight className="h-4 w-4 text-gray-600 mx-2" />
+            <ArrowRight 
+              className="h-4 w-4 mx-2"
+              style={{ color: 'var(--muted-foreground)' }}
+            />
             
-            <div className={`flex items-center gap-2 ${activeTab === 'preview' ? 'text-blue-400' : 'text-gray-500'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
-                activeTab === 'preview' ? 'border-blue-400 bg-blue-500 text-white' : 
-                activeTab === 'result' ? 'border-green-500 bg-green-600 text-white' : 'border-gray-700 bg-gray-800'
-              }`}>
+            <div 
+              className="flex items-center gap-2"
+              style={{ 
+                color: activeTab === 'preview' ? 'var(--primary)' : 'var(--muted-foreground)' 
+              }}
+            >
+              <div 
+                className="w-8 h-8 rounded-full flex items-center justify-center border-2"
+                style={{
+                  borderColor: activeTab === 'preview' ? 'var(--primary)' : 
+                              activeTab === 'result' ? '#10b981' : 'var(--border)',
+                  backgroundColor: activeTab === 'preview' ? 'var(--primary)' : 
+                                  activeTab === 'result' ? '#10b981' : 'transparent',
+                  color: ['preview', 'result'].includes(activeTab) ? 'white' : 'var(--muted-foreground)'
+                }}
+              >
                 {activeTab === 'result' ? <CheckCircle2 className="h-4 w-4" /> : '2'}
               </div>
               <span className="text-sm font-medium">Preview</span>
             </div>
             
-            <ArrowRight className="h-4 w-4 text-gray-600 mx-2" />
+            <ArrowRight 
+              className="h-4 w-4 mx-2"
+              style={{ color: 'var(--muted-foreground)' }}
+            />
             
-            <div className={`flex items-center gap-2 ${activeTab === 'result' ? 'text-blue-400' : 'text-gray-500'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
-                activeTab === 'result' ? 'border-blue-400 bg-blue-500 text-white' : 'border-gray-700 bg-gray-800'
-              }`}>
+            <div 
+              className="flex items-center gap-2"
+              style={{ 
+                color: activeTab === 'result' ? 'var(--primary)' : 'var(--muted-foreground)' 
+              }}
+            >
+              <div 
+                className="w-8 h-8 rounded-full flex items-center justify-center border-2"
+                style={{
+                  borderColor: activeTab === 'result' ? 'var(--primary)' : 'var(--border)',
+                  backgroundColor: activeTab === 'result' ? 'var(--primary)' : 'transparent',
+                  color: activeTab === 'result' ? 'white' : 'var(--muted-foreground)'
+                }}
+              >
                 3
               </div>
               <span className="text-sm font-medium">Complete</span>
@@ -283,24 +352,52 @@ const ImportModal: React.FC<ImportModalProps> = ({ open, onOpenChange }) => {
               {/* Upload Area */}
               <div
                 className={`border-2 border-dashed rounded-xl p-12 text-center cursor-pointer transition-all ${
-                  dragActive 
-                    ? 'border-blue-500 bg-blue-950/30 scale-[1.02]' 
-                    : 'border-gray-700 bg-gray-900 hover:border-blue-500 hover:bg-gray-800'
+                  dragActive ? 'scale-[1.02]' : ''
                 }`}
+                style={{
+                  borderColor: dragActive ? 'var(--primary)' : 'var(--border)',
+                  backgroundColor: dragActive ? 'var(--muted)' : 'var(--background)'
+                }}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
                 onClick={() => fileInputRef.current?.click()}
+                onMouseEnter={(e) => {
+                  if (!dragActive) {
+                    e.currentTarget.style.borderColor = 'var(--primary)';
+                    e.currentTarget.style.backgroundColor = 'var(--muted)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!dragActive) {
+                    e.currentTarget.style.borderColor = 'var(--border)';
+                    e.currentTarget.style.backgroundColor = 'var(--background)';
+                  }
+                }}
               >
                 <div className={`transition-transform ${dragActive ? 'scale-110' : ''}`}>
-                  <FileUp className="mx-auto h-16 w-16 text-gray-500 mb-4" />
-                  <p className="text-lg font-medium mb-2 text-white">
-                    <span className="text-blue-400">Click to upload</span> or drag and drop
+                  <FileUp 
+                    className="mx-auto h-16 w-16 mb-4"
+                    style={{ color: 'var(--muted-foreground)' }}
+                  />
+                  <p className="text-lg font-medium mb-2" style={{ color: 'var(--foreground)' }}>
+                    <span style={{ color: 'var(--primary)' }}>Click to upload</span> or drag and drop
                   </p>
-                  <p className="text-sm text-gray-400 mb-4">
+                  <p 
+                    className="text-sm mb-4"
+                    style={{ color: 'var(--muted-foreground)' }}
+                  >
                     CSV or JSON files (max 10MB)
                   </p>
-                  <Badge variant="outline" className="text-xs bg-gray-800 text-gray-300 border-gray-700">
+                  <Badge 
+                    variant="outline" 
+                    className="text-xs border"
+                    style={{
+                      backgroundColor: 'var(--muted)',
+                      color: 'var(--foreground)',
+                      borderColor: 'var(--border)'
+                    }}
+                  >
                     📄 CSV, JSON supported
                   </Badge>
                 </div>
@@ -316,22 +413,54 @@ const ImportModal: React.FC<ImportModalProps> = ({ open, onOpenChange }) => {
 
               {/* File Info */}
               {file && (
-                <Card className="border-blue-900 bg-blue-950/30">
+                <Card 
+                  className="border"
+                  style={{
+                    borderColor: 'var(--primary)',
+                    backgroundColor: 'var(--muted)'
+                  }}
+                >
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between">
                       <div className="flex items-start gap-3">
-                        <FileText className="h-8 w-8 text-blue-400 mt-1" />
+                        <FileText 
+                          className="h-8 w-8 mt-1"
+                          style={{ color: 'var(--primary)' }}
+                        />
                         <div>
-                          <p className="font-medium text-white">{file.name}</p>
+                          <p 
+                            className="font-medium"
+                            style={{ color: 'var(--foreground)' }}
+                          >
+                            {file.name}
+                          </p>
                           <div className="flex items-center gap-3 mt-1">
-                            <p className="text-sm text-blue-300">
+                            <p 
+                              className="text-sm"
+                              style={{ color: 'var(--primary)' }}
+                            >
                               {(file.size / 1024).toFixed(2)} KB
                             </p>
-                            <Badge variant="default" className="text-xs bg-blue-600 text-white">
+                            <Badge 
+                              variant="default" 
+                              className="text-xs"
+                              style={{
+                                background: 'linear-gradient(to right, var(--purple-600), var(--violet-600))',
+                                color: 'white'
+                              }}
+                            >
                               {fileType ? fileType.toUpperCase() : ''}
                             </Badge>
                             {previewData.length > 0 && (
-                              <Badge variant="secondary" className="text-xs bg-gray-800 text-gray-200">
+                              <Badge 
+                                variant="secondary" 
+                                className="text-xs border"
+                                style={{
+                                  backgroundColor: 'var(--muted)',
+                                  color: 'var(--foreground)',
+                                  borderColor: 'var(--border)'
+                                }}
+                              >
                                 {previewData.length} tasks detected
                               </Badge>
                             )}
@@ -347,7 +476,15 @@ const ImportModal: React.FC<ImportModalProps> = ({ open, onOpenChange }) => {
                           setFile(null);
                           setPreviewData([]);
                         }}
-                        className="hover:bg-blue-900 text-gray-400 hover:text-white"
+                        style={{ color: 'var(--muted-foreground)' }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = 'var(--muted)';
+                          e.currentTarget.style.color = 'var(--foreground)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                          e.currentTarget.style.color = 'var(--muted-foreground)';
+                        }}
                       >
                         <X className="h-4 w-4" />
                       </Button>
@@ -357,17 +494,37 @@ const ImportModal: React.FC<ImportModalProps> = ({ open, onOpenChange }) => {
               )}
 
               {/* Sample Format */}
-              <Card className="bg-gray-900 border-gray-800">
+              <Card 
+                className="border"
+                style={{
+                  backgroundColor: 'var(--card)',
+                  borderColor: 'var(--border)'
+                }}
+              >
                 <CardHeader>
-                  <CardTitle className="text-sm flex items-center gap-2 text-white">
+                  <CardTitle 
+                    className="text-sm flex items-center gap-2"
+                    style={{ color: 'var(--foreground)' }}
+                  >
                     <Table2 className="h-4 w-4" />
                     Expected Format
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="bg-black rounded-lg p-4 font-mono text-xs border border-gray-800">
-                    <div className="text-gray-400 mb-2">CSV Example:</div>
-                    <div className="text-gray-200">
+                  <div 
+                    className="rounded-lg p-4 font-mono text-xs border"
+                    style={{
+                      backgroundColor: 'var(--background)',
+                      borderColor: 'var(--border)'
+                    }}
+                  >
+                    <div 
+                      className="mb-2"
+                      style={{ color: 'var(--muted-foreground)' }}
+                    >
+                      CSV Example:
+                    </div>
+                    <div style={{ color: 'var(--foreground)' }}>
                       title,description,priority,dueDate<br />
                       Buy groceries,Get milk and eggs,high,2025-01-05<br />
                       Clean room,Vacuum and dust,medium,2025-01-06
@@ -381,40 +538,103 @@ const ImportModal: React.FC<ImportModalProps> = ({ open, onOpenChange }) => {
           {/* Preview Tab */}
           {activeTab === 'preview' && (
             <div className="space-y-6">
-              <Alert className="bg-blue-950/30 border-blue-900">
-                <Eye className="h-4 w-4 text-blue-400" />
-                <AlertDescription className="text-blue-300">
+              <Alert 
+                className="border"
+                style={{
+                  backgroundColor: 'var(--muted)',
+                  borderColor: 'var(--primary)'
+                }}
+              >
+                <Eye 
+                  className="h-4 w-4"
+                  style={{ color: 'var(--primary)' }}
+                />
+                <AlertDescription style={{ color: 'var(--primary)' }}>
                   Review your data before importing. {previewData.length} tasks will be created.
                 </AlertDescription>
               </Alert>
 
-              <Card className="bg-gray-900 border-gray-800">
-                <CardHeader className="border-b border-gray-800">
+              <Card 
+                className="border"
+                style={{
+                  backgroundColor: 'var(--card)',
+                  borderColor: 'var(--border)'
+                }}
+              >
+                <CardHeader 
+                  className="border-b"
+                  style={{ borderColor: 'var(--border)' }}
+                >
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-white">Data Preview</CardTitle>
-                    <Badge className="bg-gray-800 text-white border border-gray-700">{previewData.length} rows</Badge>
+                    <CardTitle style={{ color: 'var(--foreground)' }}>
+                      Data Preview
+                    </CardTitle>
+                    <Badge 
+                      className="border"
+                      style={{
+                        backgroundColor: 'var(--muted)',
+                        color: 'var(--foreground)',
+                        borderColor: 'var(--border)'
+                      }}
+                    >
+                      {previewData.length} rows
+                    </Badge>
                   </div>
                 </CardHeader>
                 <CardContent className="p-0">
                   <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
                     <table className="w-full">
-                      <thead className="sticky top-0 bg-black border-b border-gray-800">
+                      <thead 
+                        className="sticky top-0 border-b"
+                        style={{
+                          backgroundColor: 'var(--background)',
+                          borderColor: 'var(--border)'
+                        }}
+                      >
                         <tr>
-                          <th className="text-left p-3 text-xs font-semibold text-gray-400">#</th>
+                          <th 
+                            className="text-left p-3 text-xs font-semibold"
+                            style={{ color: 'var(--muted-foreground)' }}
+                          >
+                            #
+                          </th>
                           {previewData.length > 0 && Object.keys(previewData[0]).map(key => (
-                            <th key={key} className="text-left p-3 text-xs font-semibold text-gray-400">
+                            <th 
+                              key={key} 
+                              className="text-left p-3 text-xs font-semibold"
+                              style={{ color: 'var(--muted-foreground)' }}
+                            >
                               {key}
                             </th>
                           ))}
                         </tr>
                       </thead>
-                      <tbody className="bg-gray-900">
+                      <tbody style={{ backgroundColor: 'var(--card)' }}>
                         {previewData.map((row, index) => (
-                          <tr key={index} className="border-b border-gray-800 hover:bg-gray-800 transition-colors">
-                            <td className="p-3 text-sm text-gray-400 font-medium">{index + 1}</td>
+                          <tr 
+                            key={index} 
+                            className="border-b transition-colors"
+                            style={{ borderColor: 'var(--border)' }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = 'var(--muted)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = 'transparent';
+                            }}
+                          >
+                            <td 
+                              className="p-3 text-sm font-medium"
+                              style={{ color: 'var(--muted-foreground)' }}
+                            >
+                              {index + 1}
+                            </td>
                             {Object.values(row).map((value: any, idx) => (
-                              <td key={idx} className="p-3 text-sm text-gray-200">
-                                {value || <span className="text-gray-600">—</span>}
+                              <td 
+                                key={idx} 
+                                className="p-3 text-sm"
+                                style={{ color: 'var(--foreground)' }}
+                              >
+                                {value || <span style={{ color: 'var(--muted-foreground)' }}>—</span>}
                               </td>
                             ))}
                           </tr>
@@ -432,37 +652,68 @@ const ImportModal: React.FC<ImportModalProps> = ({ open, onOpenChange }) => {
             <div className="space-y-6 py-8">
               <div className="text-center">
                 {importResult.imported > 0 && importResult.errors === 0 ? (
-                  <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-950 mb-4">
-                    <CheckCircle2 className="h-10 w-10 text-green-400" />
+                  <div 
+                    className="inline-flex items-center justify-center w-20 h-20 rounded-full mb-4"
+                    style={{ backgroundColor: '#065f4620' }}
+                  >
+                    <CheckCircle2 className="h-10 w-10" style={{ color: '#10b981' }} />
                   </div>
                 ) : (
-                  <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-yellow-950 mb-4">
-                    <AlertCircle className="h-10 w-10 text-yellow-400" />
+                  <div 
+                    className="inline-flex items-center justify-center w-20 h-20 rounded-full mb-4"
+                    style={{ backgroundColor: '#f59e0b20' }}
+                  >
+                    <AlertCircle className="h-10 w-10" style={{ color: '#f59e0b' }} />
                   </div>
                 )}
                 
-                <h3 className="text-2xl font-bold mb-2 text-white">Import Complete!</h3>
-                <p className="text-gray-400">
+                <h3 
+                  className="text-2xl font-bold mb-2"
+                  style={{ color: 'var(--foreground)' }}
+                >
+                  Import Complete!
+                </h3>
+                <p style={{ color: 'var(--muted-foreground)' }}>
                   Your tasks have been imported to your workspace
                 </p>
               </div>
 
               <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
-                <Card className="border-green-900 bg-green-950/30">
+                <Card 
+                  className="border"
+                  style={{
+                    borderColor: '#10b981',
+                    backgroundColor: '#10b98120'
+                  }}
+                >
                   <CardContent className="p-6 text-center">
-                    <p className="text-4xl font-bold text-green-400 mb-2">
+                    <p className="text-4xl font-bold mb-2" style={{ color: '#10b981' }}>
                       {importResult.imported}
                     </p>
-                    <p className="text-sm text-green-300 font-medium">Tasks Imported</p>
+                    <p className="text-sm font-medium" style={{ color: '#10b981' }}>
+                      Tasks Imported
+                    </p>
                   </CardContent>
                 </Card>
 
-                <Card className={importResult.errors > 0 ? 'border-red-900 bg-red-950/30' : 'border-gray-800 bg-gray-900'}>
+                <Card 
+                  className="border"
+                  style={{
+                    borderColor: importResult.errors > 0 ? '#ef4444' : 'var(--border)',
+                    backgroundColor: importResult.errors > 0 ? '#ef444420' : 'var(--card)'
+                  }}
+                >
                   <CardContent className="p-6 text-center">
-                    <p className={`text-4xl font-bold mb-2 ${importResult.errors > 0 ? 'text-red-400' : 'text-gray-600'}`}>
+                    <p 
+                      className="text-4xl font-bold mb-2"
+                      style={{ color: importResult.errors > 0 ? '#ef4444' : 'var(--muted-foreground)' }}
+                    >
                       {importResult.errors}
                     </p>
-                    <p className={`text-sm font-medium ${importResult.errors > 0 ? 'text-red-300' : 'text-gray-500'}`}>
+                    <p 
+                      className="text-sm font-medium"
+                      style={{ color: importResult.errors > 0 ? '#ef4444' : 'var(--muted-foreground)' }}
+                    >
                       Errors
                     </p>
                   </CardContent>
@@ -470,9 +721,15 @@ const ImportModal: React.FC<ImportModalProps> = ({ open, onOpenChange }) => {
               </div>
 
               {importResult.errors > 0 && (
-                <Alert className="bg-red-950/30 border-red-900">
-                  <AlertCircle className="h-4 w-4 text-red-400" />
-                  <AlertDescription className="text-red-300">
+                <Alert 
+                  className="border"
+                  style={{
+                    backgroundColor: '#ef444420',
+                    borderColor: '#ef4444'
+                  }}
+                >
+                  <AlertCircle className="h-4 w-4" style={{ color: '#ef4444' }} />
+                  <AlertDescription style={{ color: '#ef4444' }}>
                     {importResult.errors} tasks failed to import. Check console for details.
                   </AlertDescription>
                 </Alert>
@@ -482,14 +739,40 @@ const ImportModal: React.FC<ImportModalProps> = ({ open, onOpenChange }) => {
 
           {/* Processing Progress */}
           {isProcessing && (
-            <div className="space-y-4 py-8 bg-gray-900 rounded-lg p-6 border border-gray-800">
+            <div 
+              className="space-y-4 py-8 rounded-lg p-6 border"
+              style={{
+                backgroundColor: 'var(--muted)',
+                borderColor: 'var(--border)'
+              }}
+            >
               <div className="text-center mb-4">
-                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400 mb-4"></div>
-                <p className="font-medium text-white">Importing tasks...</p>
-                <p className="text-sm text-gray-400">Please wait while we process your file</p>
+                <div 
+                  className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 mb-4"
+                  style={{ borderColor: 'var(--primary)' }}
+                ></div>
+                <p 
+                  className="font-medium"
+                  style={{ color: 'var(--foreground)' }}
+                >
+                  Importing tasks...
+                </p>
+                <p 
+                  className="text-sm"
+                  style={{ color: 'var(--muted-foreground)' }}
+                >
+                  Please wait while we process your file
+                </p>
               </div>
-              <Progress value={importProgress} className="w-full bg-gray-800" />
-              <p className="text-center text-sm text-gray-400">
+              <Progress 
+                value={importProgress} 
+                className="w-full"
+                style={{ backgroundColor: 'var(--border)' }}
+              />
+              <p 
+                className="text-center text-sm"
+                style={{ color: 'var(--muted-foreground)' }}
+              >
                 {importProgress}% complete
               </p>
             </div>
@@ -497,12 +780,28 @@ const ImportModal: React.FC<ImportModalProps> = ({ open, onOpenChange }) => {
         </div>
 
         {/* Footer Actions */}
-        <div className="border-t border-gray-800 pt-4 px-6 pb-4 flex justify-between bg-gray-900">
+        <div 
+          className="border-t pt-4 px-6 pb-4 flex justify-between"
+          style={{
+            borderColor: 'var(--border)',
+            backgroundColor: 'var(--muted)'
+          }}
+        >
           <Button
             variant="outline"
             onClick={handleClose}
             disabled={isProcessing}
-            className="border-gray-700 hover:bg-gray-800 text-gray-300 hover:text-white"
+            className="border"
+            style={{
+              borderColor: 'var(--border)',
+              color: 'var(--foreground)'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--muted)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
           >
             <X className="h-4 w-4 mr-2" />
             Cancel
@@ -515,7 +814,17 @@ const ImportModal: React.FC<ImportModalProps> = ({ open, onOpenChange }) => {
                   variant="outline"
                   onClick={() => setActiveTab('upload')}
                   disabled={isProcessing}
-                  className="border-gray-700 hover:bg-gray-800 text-gray-300 hover:text-white"
+                  className="border"
+                  style={{
+                    borderColor: 'var(--border)',
+                    color: 'var(--foreground)'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--muted)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }}
                 >
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Back
@@ -523,7 +832,16 @@ const ImportModal: React.FC<ImportModalProps> = ({ open, onOpenChange }) => {
                 <Button
                   onClick={handleImport}
                   disabled={isProcessing || previewData.length === 0}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  className="shadow-lg text-white"
+                  style={{
+                    background: 'linear-gradient(to right, var(--purple-600), var(--violet-600))'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'scale(1.05)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'scale(1)';
+                  }}
                 >
                   <Upload className="h-4 w-4 mr-2" />
                   {isProcessing ? 'Importing...' : `Import ${previewData.length} Tasks`}
@@ -532,7 +850,19 @@ const ImportModal: React.FC<ImportModalProps> = ({ open, onOpenChange }) => {
             )}
 
             {activeTab === 'result' && (
-              <Button onClick={handleClose} className="bg-green-600 hover:bg-green-700 text-white">
+              <Button 
+                onClick={handleClose} 
+                className="text-white"
+                style={{ backgroundColor: '#10b981' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#059669';
+                  e.currentTarget.style.transform = 'scale(1.05)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#10b981';
+                  e.currentTarget.style.transform = 'scale(1)';
+                }}
+              >
                 <CheckCircle2 className="h-4 w-4 mr-2" />
                 Done
               </Button>

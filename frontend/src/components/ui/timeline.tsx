@@ -1,4 +1,3 @@
-
 "use client";
 import {
   useMotionValueEvent,
@@ -7,7 +6,6 @@ import {
   motion,
 } from "motion/react";
 import React, { useEffect, useRef, useState } from "react";
-import { Target, Layers, Zap, TrendingUp, CheckCircle2 } from "lucide-react";
 
 interface TimelineEntry {
   title: string;
@@ -37,87 +35,150 @@ const Timeline = ({ data }: { data: TimelineEntry[] }) => {
 
   return (
     <div
-      className="w-full bg-gradient-to-b from-white via-gray-50 to-white dark:from-neutral-950 dark:via-neutral-900 dark:to-neutral-950 font-sans md:px-10"
+      className="w-full font-sans md:px-10"
       ref={containerRef}
+      style={{ 
+        background: 'linear-gradient(to bottom, var(--background), var(--secondary), var(--background))'
+      }}
     >
-      <motion.div
-        className="text-center mb-20 max-w-3xl mx-auto px-4"
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.6 }}
-      >
-        <motion.div
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 dark:bg-blue-950 border border-blue-100 dark:border-blue-900 mb-6"
-          initial={{ opacity: 0, scale: 0.9 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.2 }}
-        >
-          <Zap className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-          <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
-            Simple 4-Step Process
-          </span>
-        </motion.div>
-        
-        <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
-          How It Works
-        </h2>
-      <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-  From setting clear goals to tracking real progress, TaskMaster guides you
-  through a simple four-step workflow designed to keep you focused, organized,
-  and consistently productive.
-</p>
-      </motion.div>
-
       <div ref={ref} className="relative max-w-6xl mx-auto pb-20">
         {data.map((item, index) => (
           <motion.div
             key={index}
-            className="flex justify-start pt-10 md:pt-32 md:gap-10"
+            className="flex justify-start pt-10 md:pt-8 md:gap-10"
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 0.5, delay: index * 0.1 }}
           >
             <div className="sticky flex flex-col md:flex-row z-40 items-center top-40 self-start max-w-xs lg:max-w-sm md:w-full">
-              <div className="h-12 absolute left-2 md:left-3 w-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
-                <div className="text-white">
+              {/* Icon Circle with gradient */}
+              <motion.div 
+                className="h-12 absolute left-2 md:left-3 w-12 rounded-full flex items-center justify-center shadow-lg relative overflow-hidden"
+                style={{
+                  background: 'linear-gradient(135deg, var(--purple-600), var(--violet-600))',
+                }}
+                whileHover={{ scale: 1.1, rotate: 5 }}
+                transition={{ duration: 0.3 }}
+              >
+                {/* Shine effect */}
+                <motion.div
+                  className="absolute inset-0"
+                  style={{
+                    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)',
+                  }}
+                  animate={{
+                    x: [-100, 100],
+                  }}
+                  transition={{
+                    duration: 3,
+                    repeat: Infinity,
+                    repeatDelay: 2,
+                  }}
+                />
+                <div className="text-white relative z-10">
                   {item.icon}
                 </div>
-              </div>
-              <h3 className="hidden md:block text-2xl md:pl-20 font-bold text-gray-900 dark:text-white">
+              </motion.div>
+              
+              {/* Title */}
+              <h3 
+                className="hidden md:block text-2xl md:pl-20 font-bold tracking-tight"
+                style={{ 
+                  color: 'var(--foreground)',
+                  fontFamily: "'Inter', 'SF Pro Display', -apple-system, sans-serif",
+                  fontWeight: 800,
+                }}
+              >
                 {item.title}
               </h3>
             </div>
 
             <div className="relative pl-20 pr-4 md:pl-4 w-full">
-              <h3 className="md:hidden block text-2xl mb-4 text-left font-bold text-gray-900 dark:text-white">
+              {/* Mobile Title */}
+              <h3 
+                className="md:hidden block text-2xl mb-4 text-left font-bold tracking-tight"
+                style={{ 
+                  color: 'var(--foreground)',
+                  fontFamily: "'Inter', 'SF Pro Display', -apple-system, sans-serif",
+                  fontWeight: 800,
+                }}
+              >
                 {item.title}
               </h3>
+              
+              {/* Content Card */}
               <motion.div
-                className="bg-white dark:bg-neutral-900 rounded-2xl p-8 shadow-xl border border-gray-100 dark:border-neutral-800 hover:shadow-2xl transition-shadow duration-300"
+                className="rounded-2xl p-8 shadow-xl border backdrop-blur-sm relative overflow-hidden group"
+                style={{
+                  backgroundColor: 'var(--card)',
+                  borderColor: 'var(--border)',
+                }}
                 whileHover={{ y: -5 }}
                 transition={{ duration: 0.2 }}
               >
-                {item.content}
+                {/* Gradient glow on hover */}
+                <motion.div
+                  className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl"
+                  style={{
+                    background: 'linear-gradient(135deg, var(--purple-500), var(--violet-500))',
+                    filter: 'blur(30px)',
+                    zIndex: -1,
+                  }}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  whileHover={{ opacity: 0.1, scale: 1 }}
+                />
+
+                {/* Animated border on hover */}
+                <div 
+                  className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                  style={{
+                    background: `linear-gradient(135deg, var(--purple-500), var(--violet-500))`,
+                    padding: '1px',
+                    WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                    WebkitMaskComposite: 'xor',
+                    maskComposite: 'exclude',
+                  }}
+                />
+
+                <div className="relative z-10">
+                  {item.content}
+                </div>
               </motion.div>
             </div>
           </motion.div>
         ))}
+        
+        {/* Vertical Line */}
         <div
           style={{
             height: height + "px",
           }}
-          className="absolute md:left-8 left-8 top-0 overflow-hidden w-[2px] bg-[linear-gradient(to_bottom,var(--tw-gradient-stops))] from-transparent from-[0%] via-gray-200 dark:via-neutral-700 to-transparent to-[99%] [mask-image:linear-gradient(to_bottom,transparent_0%,black_10%,black_90%,transparent_100%)]"
+          className="absolute md:left-8 left-8 top-0 overflow-hidden w-[2px] [mask-image:linear-gradient(to_bottom,transparent_0%,black_10%,black_90%,transparent_100%)]"
         >
+          {/* Background line */}
+          <div 
+            className="absolute inset-0 w-[2px]"
+            style={{
+              background: 'linear-gradient(to bottom, transparent 0%, var(--border) 10%, var(--border) 90%, transparent 100%)'
+            }}
+          />
+          
+          {/* Animated progress line */}
           <motion.div
             style={{
               height: heightTransform,
               opacity: opacityTransform,
             }}
-            className="absolute inset-x-0 top-0 w-[2px] bg-gradient-to-t from-purple-500 via-blue-500 to-transparent from-[0%] via-[10%] rounded-full"
-          />
+            className="absolute inset-x-0 top-0 w-[2px] rounded-full"
+          >
+            <div
+              className="w-full h-full"
+              style={{
+                background: 'linear-gradient(to top, var(--purple-500) 0%, var(--violet-500) 50%, transparent 100%)'
+              }}
+            />
+          </motion.div>
         </div>
       </div>
     </div>

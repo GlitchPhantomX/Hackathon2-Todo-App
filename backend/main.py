@@ -154,7 +154,8 @@ async def dev_mode_auth(request: Request, call_next):
 # ==================== CORS CONFIGURATION ====================
 # ==================== CORS CONFIGURATION ====================
 # Read CORS origins from environment or allow all for development
-cors_origins_env = os.getenv("CORS_ORIGINS", "*")
+# In main.py, around line 140
+cors_origins_env = os.getenv("CORS_ORIGINS", "http://127.0.0.1:58845,http://localhost:3000,http://127.0.0.1:3000")
 if cors_origins_env == "*":
     origins = ["*"]
 else:
@@ -255,6 +256,18 @@ def read_root():
 def health_check():
     db_status = test_connection()
     return {"status": "healthy" if db_status else "unhealthy"}
+
+
+@app.get("/ws/health")
+def websocket_health_check():
+    """Health check for WebSocket connections"""
+    from routers.websocket import manager
+    return {
+        "status": "healthy",
+        "active_connections": len(manager.active_connections),
+        "connected_users": len(manager.user_connections),
+        "notification_connections": sum(len(conns) for conns in manager.notification_connections.values())
+    }
 
 # ✅ CORS Preflight handler for all OPTIONS requests
 @app.options("/{full_path:path}")

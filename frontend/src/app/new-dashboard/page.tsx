@@ -16,14 +16,15 @@ import ProjectSidebar from "@/components/ProjectSidebar";
 import TagsList from "@/components/TagsList";
 import BulkActions from "@/components/BulkActions";
 import TaskDetail from "@/components/TaskDetail";
+import NewDashboardSidebar from "@/components/NewDashboardSidebar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, LayoutGrid, ListTodo, BarChart3, MenuIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Task } from "@/types/task.types";
 
-// Lazy load heavy chart components for code splitting
+// Lazy load heavy chart components
 const CompletionChart = lazy(() => import("@/components/CompletionChart"));
 const PriorityChart = lazy(() => import("@/components/PriorityChart"));
 const ProductivityChart = lazy(() => import("@/components/ProductivityChart"));
@@ -38,6 +39,7 @@ const NewDashboardPage = () => {
     "overview" | "tasks" | "analytics"
   >("overview");
   const [viewingTaskDetail, setViewingTaskDetail] = useState<Task | null>(null);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const { setFilter, filters } = useDashboard();
 
   const handleTaskClick = (task: Task) => {
@@ -55,279 +57,536 @@ const NewDashboardPage = () => {
   };
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-      {/* Dashboard Header */}
-      <section>
+    <div className="flex min-h-screen w-full" style={{ backgroundColor: 'var(--background)' }}>
+      {/* Sidebar */}
+      <NewDashboardSidebar 
+        isMobileOpen={isMobileSidebarOpen}
+        onMobileClose={() => setIsMobileSidebarOpen(false)}
+      />
 
-        <DashboardHeader />
-      </section>
-
-      {/* View Tabs */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-        <Tabs
-          value={activeView}
-          onValueChange={(value: string) =>
-            setActiveView(value as "overview" | "tasks" | "analytics")
-          }
-          className="w-full"
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-w-0">
+        
+        {/* Mobile Header */}
+        <div 
+          className="lg:hidden flex items-center justify-between px-4 py-3 border-b sticky top-0 z-30"
+          style={{ 
+            backgroundColor: 'var(--background)',
+            borderColor: 'var(--border)'
+          }}
         >
-          <div className="border-b border-gray-200 dark:border-gray-700 px-6">
-            <TabsList className="bg-transparent h-12 p-0 gap-6">
-              <TabsTrigger
-                value="overview"
-                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 rounded-none pb-3"
-              >
-                Overview
-              </TabsTrigger>
-              <TabsTrigger
-                value="tasks"
-                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 rounded-none pb-3"
-              >
-                Tasks
-              </TabsTrigger>
-              <TabsTrigger
-                value="analytics"
-                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 rounded-none pb-3"
-              >
-                Analytics
-              </TabsTrigger>
-            </TabsList>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsMobileSidebarOpen(true)}
+            className="h-10 w-10"
+          >
+            <MenuIcon className="h-5 w-5" />
+          </Button>
+          <div className="flex items-center gap-2">
+            <div 
+              className="h-6 w-6 rounded"
+              style={{
+                background: 'linear-gradient(to right, var(--purple-500), var(--violet-500))'
+              }}
+            />
+            <span 
+              className="text-lg font-semibold"
+              style={{ color: 'var(--foreground)' }}
+            >
+              TodoMaster
+            </span>
           </div>
+          <div className="w-10"></div> {/* Spacer for centering */}
+        </div>
 
-          {/* Overview Tab */}
-          <TabsContent value="overview" className="p-6 space-y-6 mt-0">
-            {/* Stats Cards */}
-            <DashboardStats />
-
-            {/* Quick Actions Panel */}
-            <QuickActionsPanel />
-
-            {/* Main Content Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Left Column - 2/3 width */}
-              <div className="lg:col-span-2 space-y-6">
-                {/* Recent Tasks Preview */}
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-                  <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center justify-between">
-                      <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                        Recent Tasks
-                      </h2>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setActiveView("tasks")}
-                        className="text-blue-600 hover:text-blue-700 dark:text-blue-400"
-                      >
-                        View All →
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="p-6">
-                    <TaskList
-                      onEditTask={handleEditTask}
-                      onTaskClick={handleTaskClick}
-                    />
-                  </div>
-                </div>
-
-                {/* Charts Section */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                    <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
-                      Task Completion
-                    </h2>
-                    <Suspense fallback={<Skeleton className="h-48 w-full" />}>
-                      <CompletionChart />
-                    </Suspense>
-                  </div>
-
-                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                    <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
-                      Priority Distribution
-                    </h2>
-                    <Suspense fallback={<Skeleton className="h-48 w-full" />}>
-                      <PriorityChart />
-                    </Suspense>
-                  </div>
-                </div>
-
-                {/* Recent Activity Feed */}
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                  <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
-                    Recent Activity
-                  </h2>
-                  <Suspense fallback={<Skeleton className="h-64 w-full" />}>
-                    <RecentActivityFeed />
-                  </Suspense>
-                </div>
-              </div>
-
-              {/* Right Column - 1/3 width */}
-              <div className="space-y-6">
-                {/* Upcoming Tasks Widget */}
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                  <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
-                    Upcoming Tasks
-                  </h2>
-                  <Suspense fallback={<Skeleton className="h-40 w-full" />}>
-                    <UpcomingTasksWidget />
-                  </Suspense>
-                </div>
-
-                {/* Tags List */}
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-2.5">
-                  <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
-                    Tags
-                  </h2>
-                  <TagsList />
-                </div>
-              </div>
+        {/* Scrollable Content */}
+        <main className="flex-1 overflow-y-auto">
+          <div className="container mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-4 sm:py-6 max-w-[1800px]">
+            
+            {/* Dashboard Header */}
+            <div className="mb-4 sm:mb-6">
+              <DashboardHeader />
             </div>
-          </TabsContent>
 
-          {/* Tasks Tab */}
-          <TabsContent value="tasks" className="mt-0">
-            {/* Task Management Section */}
-            <div className="flex flex-col lg:flex-row gap-4 p-4 max-w-full overflow-hidden">
-              {/* Sidebar - Projects & Tags */}
-              <aside className="w-full lg:w-56 xl:w-64 flex-shrink-0 space-y-4 overflow-y-auto max-h-[calc(100vh-200px)]">
-                {/* Add Task Button */}
-                <Button
-                  onClick={() => setIsAddTaskModalOpen(true)}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
-                  size="default"
+            {/* Tabs Navigation */}
+            <Tabs
+              value={activeView}
+              onValueChange={(value: string) =>
+                setActiveView(value as "overview" | "tasks" | "analytics")
+              }
+              className="w-full"
+            >
+              {/* Tab Bar */}
+              <div className="mb-6">
+                <div 
+                  className="rounded-xl shadow-sm border"
+                  style={{
+                    backgroundColor: 'var(--card)',
+                    borderColor: 'var(--border)'
+                  }}
                 >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Task
-                </Button>
+                  <TabsList 
+                    className="w-full bg-transparent border-b rounded-none p-0 h-auto"
+                    style={{ borderColor: 'var(--border)' }}
+                  >
+                    <div className="flex items-center justify-between px-2 sm:px-6 overflow-x-auto">
+                      <TabsTrigger
+                        value="overview"
+                        className="relative flex items-center gap-2 px-4 sm:px-8 py-4 font-medium bg-transparent border-b-2 border-transparent rounded-none hover:bg-transparent transition-all duration-200 data-[state=active]:border-[var(--primary)] data-[state=active]:text-[var(--primary)]"
+                        style={{
+                          color: 'var(--muted-foreground)',
+                        }}
+                      >
+                        <LayoutGrid className="h-4 w-4" />
+                        <span className="hidden sm:inline">Overview</span>
+                      </TabsTrigger>
+                      
+                      <TabsTrigger
+                        value="tasks"
+                        className="relative flex items-center gap-2 px-4 sm:px-8 py-4 font-medium bg-transparent border-b-2 border-transparent rounded-none hover:bg-transparent transition-all duration-200 data-[state=active]:border-[var(--primary)] data-[state=active]:text-[var(--primary)]"
+                        style={{
+                          color: 'var(--muted-foreground)',
+                        }}
+                      >
+                        <ListTodo className="h-4 w-4" />
+                        <span className="hidden sm:inline">Tasks</span>
+                      </TabsTrigger>
+                      
+                      <TabsTrigger
+                        value="analytics"
+                        className="relative flex items-center gap-2 px-4 sm:px-8 py-4 font-medium bg-transparent border-b-2 border-transparent rounded-none hover:bg-transparent transition-all duration-200 data-[state=active]:border-[var(--primary)] data-[state=active]:text-[var(--primary)]"
+                        style={{
+                          color: 'var(--muted-foreground)',
+                        }}
+                      >
+                        <BarChart3 className="h-4 w-4" />
+                        <span className="hidden sm:inline">Analytics</span>
+                      </TabsTrigger>
+                    </div>
+                  </TabsList>
+                </div>
+              </div>
 
-                {/* Project Sidebar */}
-                <Card className="shadow-sm">
-                  <CardHeader className="pb-3 px-4 pt-4">
-                    <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                      Projects
-                    </h3>
-                  </CardHeader>
-                  <CardContent className="px-4 pb-4">
-                    <ProjectSidebar
-                      selectedProjectId={filters.project || null}
-                      onProjectSelect={handleProjectSelect}
-                    />
-                  </CardContent>
-                </Card>
+              {/* OVERVIEW TAB */}
+              <TabsContent value="overview" className="space-y-6 mt-0">
+                
+                <DashboardStats />
+                <QuickActionsPanel />
 
-                {/* Tags */}
-                <Card className="shadow-sm">
-                  <CardHeader className="pb-3 px-4 pt-4">
-                    <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                      Tags
-                    </h3>
-                  </CardHeader>
-                  <CardContent className="px-4 pb-4">
+                {/* Main Content */}
+                <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+                  
+                  {/* Left Column */}
+                  <div className="xl:col-span-8 space-y-6">
+                    
+                    {/* Recent Tasks */}
+                    <Card 
+                      className="border shadow-sm hover:shadow-md transition-shadow"
+                      style={{
+                        borderColor: 'var(--border)',
+                        backgroundColor: 'var(--card)'
+                      }}
+                    >
+                      <CardHeader 
+                        className="border-b"
+                        style={{ borderColor: 'var(--border)' }}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <CardTitle 
+                              className="text-xl font-bold"
+                              style={{ color: 'var(--foreground)' }}
+                            >
+                              Recent Tasks
+                            </CardTitle>
+                            <p 
+                              className="text-sm mt-1"
+                              style={{ color: 'var(--muted-foreground)' }}
+                            >
+                              Your latest task updates
+                            </p>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setActiveView("tasks")}
+                            className="hover:bg-transparent hidden sm:flex"
+                            style={{ color: 'var(--primary)' }}
+                          >
+                            View All →
+                          </Button>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="p-4 sm:p-6">
+                        <TaskList
+                          onEditTask={handleEditTask}
+                          onTaskClick={handleTaskClick}
+                        />
+                      </CardContent>
+                    </Card>
+
+                    {/* Charts Row */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Completion Chart */}
+                      <Card 
+                        className="border shadow-sm hover:shadow-md transition-shadow"
+                        style={{
+                          borderColor: 'var(--border)',
+                          backgroundColor: 'var(--card)'
+                        }}
+                      >
+                        <CardHeader 
+                          className="border-b"
+                          style={{ borderColor: 'var(--border)' }}
+                        >
+                          <CardTitle 
+                            className="text-lg font-semibold"
+                            style={{ color: 'var(--foreground)' }}
+                          >
+                            Task Completion
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-4 sm:p-6">
+                          <Suspense fallback={<Skeleton className="h-48 w-full rounded-lg" />}>
+                            <CompletionChart />
+                          </Suspense>
+                        </CardContent>
+                      </Card>
+
+                      {/* Priority Chart */}
+                      <Card 
+                        className="border shadow-sm hover:shadow-md transition-shadow"
+                        style={{
+                          borderColor: 'var(--border)',
+                          backgroundColor: 'var(--card)'
+                        }}
+                      >
+                        <CardHeader 
+                          className="border-b"
+                          style={{ borderColor: 'var(--border)' }}
+                        >
+                          <CardTitle 
+                            className="text-lg font-semibold"
+                            style={{ color: 'var(--foreground)' }}
+                          >
+                            Priority Distribution
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-4 sm:p-6">
+                          <Suspense fallback={<Skeleton className="h-48 w-full rounded-lg" />}>
+                            <PriorityChart />
+                          </Suspense>
+                        </CardContent>
+                      </Card>
+                    </div>
+
+                    {/* Recent Activity */}
+                    <Card 
+                      className="border shadow-sm hover:shadow-md transition-shadow"
+                      style={{
+                        borderColor: 'var(--border)',
+                        backgroundColor: 'var(--card)'
+                      }}
+                    >
+                      <CardHeader 
+                        className="border-b"
+                        style={{ borderColor: 'var(--border)' }}
+                      >
+                        <CardTitle 
+                          className="text-lg font-semibold"
+                          style={{ color: 'var(--foreground)' }}
+                        >
+                          Recent Activity
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-4 sm:p-6">
+                        <Suspense fallback={<Skeleton className="h-64 w-full rounded-lg" />}>
+                          <RecentActivityFeed />
+                        </Suspense>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Right Sidebar */}
+                  <div className="xl:col-span-4 space-y-6">
+                    
+                    {/* Upcoming Tasks */}
+                    <Card 
+                      className="border shadow-sm hover:shadow-md transition-shadow"
+                      style={{
+                        borderColor: 'var(--border)',
+                        backgroundColor: 'var(--card)'
+                      }}
+                    >
+                      <CardHeader 
+                        className="border-b"
+                        style={{ borderColor: 'var(--border)' }}
+                      >
+                        <CardTitle 
+                          className="text-lg font-semibold"
+                          style={{ color: 'var(--foreground)' }}
+                        >
+                          Upcoming Tasks
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-4 sm:p-6">
+                        <Suspense fallback={<Skeleton className="h-40 w-full rounded-lg" />}>
+                          <UpcomingTasksWidget />
+                        </Suspense>
+                      </CardContent>
+                    </Card>
+
                     <TagsList />
-                  </CardContent>
-                </Card>
-              </aside>
+                  </div>
+                </div>
+              </TabsContent>
 
-              {/* Main Tasks Area */}
-              <main className="flex-1 min-w-0 space-y-4 overflow-y-auto max-h-[calc(100vh-200px)]">
-                {/* Bulk Actions */}
-                {selectedTasks.length > 0 && (
-                  <Card className="bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 shadow-sm">
-                    <CardContent className="p-3">
-                      <BulkActions
-                        selectedTaskIds={selectedTasks}
-                        onSelectionChange={setSelectedTasks}
-                        onActionComplete={() => setSelectedTasks([])}
-                      />
+              {/* TASKS TAB */}
+              <TabsContent value="tasks" className="mt-0">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                  
+                  {/* Left Sidebar */}
+                  <aside className="lg:col-span-3 space-y-4">
+                    
+                    {/* Add Task Button */}
+                    <Button
+                      onClick={() => setIsAddTaskModalOpen(true)}
+                      className="w-full h-12 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+                      style={{
+                        background: 'linear-gradient(to right, var(--purple-600), var(--violet-600))',
+                      }}
+                      size="lg"
+                    >
+                      <Plus className="h-5 w-5 mr-2" />
+                      Add New Task
+                    </Button>
+
+                    {/* Projects */}
+                    <Card 
+                      className="border shadow-sm"
+                      style={{
+                        borderColor: 'var(--border)',
+                        backgroundColor: 'var(--card)'
+                      }}
+                    >
+                      <CardHeader 
+                        className="border-b pb-3"
+                        style={{ borderColor: 'var(--border)' }}
+                      >
+                        <CardTitle 
+                          className="text-base font-semibold"
+                          style={{ color: 'var(--foreground)' }}
+                        >
+                          Projects
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-4 max-h-[350px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
+                        <ProjectSidebar
+                          selectedProjectId={filters.project || null}
+                          onProjectSelect={handleProjectSelect}
+                        />
+                      </CardContent>
+                    </Card>
+
+                    <TagsList />
+                  </aside>
+
+                  {/* Main Tasks Area */}
+                  <main className="lg:col-span-9 space-y-4">
+                    
+                    {/* Bulk Actions */}
+                    {selectedTasks.length > 0 && (
+                      <Card 
+                        className="border shadow-sm"
+                        style={{
+                          backgroundColor: 'var(--muted)',
+                          borderColor: 'var(--border)'
+                        }}
+                      >
+                        <CardContent className="p-4">
+                          <BulkActions
+                            selectedTaskIds={selectedTasks}
+                            onSelectionChange={setSelectedTasks}
+                            onActionComplete={() => setSelectedTasks([])}
+                          />
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* Task List */}
+                    <Card 
+                      className="border shadow-sm"
+                      style={{
+                        borderColor: 'var(--border)',
+                        backgroundColor: 'var(--card)'
+                      }}
+                    >
+                      <CardHeader 
+                        className="border-b"
+                        style={{ borderColor: 'var(--border)' }}
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                          <div>
+                            <CardTitle 
+                              className="text-xl font-bold"
+                              style={{ color: 'var(--foreground)' }}
+                            >
+                              All Tasks
+                            </CardTitle>
+                            <p 
+                              className="text-sm mt-1"
+                              style={{ color: 'var(--muted-foreground)' }}
+                            >
+                              Manage and organize your tasks efficiently
+                            </p>
+                          </div>
+                          <Button
+                            onClick={() => setIsAddTaskModalOpen(true)}
+                            className="shadow-sm"
+                            style={{
+                              background: 'linear-gradient(to right, var(--purple-600), var(--violet-600))',
+                              color: 'white'
+                            }}
+                            size="sm"
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add Task
+                          </Button>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="p-4 sm:p-6">
+                        <TaskList
+                          onEditTask={handleEditTask}
+                          onTaskClick={handleTaskClick}
+                          onSelectionChange={setSelectedTasks}
+                        />
+                      </CardContent>
+                    </Card>
+                  </main>
+                </div>
+              </TabsContent>
+
+              {/* ANALYTICS TAB */}
+              <TabsContent value="analytics" className="space-y-6 mt-0">
+                
+                <DashboardStats />
+
+                {/* Charts Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  
+                  {/* Completion Chart */}
+                  <Card 
+                    className="border shadow-sm hover:shadow-md transition-shadow"
+                    style={{
+                      borderColor: 'var(--border)',
+                      backgroundColor: 'var(--card)'
+                    }}
+                  >
+                    <CardHeader 
+                      className="border-b"
+                      style={{ borderColor: 'var(--border)' }}
+                    >
+                      <CardTitle 
+                        className="text-lg font-semibold"
+                        style={{ color: 'var(--foreground)' }}
+                      >
+                        Task Completion Trends
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-4 sm:p-6">
+                      <Suspense fallback={<Skeleton className="h-64 w-full rounded-lg" />}>
+                        <CompletionChart />
+                      </Suspense>
                     </CardContent>
                   </Card>
-                )}
 
-                {/* Task List */}
-                <Card className="shadow-sm">
-                  <CardHeader className="border-b border-gray-200 dark:border-gray-700 p-4">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <CardTitle className="text-lg font-semibold truncate">
-                          All Tasks
-                        </CardTitle>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                          Manage and organize your tasks
-                        </p>
-                      </div>
-                      <Button
-                        onClick={() => setIsAddTaskModalOpen(true)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm flex-shrink-0"
-                        size="sm"
-                      >
-                        <Plus className="h-4 w-4 mr-1.5" />
-                        Add Task
-                      </Button>
+                  {/* Priority Chart */}
+                  <Card 
+                    className="border shadow-sm hover:shadow-md transition-shadow"
+                    style={{
+                      borderColor: 'var(--border)',
+                      backgroundColor: 'var(--card)'
+                    }}
+                  >
+                    <CardHeader 
+                      className="border-b"
+                      style={{ borderColor: 'var(--border)' }}
+                    >
+                      <CardTitle 
+                        className="text-lg font-semibold"
+                        style={{ color: 'var(--foreground)' }}
+                          >
+                            Priority Distribution
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-4 sm:p-6">
+                          <Suspense fallback={<Skeleton className="h-64 w-full rounded-lg" />}>
+                            <PriorityChart />
+                          </Suspense>
+                        </CardContent>
+                      </Card>
                     </div>
+
+                {/* Productivity Chart */}
+                <Card 
+                  className="border shadow-sm hover:shadow-md transition-shadow"
+                  style={{
+                    borderColor: 'var(--border)',
+                    backgroundColor: 'var(--card)'
+                  }}
+                >
+                  <CardHeader 
+                    className="border-b"
+                    style={{ borderColor: 'var(--border)' }}
+                  >
+                    <CardTitle 
+                      className="text-lg font-semibold"
+                      style={{ color: 'var(--foreground)' }}
+                    >
+                      Productivity Trends
+                    </CardTitle>
                   </CardHeader>
-                  <CardContent className="p-4">
-                    <TaskList
-                      onEditTask={handleEditTask}
-                      onTaskClick={handleTaskClick}
-                      onSelectionChange={setSelectedTasks}
-                    />
+                  <CardContent className="p-4 sm:p-6">
+                    <div className="w-full overflow-x-auto">
+                      <Suspense fallback={<Skeleton className="h-80 w-full rounded-lg" />}>
+                        <ProductivityChart />
+                      </Suspense>
+                    </div>
                   </CardContent>
                 </Card>
-              </main>
-            </div>
-          </TabsContent>
 
-          {/* Analytics Tab */}
-          <TabsContent value="analytics" className="p-6 space-y-6 mt-0">
-            {/* Stats Overview */}
-            <DashboardStats />
-
-            {/* Charts Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Completion Chart */}
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
-                  Task Completion
-                </h2>
-                <Suspense fallback={<Skeleton className="h-64 w-full" />}>
-                  <CompletionChart />
-                </Suspense>
-              </div>
-
-              {/* Priority Chart */}
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
-                  Priority Distribution
-                </h2>
-                <Suspense fallback={<Skeleton className="h-64 w-full" />}>
-                  <PriorityChart />
-                </Suspense>
-              </div>
-            </div>
-
-            {/* Productivity Chart - Full Width */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
-                Productivity Trends
-              </h2>
-              <Suspense fallback={<Skeleton className="h-80 w-full" />}>
-                <ProductivityChart />
-              </Suspense>
-            </div>
-
-            {/* Timeline Chart */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
-                Task Timeline
-              </h2>
-              <Suspense fallback={<Skeleton className="h-80 w-full" />}>
-                <TimelineChart />
-              </Suspense>
-            </div>
-          </TabsContent>
-        </Tabs>
+                {/* Timeline Chart */}
+                <Card 
+                  className="border shadow-sm hover:shadow-md transition-shadow"
+                  style={{
+                    borderColor: 'var(--border)',
+                    backgroundColor: 'var(--card)'
+                  }}
+                >
+                  <CardHeader 
+                    className="border-b"
+                    style={{ borderColor: 'var(--border)' }}
+                  >
+                    <CardTitle 
+                      className="text-lg font-semibold"
+                      style={{ color: 'var(--foreground)' }}
+                    >
+                      Task Timeline
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-4 sm:p-6">
+                    <div className="w-full overflow-x-auto">
+                      <Suspense fallback={<Skeleton className="h-80 w-full rounded-lg" />}>
+                        <TimelineChart />
+                      </Suspense>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          </div>
+        </main>
       </div>
 
       {/* Modals */}
@@ -345,10 +604,16 @@ const NewDashboardPage = () => {
         task={selectedTask}
       />
 
-      {/* Task Detail Modal/Sidebar */}
+      {/* Task Detail Modal */}
       {viewingTaskDetail && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div 
+          className="fixed inset-0 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
+          style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)' }}
+        >
+          <div 
+            className="rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200"
+            style={{ backgroundColor: 'var(--card)' }}
+          >
             <TaskDetail
               task={viewingTaskDetail}
               onClose={() => setViewingTaskDetail(null)}

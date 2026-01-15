@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import NewDashboardNavbar from "@/components/NewDashboardNavbar";
-import NewDashboardSidebar from "@/components/NewDashboardSidebar";
 import { Button } from "@/components/ui/button";
 import { MessageSquare } from "lucide-react";
 import MinimizedChatWidget from "@/components/chat/MinimizedChatWidget";
@@ -19,18 +18,10 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       {/* Top Navbar - Full Width */}
       <NewDashboardNavbar />
 
-      {/* Main Layout Container - Sidebar + Content */}
-      <div className="flex">
-        {/* Left Sidebar - Fixed Position */}
-        <aside className=" fixed left-0 top-16 h-[calc(100vh-4rem)] overflow-y-auto bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 z-30">
-          <NewDashboardSidebar />
-        </aside>
-
-        {/* Main Content Area - With Left Margin for Sidebar */}
-        <main className="flex-1 ml-64 min-h-[calc(100vh-4rem)]">
-          {children}
-        </main>
-      </div>
+      {/* Main Content Area - No margin, full width */}
+      <main className="flex-1 min-h-[calc(100vh-4rem)]">
+        {children}
+      </main>
 
       {/* Floating Chat Button (when minimized chat is closed) */}
       {!isChatOpen && (

@@ -8,13 +8,10 @@ import {
   Trash2,
   ChevronLeft,
   ChevronRight,
-  // Menu,
-  // X,
   MoreVertical,
   Edit3,
   Share2
 } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
 
 interface ChatSidebarProps {
   conversations: Conversation[];
@@ -153,17 +150,42 @@ export default function ChatSidebar({
 
   if (isCollapsed) {
     return (
-      <div className="w-16 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col items-center py-4 space-y-4">
+      <div 
+        className="w-16 border-r flex flex-col items-center py-4 space-y-4"
+        style={{
+          backgroundColor: 'var(--card)',
+          borderColor: 'var(--border)'
+        }}
+      >
         <button
           onClick={() => setIsCollapsed(false)}
-          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+          className="p-2 rounded-lg transition-colors"
+          style={{ color: 'var(--foreground)' }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = 'var(--muted)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'transparent';
+          }}
           title="Expand sidebar"
         >
-          <ChevronRight className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+          <ChevronRight 
+            className="h-5 w-5"
+            style={{ color: 'var(--muted-foreground)' }}
+          />
         </button>
         <button
           onClick={onCreateConversation}
-          className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+          className="p-2 text-white rounded-lg transition-all shadow-md hover:shadow-lg"
+          style={{
+            background: 'linear-gradient(to right, var(--purple-600), var(--violet-600))'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'scale(1.05)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'scale(1)';
+          }}
           title="New chat"
         >
           <PlusCircle className="h-5 w-5" />
@@ -173,27 +195,58 @@ export default function ChatSidebar({
   }
 
   return (
-    <div className="w-80 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col h-full">
+    <div 
+      className="w-80 border-r flex flex-col h-full"
+      style={{
+        backgroundColor: 'var(--card)',
+        borderColor: 'var(--border)'
+      }}
+    >
       {/* Header */}
-      <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+      <div 
+        className="p-4 border-b"
+        style={{ borderColor: 'var(--border)' }}
+      >
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-            <MessageSquare className="h-5 w-5 text-blue-500" />
+          <h2 
+            className="text-lg font-semibold flex items-center gap-2"
+            style={{ color: 'var(--foreground)' }}
+          >
+            <MessageSquare 
+              className="h-5 w-5"
+              style={{ color: 'var(--primary)' }}
+            />
             Conversations
           </h2>
           <button
             onClick={() => setIsCollapsed(true)}
-            className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            className="p-1.5 rounded-lg transition-colors"
+            style={{ color: 'var(--muted-foreground)' }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--muted)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
             title="Collapse sidebar"
           >
-            <ChevronLeft className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+            <ChevronLeft className="h-5 w-5" />
           </button>
         </div>
 
         {/* New Chat Button */}
         <button
           onClick={onCreateConversation}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-lg font-medium transition-all transform hover:scale-[1.02] shadow-sm"
+          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-white rounded-lg font-medium transition-all transform shadow-md hover:shadow-lg"
+          style={{
+            background: 'linear-gradient(to right, var(--purple-600), var(--violet-600))'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'scale(1.02)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'scale(1)';
+          }}
         >
           <PlusCircle className="h-5 w-5" />
           New Chat
@@ -206,7 +259,13 @@ export default function ChatSidebar({
             placeholder="Search conversations..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 transition-all"
+            style={{
+              borderColor: 'var(--border)',
+              backgroundColor: 'var(--muted)',
+              color: 'var(--foreground)',
+              '--tw-ring-color': 'var(--primary)'
+            } as React.CSSProperties}
           />
         </div>
       </div>
@@ -214,10 +273,23 @@ export default function ChatSidebar({
       {/* Conversations List */}
       <div className="flex-1 overflow-y-auto p-3 space-y-2">
         {filteredConversations.length === 0 ? (
-          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-            <MessageSquare className="h-12 w-12 mx-auto mb-3 opacity-50" />
-            <p className="text-sm">No conversations yet</p>
-            <p className="text-xs mt-1">Start a new chat!</p>
+          <div className="text-center py-8">
+            <MessageSquare 
+              className="h-12 w-12 mx-auto mb-3 opacity-50"
+              style={{ color: 'var(--muted-foreground)' }}
+            />
+            <p 
+              className="text-sm"
+              style={{ color: 'var(--muted-foreground)' }}
+            >
+              No conversations yet
+            </p>
+            <p 
+              className="text-xs mt-1"
+              style={{ color: 'var(--muted-foreground)' }}
+            >
+              Start a new chat!
+            </p>
           </div>
         ) : (
           <>
@@ -276,8 +348,14 @@ export default function ChatSidebar({
       </div>
 
       {/* Footer */}
-      <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-        <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
+      <div 
+        className="p-4 border-t"
+        style={{ borderColor: 'var(--border)' }}
+      >
+        <p 
+          className="text-xs text-center"
+          style={{ color: 'var(--muted-foreground)' }}
+        >
           {conversations.length} conversation{conversations.length !== 1 ? 's' : ''}
         </p>
       </div>
@@ -285,14 +363,31 @@ export default function ChatSidebar({
       {/* Rename Dialog */}
       {renameDialog.isOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Rename Conversation</h3>
+          <div 
+            className="rounded-lg p-6 w-full max-w-md mx-4"
+            style={{
+              backgroundColor: 'var(--card)',
+              borderColor: 'var(--border)'
+            }}
+          >
+            <h3 
+              className="text-lg font-semibold mb-4"
+              style={{ color: 'var(--foreground)' }}
+            >
+              Rename Conversation
+            </h3>
             <div className="mb-4">
               <input
                 type="text"
                 value={renameDialog.title}
                 onChange={(e) => setRenameDialog(prev => ({ ...prev, title: e.target.value }))}
-                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 transition-all"
+                style={{
+                  borderColor: 'var(--border)',
+                  backgroundColor: 'var(--muted)',
+                  color: 'var(--foreground)',
+                  '--tw-ring-color': 'var(--primary)'
+                } as React.CSSProperties}
                 placeholder="Conversation title"
                 autoFocus
               />
@@ -300,13 +395,32 @@ export default function ChatSidebar({
             <div className="flex justify-end gap-3">
               <button
                 onClick={closeRenameDialog}
-                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                className="px-4 py-2 rounded-lg transition-colors"
+                style={{
+                  color: 'var(--foreground)',
+                  backgroundColor: 'transparent'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--muted)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
               >
                 Cancel
               </button>
               <button
                 onClick={confirmRename}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                className="px-4 py-2 text-white rounded-lg transition-all"
+                style={{
+                  background: 'linear-gradient(to right, var(--purple-600), var(--violet-600))'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'scale(1.05)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'scale(1)';
+                }}
               >
                 Rename
               </button>
@@ -318,19 +432,48 @@ export default function ChatSidebar({
       {/* Delete Confirmation Dialog */}
       {deleteDialog.isOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Delete Conversation</h3>
-            <p className="text-gray-600 dark:text-gray-300 mb-6">Are you sure you want to delete this conversation? This action cannot be undone.</p>
+          <div 
+            className="rounded-lg p-6 w-full max-w-md mx-4"
+            style={{
+              backgroundColor: 'var(--card)'
+            }}
+          >
+            <h3 
+              className="text-lg font-semibold mb-2"
+              style={{ color: 'var(--foreground)' }}
+            >
+              Delete Conversation
+            </h3>
+            <p 
+              className="mb-6"
+              style={{ color: 'var(--muted-foreground)' }}
+            >
+              Are you sure you want to delete this conversation? This action cannot be undone.
+            </p>
             <div className="flex justify-end gap-3">
               <button
                 onClick={closeDeleteDialog}
-                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                className="px-4 py-2 rounded-lg transition-colors"
+                style={{ color: 'var(--foreground)' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--muted)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
               >
                 Cancel
               </button>
               <button
                 onClick={confirmDelete}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                className="px-4 py-2 text-white rounded-lg transition-colors"
+                style={{ backgroundColor: '#ef4444' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#dc2626';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#ef4444';
+                }}
               >
                 Delete
               </button>
@@ -366,19 +509,32 @@ const ConversationGroup = ({
 
   return (
     <div className="mb-4">
-      <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 px-3 mb-2 uppercase tracking-wide">
+      <h3 
+        className="text-xs font-semibold px-3 mb-2 uppercase tracking-wide"
+        style={{ color: 'var(--muted-foreground)' }}
+      >
         {title}
       </h3>
       <div className="space-y-1">
         {conversations.map((conv) => (
           <div
             key={conv.id}
-            className={`group relative flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-all ${
-              activeConversationId === conv.id
-                ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
-                : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
-            }`}
+            className="group relative flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-all"
+            style={{
+              backgroundColor: activeConversationId === conv.id ? 'var(--muted)' : 'transparent',
+              color: activeConversationId === conv.id ? 'var(--primary)' : 'var(--foreground)'
+            }}
             onClick={() => onLoadConversation(conv.id)}
+            onMouseEnter={(e) => {
+              if (activeConversationId !== conv.id) {
+                e.currentTarget.style.backgroundColor = 'var(--muted)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (activeConversationId !== conv.id) {
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }
+            }}
           >
             <MessageSquare className="h-4 w-4 flex-shrink-0" />
             <span className="flex-1 truncate text-sm font-medium">
@@ -392,42 +548,75 @@ const ConversationGroup = ({
                   e.stopPropagation();
                   setMenuOpenId(menuOpenId === conv.id ? null : conv.id);
                 }}
-                className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                className="p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                style={{ color: 'var(--muted-foreground)' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--muted)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
                 title="More options"
               >
-                <MoreVertical className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                <MoreVertical className="h-4 w-4" />
               </button>
 
               {/* Dropdown menu */}
               {menuOpenId === conv.id && (
-                <div className="absolute right-0 top-8 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1 w-48 z-20">
+                <div 
+                  className="absolute right-0 top-8 border rounded-lg shadow-lg py-1 w-48 z-20"
+                  style={{
+                    backgroundColor: 'var(--card)',
+                    borderColor: 'var(--border)'
+                  }}
+                >
                   <button
-                    className="flex items-center gap-2 w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 text-sm text-gray-700 dark:text-gray-300"
+                    className="flex items-center gap-2 w-full px-4 py-2 text-left text-sm transition-colors"
+                    style={{ color: 'var(--foreground)' }}
                     onClick={(e) => {
                       e.stopPropagation();
                       openRenameDialog(conv.id, conv.title);
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = 'var(--muted)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'transparent';
                     }}
                   >
                     <Edit3 className="h-4 w-4" />
                     Rename
                   </button>
                   <button
-                    className="flex items-center gap-2 w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 text-sm text-gray-700 dark:text-gray-300"
+                    className="flex items-center gap-2 w-full px-4 py-2 text-left text-sm transition-colors"
+                    style={{ color: 'var(--foreground)' }}
                     onClick={(e) => {
                       e.stopPropagation();
-                      // Share functionality would go here
                       console.log('Share conversation:', conv.id);
                       setMenuOpenId(null);
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = 'var(--muted)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'transparent';
                     }}
                   >
                     <Share2 className="h-4 w-4" />
                     Share
                   </button>
                   <button
-                    className="flex items-center gap-2 w-full px-4 py-2 text-left hover:bg-red-50 dark:hover:bg-red-900/20 text-sm text-red-600 dark:text-red-400"
+                    className="flex items-center gap-2 w-full px-4 py-2 text-left text-sm"
+                    style={{ color: '#ef4444' }}
                     onClick={(e) => {
                       e.stopPropagation();
                       openDeleteDialog(conv.id);
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#ef444420';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'transparent';
                     }}
                   >
                     <Trash2 className="h-4 w-4" />
@@ -438,63 +627,6 @@ const ConversationGroup = ({
             </div>
           </div>
         ))}
-      </div>
-    </div>
-  );
-};
-
-// Confirmation Dialog Component
-interface ConfirmationDialogProps {
-  isOpen: boolean;
-  title: string;
-  message: string;
-  onConfirm: () => void;
-  onCancel: () => void;
-  confirmText?: string;
-  cancelText?: string;
-  variant?: 'default' | 'destructive';
-  children?: React.ReactNode;
-}
-
-const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
-  isOpen,
-  title,
-  message,
-  onConfirm,
-  onCancel,
-  confirmText = 'Confirm',
-  cancelText = 'Cancel',
-  variant = 'default',
-  children
-}) => {
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{title}</h3>
-        <p className="text-gray-600 dark:text-gray-300 mb-4">{message}</p>
-
-        {children && <div className="mb-4">{children}</div>}
-
-        <div className="flex justify-end gap-3">
-          <button
-            onClick={onCancel}
-            className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-          >
-            {cancelText}
-          </button>
-          <button
-            onClick={onConfirm}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              variant === 'destructive'
-                ? 'bg-red-600 hover:bg-red-700 text-white'
-                : 'bg-blue-600 hover:bg-blue-700 text-white'
-            }`}
-          >
-            {confirmText}
-          </button>
-        </div>
       </div>
     </div>
   );

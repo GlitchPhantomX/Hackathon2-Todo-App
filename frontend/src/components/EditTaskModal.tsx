@@ -36,6 +36,7 @@ const EditTaskModal = ({ isOpen, onClose, task }: EditTaskModalProps) => {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedProject, setSelectedProject] = useState<string>('');
   const [newTag, setNewTag] = useState('');
+  const [recurrence, setRecurrence] = useState<string>('none');
   const [errors, setErrors] = useState<{ title?: string; description?: string }>({});
 
   const resetForm = () => {
@@ -47,6 +48,7 @@ const EditTaskModal = ({ isOpen, onClose, task }: EditTaskModalProps) => {
     setSelectedTags([]);
     setSelectedProject('');
     setNewTag('');
+    setRecurrence('none');
     setErrors({});
   };
 
@@ -60,6 +62,7 @@ const EditTaskModal = ({ isOpen, onClose, task }: EditTaskModalProps) => {
       setStatus(task.status as 'pending' | 'completed');
       setSelectedTags(task.tags || []);
       setSelectedProject(task.projectId || '');
+      setRecurrence(task.recurrencePattern || 'none');
     } else {
       resetForm();
     }
@@ -118,6 +121,12 @@ const EditTaskModal = ({ isOpen, onClose, task }: EditTaskModalProps) => {
 
       if (selectedProject && selectedProject !== 'none') {
         updateData.projectId = selectedProject;
+      }
+
+      if (recurrence && recurrence !== 'none') {
+        updateData.recurrencePattern = recurrence;
+      } else {
+        updateData.recurrencePattern = undefined;
       }
 
       await updateTaskSync(task.id, updateData);
@@ -294,9 +303,28 @@ const EditTaskModal = ({ isOpen, onClose, task }: EditTaskModalProps) => {
             </div>
           </div>
 
+          {/* Recurrence */}
+          <div>
+            <Label htmlFor="recurrence">Recurrence</Label>
+            <Select
+              value={recurrence}
+              onValueChange={setRecurrence}
+            >
+              <SelectTrigger id="recurrence">
+                <SelectValue placeholder="Select recurrence pattern" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No Recurrence</SelectItem>
+                <SelectItem value="daily">Daily</SelectItem>
+                <SelectItem value="weekly">Weekly</SelectItem>
+                <SelectItem value="monthly">Monthly</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           <div>
             <Label htmlFor="project">Project</Label>
-            <Select 
+            <Select
               value={selectedProject || 'none'}
               onValueChange={(value) => setSelectedProject(value === 'none' ? '' : value)}
             >

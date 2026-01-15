@@ -11,12 +11,14 @@ export interface Task {
   priority?: 'low' | 'medium' | 'high';
   tags?: string[];
   projectId?: string;
+  recurrencePattern?: 'none' | 'daily' | 'weekly' | 'monthly';
 }
 
 export interface TaskCreate {
   title: string;
   description?: string;
   dueDate?: string;
+  recurrencePattern?: 'none' | 'daily' | 'weekly' | 'monthly';
 }
 
 export interface TaskUpdate {
@@ -24,6 +26,7 @@ export interface TaskUpdate {
   description?: string;
   completed?: boolean;
   dueDate?: string;
+  recurrencePattern?: 'none' | 'daily' | 'weekly' | 'monthly';
 }
 
 export interface TaskFilter {
