@@ -1,21 +1,8 @@
 from sqlmodel import create_engine, Session
 from sqlalchemy import text
 from sqlalchemy import event
-import importlib.util
-import os
-
-# Import the main config module explicitly to avoid import conflicts
-current_dir = os.path.dirname(os.path.abspath(__file__))
-config_path = os.path.join(current_dir, "config.py")
-config_spec = importlib.util.spec_from_file_location("config", config_path)
-config_module = importlib.util.module_from_spec(config_spec)
-config_spec.loader.exec_module(config_module)
-settings = config_module.settings
-
+from config import settings
 # Import models for table creation (imported inside function to avoid circular import)
-
-# Export DATABASE_URL for use by other modules
-DATABASE_URL = settings.DATABASE_URL
 
 
 # Create SQLModel engine

@@ -1,5 +1,5 @@
 from sqlmodel import SQLModel, Field, Relationship
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -28,8 +28,8 @@ class User(SQLModel, table=True):
     phone: Optional[str] = None
     timezone: str = Field(default="UTC")
     locale: str = Field(default="en-US")
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
 
     # Relationships
     tasks: list["Task"] = Relationship(back_populates="user")
@@ -67,15 +67,8 @@ class Task(TaskBase, table=True):
     # status: str = Field(default="pending", max_length=20, nullable=False)  # ❌ REMOVE THIS LINE
     project_id: Optional[int] = Field(foreign_key="projects.id", nullable=True, index=True)
     user_id: int = Field(foreign_key="users.id", nullable=False, index=True)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
-    # Recurring task fields
-    is_recurring: bool = Field(default=False)
-    frequency: Optional[str] = Field(default=None, max_length=10)  # daily, weekly, monthly
-
-    # Notification fields
-    reminder_sent: bool = Field(default=False)  # Whether a reminder has been sent for this task
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
 
     # Relationships
     user: Optional[User] = Relationship(back_populates="tasks")
@@ -95,7 +88,7 @@ class Notification(SQLModel, table=True):
     task_id: Optional[int] = Field(foreign_key="tasks.id", nullable=True)
     task_title: Optional[str] = Field(max_length=200, nullable=True)
     read: bool = Field(default=False)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=datetime.utcnow)
     icon: Optional[str] = Field(max_length=50, nullable=True)
     color: Optional[str] = Field(max_length=20, nullable=True)
 
@@ -118,7 +111,7 @@ class UserPreference(SQLModel, table=True):
     default_project_id: Optional[int] = Field(foreign_key="projects.id", nullable=True)
     default_view: str = Field(default="list", max_length=10, nullable=False)
     items_per_page: int = Field(default=10)
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
 
     # Relationship
     user: Optional[User] = Relationship(back_populates="preferences")
@@ -133,8 +126,8 @@ class Project(SQLModel, table=True):
     description: str = Field(default="", max_length=500)
     color: str = Field(default="#3b82f6", max_length=7, nullable=False)
     icon: Optional[str] = Field(max_length=50, nullable=True)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
 
     # Relationships
     user: Optional[User] = Relationship(back_populates="projects")
@@ -148,8 +141,8 @@ class Tag(SQLModel, table=True):
     user_id: int = Field(foreign_key="users.id", nullable=False, index=True)
     name: str = Field(min_length=3, max_length=100, nullable=False)
     color: str = Field(default="#3B82F6", max_length=7, nullable=False)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
 
     # Relationships
     user: Optional[User] = Relationship(back_populates="tags")
@@ -197,7 +190,7 @@ class UserSettings(SQLModel, table=True):
     integrations_webhooks_enabled: bool = Field(default=False)
     integrations_connected_services: str = Field(default="[]", max_length=1000, nullable=False)
 
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
 
     # Relationship
     user: Optional[User] = Relationship(back_populates="settings")
@@ -210,7 +203,7 @@ class RefreshToken(SQLModel, table=True):
     token: str = Field(unique=True, nullable=False, max_length=255)
     user_id: int = Field(foreign_key="users.id", nullable=False, index=True)
     expires_at: datetime = Field(nullable=False)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=datetime.utcnow)
     is_active: bool = Field(default=True)
 
     user: Optional[User] = Relationship(back_populates="refresh_tokens")
@@ -222,8 +215,8 @@ class Conversation(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="users.id", nullable=False, index=True)
     title: str = Field(max_length=200, nullable=False)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
     is_archived: bool = Field(default=False)
 
     # Relationships
@@ -241,7 +234,7 @@ class ChatMessage(SQLModel, table=True):
     conversation_id: int = Field(foreign_key="conversations.id", nullable=False, index=True)
     role: str = Field(max_length=20, nullable=False)
     content: str = Field(nullable=False)
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
     metadata_json: Optional[str] = Field(default=None)
 
     # Relationship

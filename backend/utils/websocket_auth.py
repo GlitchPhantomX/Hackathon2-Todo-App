@@ -40,10 +40,6 @@ class WebSocketAuthenticator:
             query_params = dict(websocket.query_params)
             token = query_params.get("token")
 
-            # If no token in query params, also check for 'access_token' (alternative param name)
-            if not token:
-                token = query_params.get("access_token")
-
             if not token:
                 # Accept the websocket first before sending messages
                 await websocket.accept()

@@ -123,8 +123,6 @@ class TaskCreate(BaseModel):
     priority: str = Field(default="medium", description="Task priority (low, medium, high)")
     project_id: Optional[int] = Field(None, description="Project ID to associate with task")
     tag_ids: Optional[List[int]] = Field(None, description="List of tag IDs to associate with the task")
-    is_recurring: bool = Field(default=False, description="Whether the task is recurring")
-    frequency: Optional[str] = Field(default=None, max_length=10, description="Frequency of recurring task (daily, weekly, monthly)")
 
     model_config = {
         "json_schema_extra": {
@@ -134,9 +132,7 @@ class TaskCreate(BaseModel):
                 "due_date": "2025-12-31T23:59:59Z",
                 "priority": "high",
                 "project_id": 1,
-                "tag_ids": [1, 2],
-                "is_recurring": False,
-                "frequency": "daily"
+                "tag_ids": [1, 2]
             }
         }
     }
@@ -163,17 +159,13 @@ class TaskUpdate(BaseModel):
     priority: Optional[str] = Field(None, description="Task priority (low, medium, high)")
     project_id: Optional[int] = Field(None, description="Project ID to associate with task")
     tag_ids: Optional[List[int]] = Field(None, description="List of tag IDs to associate with the task")
-    is_recurring: Optional[bool] = Field(None, description="Whether the task is recurring")
-    frequency: Optional[str] = Field(None, max_length=10, description="Frequency of recurring task (daily, weekly, monthly)")
 
     model_config = {
         "json_schema_extra": {
             "example": {
                 "completed": True,
                 "priority": "high",
-                "tag_ids": [1, 2, 3],
-                "is_recurring": False,
-                "frequency": "daily"
+                "tag_ids": [1, 2, 3]
             }
         }
     }
@@ -191,8 +183,6 @@ class TaskResponse(BaseModel):
     priority: str
     created_at: datetime
     updated_at: datetime
-    is_recurring: bool = False
-    frequency: Optional[str] = None
     tags: Optional[List["TagResponse"]] = None
 
     model_config = {
@@ -207,8 +197,6 @@ class TaskResponse(BaseModel):
                 "completed": False,
                 "due_date": "2025-12-31T23:59:59Z",
                 "priority": "high",
-                "is_recurring": False,
-                "frequency": "daily",
                 "created_at": "2025-12-09T11:00:00Z",
                 "updated_at": "2025-12-09T11:00:00Z",
                 "tags": [

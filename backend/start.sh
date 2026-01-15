@@ -1,8 +1,11 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
-echo "🚀 Starting server on port ${MCP_SERVER_PORT:-8000}"
+# Railway provides PORT environment variable
+PORT=${PORT:-8000}
 
-exec uvicorn main:app \
-  --host 0.0.0.0 \
-  --port ${MCP_SERVER_PORT:-8000}
+echo "🚀 Starting server on port $PORT"
+echo "📍 DATABASE_URL available: ${DATABASE_URL:+YES}"
+
+# Start uvicorn with Railway's PORT
+exec uv run uvicorn main:app --host 0.0.0.0 --port $PORT --log-level info --access-log
