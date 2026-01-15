@@ -77,3 +77,8 @@ Thumbs.db
 ehthumbs.db
 Icon?
 Thumbs.db
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
