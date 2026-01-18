@@ -126,13 +126,16 @@ const importExportCircuitBreaker = createCircuitBreaker({
 // AXIOS INSTANCE CONFIGURATION
 // ============================================
 
+// ✅ FIXED: Use NEXT_PUBLIC_API_URL which includes /api/v1 prefix
 const api: AxiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api/v1',
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
   },
 });
+
+console.log('🔧 API Base URL configured:', process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1');
 
 // ============================================
 // TOKEN MANAGEMENT
@@ -221,8 +224,10 @@ const refreshAccessToken = async (): Promise<string | null> => {
   try {
     logging.info('Attempting to refresh access token');
     
+    // ✅ FIXED: Use NEXT_PUBLIC_API_URL environment variable
+    const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
     const response = await axios.post(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api/v1'}/auth/refresh`,
+      `${baseURL}/auth/refresh`,
       { refresh_token: refreshToken }
     );
 
@@ -719,6 +724,7 @@ export const tagService = {
     }, taskCircuitBreaker);
   },
 };
+
 // ============================================
 // STATISTICS SERVICE
 // ============================================
@@ -751,13 +757,8 @@ export const statsService = {
 // NOTIFICATION SERVICE
 // ============================================
 
-// ============================================
-// NOTIFICATION SERVICE
-// ============================================
-
 export const notificationService = {
   getNotifications: async (userId: string, unreadOnly: boolean = false, limit: number = 10): Promise<Notification[]> => {
-    // ✅ CHANGED: Use /notifications instead of /users/me/notifications (matches backend route)
     const cacheKey = generateCacheKey(`/notifications`, { unread_only: unreadOnly, limit });
     return withCachingAndCircuitBreaker(async () => {
       const response = await api.get(`/notifications`, {
@@ -768,7 +769,6 @@ export const notificationService = {
   },
 
   getNotification: async (userId: string, notificationId: string): Promise<Notification> => {
-    // ✅ CHANGED: Use /notifications/{id} instead of /users/me/notifications/{id} (matches backend route)
     const cacheKey = generateCacheKey(`/notifications/${notificationId}`);
     return withCachingAndCircuitBreaker(async () => {
       const response = await api.get(`/notifications/${notificationId}`);
@@ -778,7 +778,6 @@ export const notificationService = {
 
   createNotification: async (userId: string, data: Omit<Notification, 'id'>): Promise<Notification> => {
     return withCircuitBreakerAndRetry(async () => {
-      // ✅ Keep as /notifications for POST
       const response = await api.post(`/notifications`, data);
 
       apiCache.delete(generateCacheKey(`/notifications`, { unread_only: true, limit: 10 }));
@@ -790,7 +789,6 @@ export const notificationService = {
 
   markNotificationAsRead: async (userId: string, notificationId: string): Promise<Notification> => {
     return withCircuitBreakerAndRetry(async () => {
-      // ✅ CHANGED: Use /notifications/{id}/read instead of /users/me/notifications/{id}/read (matches backend route)
       const response = await api.post(`/notifications/${notificationId}/read`);
 
       apiCache.delete(generateCacheKey(`/notifications`, { unread_only: true, limit: 10 }));
@@ -803,7 +801,6 @@ export const notificationService = {
 
   deleteNotification: async (userId: string, notificationId: string): Promise<void> => {
     return withCircuitBreakerAndRetry(async () => {
-      // ✅ Keep as /notifications for DELETE
       await api.delete(`/notifications/${notificationId}`);
 
       apiCache.delete(generateCacheKey(`/notifications`, { unread_only: true, limit: 10 }));
