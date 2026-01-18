@@ -146,34 +146,46 @@ const ImportModal: React.FC<ImportModalProps> = ({ open, onOpenChange }) => {
 
   const handleImport = async () => {
     if (!userId || previewData.length === 0) return;
-
+  
     setIsProcessing(true);
     setImportProgress(0);
     let imported = 0;
     let errors = 0;
-
+  
     try {
       console.log('📥 Starting import of', previewData.length, 'tasks');
-
+  
       for (let i = 0; i < previewData.length; i++) {
         const row = previewData[i];
         
         try {
           const priorityValue = row.priority || row.Priority || 'medium';
+          const dueDate = row.dueDate || row.due_date || row.DueDate || null;
+          
+          // ✅ Check if due date is in the past
+          const isPastDate = dueDate ? new Date(dueDate) < new Date() : false;
+          
+          // ✅ Build minimal task data - only required fields
           const taskData: any = {
             id: `temp-${Date.now()}-${Math.random()}`,
             title: row.title || row.Title || 'Untitled Task',
             description: row.description || row.Description || '',
             status: 'pending',
-            priority: (typeof priorityValue === 'string' && ['low', 'medium', 'high', 'urgent'].includes(priorityValue.toLowerCase())) ?
-                      priorityValue.toLowerCase() : 'medium',
-            due_date: row.dueDate || row.due_date || row.DueDate || null,
+            priority: (typeof priorityValue === 'string' && ['low', 'medium', 'high', 'urgent'].includes(priorityValue.toLowerCase())) 
+                      ? priorityValue.toLowerCase() 
+                      : 'medium',
+            due_date: dueDate,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
             user_id: userId,
+            
+            // ✅ Set these explicitly to false for imports (no recurring, no reminders)
+            is_recurring: false,
+            reminder_enabled: false, // ✅ Always false during import
+            completed: false,
           };
-
-          console.log('➕ Creating task:', taskData.title);
+  
+          console.log('➕ Creating task:', taskData.title, isPastDate ? '(past date)' : '');
           await addTask(taskData);
           
           imported++;
@@ -183,12 +195,12 @@ const ImportModal: React.FC<ImportModalProps> = ({ open, onOpenChange }) => {
           errors++;
         }
       }
-
+  
       console.log(`✅ Import complete: ${imported} imported, ${errors} errors`);
       
       setImportResult({ imported, errors });
       setActiveTab('result');
-
+  
       if (imported > 0) {
         createTaskNotification('created', `${imported} tasks imported successfully`);
       }

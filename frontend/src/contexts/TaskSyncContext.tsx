@@ -80,31 +80,73 @@ export const TaskSyncProvider: React.FC<TaskSyncProviderProps> = ({ children }) 
     websocketStatus: 'disconnected',
   });
 
-  // ✅ Add check for client-side only
   const [isClient, setIsClient] = React.useState(false);
 
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-  // Effect to handle WebSocket connections and event handling
-  useEffect(() => {
-    // ✅ Only run on client side
+  // ✅ Define syncTasks FIRST (before addTask uses it)
+  const syncTasks = useCallback(async () => {
     if (!isClient) return;
 
     const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+    
+    if (!token) {
+      dispatch({ type: 'SYNC_TASKS_ERROR', payload: 'No authentication token' });
+      return;
+    }
 
-    if (!token) return; // Early return if no token
+    dispatch({ type: 'SYNC_TASKS_START' });
+    try {
+      const apiUrl = `http://localhost:8000/api/v1/users/me/tasks`;
+      const response = await fetch(apiUrl, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
 
-    // Connect to WebSocket
+      if (!response.ok) {
+        throw new Error(`Failed to sync tasks: ${response.status}`);
+      }
+
+      const tasks = await response.json();
+      
+      // Convert backend format to frontend format
+      const formattedTasks = tasks.map((task: any) => ({
+        id: task.id.toString(),
+        title: task.title,
+        description: task.description,
+        status: task.status || (task.completed ? 'completed' : 'pending'),
+        priority: task.priority,
+        due_date: task.due_date,
+        project_id: task.project_id?.toString(),
+        user_id: task.user_id.toString(),
+        tags: task.tags || [],
+        created_at: task.created_at,
+        updated_at: task.updated_at
+      }));
+      
+      dispatch({ type: 'SYNC_TASKS_SUCCESS', payload: formattedTasks });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      dispatch({ type: 'SYNC_TASKS_ERROR', payload: errorMessage });
+    }
+  }, [isClient]);
+
+  // Effect to handle WebSocket connections and event handling
+  useEffect(() => {
+    if (!isClient) return;
+
+    const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+    if (!token) return;
+
     websocketService.connect(token);
 
-    // Subscribe to WebSocket status changes
     websocketService.onConnectionStatusChange((status) => {
       dispatch({ type: 'SET_WEBSOCKET_STATUS', payload: status });
     });
 
-    // Subscribe to task sync events
     const unsubscribeTaskCreated = websocketService.subscribe('task_created', (data) => {
       if (data.task) {
         dispatch({ type: 'ADD_TASK', payload: data.task });
@@ -129,10 +171,8 @@ export const TaskSyncProvider: React.FC<TaskSyncProviderProps> = ({ children }) 
       }
     });
 
-    // Request initial sync when connected
     websocketService.requestSync();
 
-    // Cleanup function
     return () => {
       unsubscribeTaskCreated();
       unsubscribeTaskUpdated();
@@ -140,77 +180,43 @@ export const TaskSyncProvider: React.FC<TaskSyncProviderProps> = ({ children }) 
       unsubscribeSyncResponse();
       websocketService.disconnect();
     };
-  }, [isClient]); // ✅ Add isClient as dependency
+  }, [isClient]);
 
-  // Function to handle API calls with fallback when WebSocket is unavailable
-  const makeApiCall = useCallback(async (url: string, options: RequestInit) => {
-    try {
-      // Construct the full API URL using the backend API
-      const apiUrl = `http://localhost:8000/api/v1${url}`;
-      console.log('🔗 API Call:', apiUrl);
-      console.log('📦 Request body:', options.body);
-      console.log('🔑 Headers:', options.headers);
-      
-      const response = await fetch(apiUrl, options);
-      
-      console.log('📊 Response status:', response.status);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Response error:', errorText);
-        throw new Error(`API call failed: ${response.status} ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      console.log('✅ Response data:', data);
-      return data;
-    } catch (error) {
-      console.error('❌ API call failed:', error);
-      throw error;
-    }
-  }, []);
-
-  // Function to add a task with optimistic update
+  // ✅ Now define addTask (after syncTasks is defined)
   const addTask = useCallback(async (task: Task) => {
-    // ✅ Only run on client side
     if (!isClient) return;
-
+  
     console.log('🚀 addTask called with:', task);
-
-    // Get token
+  
     const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-    console.log('🔑 Token:', token ? `${token.substring(0, 30)}...` : 'MISSING');
-
+  
     if (!token) {
       const errorMessage = 'No authentication token found. Please login.';
       console.error('❌', errorMessage);
       dispatch({ type: 'SET_ERROR', payload: errorMessage });
-      return;
+      throw new Error(errorMessage);
     }
-
-    // Optimistic update: add the task immediately to the UI
+  
+    // Optimistic update
     const tempId = `temp-${Date.now()}`;
     const optimisticTask = { ...task, id: tempId };
     dispatch({ type: 'ADD_TASK', payload: optimisticTask });
-
+  
     try {
-      // ✅ Prepare task data for backend
-      const taskData = {
-        title: task.title,
-        description: task.description || '',
-        priority: task.priority || 'medium',
-        status: task.status || 'pending',
-        due_date: task.due_date || null,
-        project_id: task.projectId ? parseInt(task.projectId) : null,
-        tag_ids: [],
-        // Map recurrence pattern to backend fields
-        is_recurring: task.recurrencePattern && task.recurrencePattern !== 'none',
-        frequency: task.recurrencePattern && task.recurrencePattern !== 'none' ? task.recurrencePattern : null
-      };
-
-      console.log('📤 Sending to backend:', taskData);
-
-      const newTask = await makeApiCall('/users/me/tasks', {
+      // ✅ Send task AS-IS to backend (already cleaned in AddTaskModal)
+      const taskData = { ...task };
+      
+      // ✅ Remove frontend-only fields
+      delete taskData.id;
+      delete taskData.created_at;
+      delete taskData.updated_at;
+      delete taskData.user_id;
+      delete taskData.tags;
+      delete taskData.status; // Backend doesn't accept status on create
+  
+      console.log('📤 Sending to backend:', JSON.stringify(taskData, null, 2));
+  
+      const response = await fetch(`http://localhost:8000/api/v1/users/me/tasks`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -218,47 +224,68 @@ export const TaskSyncProvider: React.FC<TaskSyncProviderProps> = ({ children }) 
         },
         body: JSON.stringify(taskData)
       });
-
-      console.log('✅ Task created successfully:', newTask);
-      console.log('📡 API Response:', newTask);
-
-      // Replace the temporary task with the actual one from backend
+  
+      console.log('📊 Response status:', response.status);
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('❌ Response error:', errorData);
+        throw new Error(errorData.detail || `API call failed: ${response.status}`);
+      }
+  
+      const newTask = await response.json();
+      console.log('✅ Task created:', newTask);
+  
+      // Remove temp task
       dispatch({ type: 'DELETE_TASK', payload: tempId });
+      
+      // Add real task
       const finalTask = {
         id: newTask.id.toString(),
         title: newTask.title,
-        description: newTask.description,
-        status: newTask.status || (newTask.completed ? 'completed' : 'pending'),
+        description: newTask.description || '',
+        status: newTask.completed ? 'completed' : 'pending',
         priority: newTask.priority,
         due_date: newTask.due_date,
         project_id: newTask.project_id?.toString(),
         user_id: newTask.user_id.toString(),
         tags: newTask.tags || [],
         created_at: newTask.created_at,
-        updated_at: newTask.updated_at
+        updated_at: newTask.updated_at,
+        completed: newTask.completed || false,
+        is_recurring: newTask.is_recurring || false,
+        frequency: newTask.frequency,
+        recurrence_end_date: newTask.recurrence_end_date,
+        reminder_enabled: newTask.reminder_enabled || false,
+        reminder_timing: newTask.reminder_timing,
+        timezone: newTask.timezone || 'UTC',
       };
+      
       dispatch({ type: 'ADD_TASK', payload: finalTask });
-
-      // Send WebSocket event if connected
+  
       if (state.websocketStatus === 'connected') {
         websocketService.send({
           type: 'task_created',
-          data: { task: newTask }
+          data: { task: finalTask }
         });
       }
+  
+      return finalTask;
+      
     } catch (error) {
-      // Rollback on error: remove the optimistic task
+      console.error('❌ Error in addTask:', error);
+      
+      // Rollback
       dispatch({ type: 'DELETE_TASK', payload: tempId });
+      
       const errorMessage = error instanceof Error ? error.message : 'Failed to add task';
-      console.error('❌ Error in addTask:', errorMessage);
       dispatch({ type: 'SET_ERROR', payload: errorMessage });
       throw error;
     }
-  }, [isClient, makeApiCall, state.websocketStatus]);
+  }, [isClient, state.websocketStatus]);
 
-  // Function to update a task with optimistic update
+  // Function to update a task
   const updateTask = useCallback(async (id: string, updates: Partial<Task>) => {
-    // ✅ Only run on client side
     if (!isClient) return;
 
     const token = localStorage.getItem('token') || localStorage.getItem('access_token');
@@ -268,11 +295,9 @@ export const TaskSyncProvider: React.FC<TaskSyncProviderProps> = ({ children }) 
       return;
     }
 
-    // Get the current task to save for rollback
     const currentTask = state.tasks.find(task => task.id === id);
     if (!currentTask) return;
 
-    // Optimistic update: update the task immediately in the UI
     dispatch({ type: 'UPDATE_TASK', payload: { id, updates } });
 
     try {
@@ -286,7 +311,7 @@ export const TaskSyncProvider: React.FC<TaskSyncProviderProps> = ({ children }) 
         tag_ids: []
       };
 
-      const updatedTask = await makeApiCall(`/users/me/tasks/${id}`, {
+      const response = await fetch(`http://localhost:8000/api/v1/users/me/tasks/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -295,10 +320,14 @@ export const TaskSyncProvider: React.FC<TaskSyncProviderProps> = ({ children }) 
         body: JSON.stringify(updateData)
       });
 
-      // Update with the server response to ensure consistency
+      if (!response.ok) {
+        throw new Error(`Failed to update task: ${response.status}`);
+      }
+
+      const updatedTask = await response.json();
+
       dispatch({ type: 'UPDATE_TASK', payload: { id, updates: updatedTask } });
 
-      // Send WebSocket event if connected
       if (state.websocketStatus === 'connected') {
         websocketService.send({
           type: 'task_updated',
@@ -306,7 +335,6 @@ export const TaskSyncProvider: React.FC<TaskSyncProviderProps> = ({ children }) 
         });
       }
     } catch (error) {
-      // Rollback on error: restore the original task state
       const rollbackUpdates: Partial<Task> = {};
       for (const key in updates) {
         if (key in currentTask) {
@@ -317,11 +345,10 @@ export const TaskSyncProvider: React.FC<TaskSyncProviderProps> = ({ children }) 
       const errorMessage = error instanceof Error ? error.message : 'Failed to update task';
       dispatch({ type: 'SET_ERROR', payload: errorMessage });
     }
-  }, [isClient, makeApiCall, state.tasks, state.websocketStatus]);
+  }, [isClient, state.tasks, state.websocketStatus]);
 
-  // Function to delete a task with optimistic update
+  // Function to delete a task
   const deleteTask = useCallback(async (id: string) => {
-    // ✅ Only run on client side
     if (!isClient) return;
 
     const token = localStorage.getItem('token') || localStorage.getItem('access_token');
@@ -331,22 +358,23 @@ export const TaskSyncProvider: React.FC<TaskSyncProviderProps> = ({ children }) 
       return;
     }
 
-    // Get the task to save for rollback
     const taskToDelete = state.tasks.find(task => task.id === id);
     if (!taskToDelete) return;
 
-    // Optimistic update: remove the task immediately from the UI
     dispatch({ type: 'DELETE_TASK', payload: id });
 
     try {
-      await makeApiCall(`/users/me/tasks/${id}`, {
+      const response = await fetch(`http://localhost:8000/api/v1/users/me/tasks/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
 
-      // Send WebSocket event if connected
+      if (!response.ok) {
+        throw new Error(`Failed to delete task: ${response.status}`);
+      }
+
       if (state.websocketStatus === 'connected') {
         websocketService.send({
           type: 'task_deleted',
@@ -354,65 +382,20 @@ export const TaskSyncProvider: React.FC<TaskSyncProviderProps> = ({ children }) 
         });
       }
     } catch (error) {
-      // Rollback on error: restore the deleted task
       if (taskToDelete) {
         dispatch({ type: 'ADD_TASK', payload: taskToDelete });
       }
       const errorMessage = error instanceof Error ? error.message : 'Failed to delete task';
       dispatch({ type: 'SET_ERROR', payload: errorMessage });
     }
-  }, [isClient, makeApiCall, state.tasks, state.websocketStatus]);
-
-  // Function to sync tasks
-  const syncTasks = useCallback(async () => {
-    // ✅ Only run on client side
-    if (!isClient) return;
-
-    const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-    
-    if (!token) {
-      dispatch({ type: 'SYNC_TASKS_ERROR', payload: 'No authentication token' });
-      return;
-    }
-
-    dispatch({ type: 'SYNC_TASKS_START' });
-    try {
-      const tasks = await makeApiCall('/users/me/tasks', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      // Convert backend format to frontend format
-      const formattedTasks = tasks.map((task: any) => ({
-        id: task.id.toString(),
-        title: task.title,
-        description: task.description,
-        status: task.status || (task.completed ? 'completed' : 'pending'),
-        priority: task.priority,
-        due_date: task.due_date,
-        project_id: task.project_id?.toString(),
-        user_id: task.user_id.toString(),
-        tags: task.tags || [],
-        created_at: task.created_at,
-        updated_at: task.updated_at
-      }));
-      
-      dispatch({ type: 'SYNC_TASKS_SUCCESS', payload: formattedTasks });
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      dispatch({ type: 'SYNC_TASKS_ERROR', payload: errorMessage });
-    }
-  }, [isClient, makeApiCall]);
+  }, [isClient, state.tasks, state.websocketStatus]);
 
   // Load tasks on mount
   useEffect(() => {
-    // ✅ Only run on client side
     if (!isClient) return;
     syncTasks();
-  }, [isClient, syncTasks]); // ✅ Add isClient as dependency
+  }, [isClient, syncTasks]);
 
-  // Expose the context value
   const contextValue = {
     tasks: state.tasks,
     addTask,
@@ -430,7 +413,6 @@ export const TaskSyncProvider: React.FC<TaskSyncProviderProps> = ({ children }) 
   );
 };
 
-// Custom hook to use the TaskSyncContext
 export const useTaskSync = (): TaskSyncContextType => {
   const context = useContext(TaskSyncContext);
   if (!context) {

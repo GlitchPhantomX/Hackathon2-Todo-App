@@ -1,6 +1,6 @@
 from sqlmodel import Session, select
-from models.models import User, Task
-from database.db import engine, create_tables, test_connection
+from models import User, Task
+from db import engine, create_tables, test_connection
 import datetime
 
 

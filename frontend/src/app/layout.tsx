@@ -26,11 +26,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang='en' suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <ClientProviders>
-          <WebSocketNotificationListener>
-            {children}
-            {/* Toast Container - Shows notifications */}
-            <ToastContainer />
-          </WebSocketNotificationListener>
+          <WebSocketNotificationListener />  {/* ✅ ADD THIS LINE */}
+          {children}
+          {/* Toast Container - Shows notifications */}
+          <ToastContainer />
         </ClientProviders>
       </body>
     </html>

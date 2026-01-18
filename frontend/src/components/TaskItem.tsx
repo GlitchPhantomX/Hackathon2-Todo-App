@@ -13,8 +13,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useTaskSync } from '@/contexts/TaskSyncContext';
 import { MoreHorizontalIcon, EditIcon, TrashIcon, CopyIcon, FolderOpenIcon, WifiIcon } from 'lucide-react';
-import { Task } from '@/types/types';
+import { Task } from '@/types/task.types';
 import { format, isToday, isPast } from 'date-fns';
+import RecurringTaskBadge from './Task/RecurringTaskBadge';
+import ReminderBadge from './Task/ReminderBadge';
+import DueDateIndicator from './DueDateIndicator';
 
 interface TaskItemProps {
   task: Task;
@@ -35,8 +38,8 @@ const TaskItem = ({
   const [isHovered, setIsHovered] = useState(false);
 
   const handleCompletionToggle = async () => {
-    await updateTask(task.id, { 
-      status: task.status === 'completed' ? 'pending' : 'completed' 
+    await updateTask(task.id, {
+      status: task.status === 'completed' ? 'pending' : 'completed'
     });
   };
 
@@ -173,7 +176,7 @@ const TaskItem = ({
                   <EditIcon className="h-4 w-4" />
                   <span className="sr-only">Edit task</span>
                 </Button>
-                
+
                 {/* Delete button - shows on hover */}
                 <Button
                   variant="ghost"
@@ -189,9 +192,9 @@ const TaskItem = ({
                 {/* Three-dot menu */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       className="h-8 w-8"
                     >
                       <MoreHorizontalIcon className="h-4 w-4" />
@@ -203,7 +206,7 @@ const TaskItem = ({
                       <EditIcon className="mr-2 h-4 w-4" />
                       Edit
                     </DropdownMenuItem>
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       onClick={handleDelete}
                       className="text-red-600 focus:text-red-600"
                     >
@@ -238,24 +241,21 @@ const TaskItem = ({
                 </Badge>
               )}
 
+              {/* Recurring task indicator */}
+              <RecurringTaskBadge task={task} />
+
+              {/* Reminder indicator */}
+              <ReminderBadge task={task} />
+
+              {/* Due date indicator */}
+              <DueDateIndicator task={task} />
+
               {/* Tags */}
               {task.tags && task.tags.map((tag, index) => (
                 <Badge key={index} variant="secondary" className="capitalize">
                   {tag}
                 </Badge>
               ))}
-
-              {/* Due date */}
-              {task.dueDate && (
-                <Badge
-                  variant={dueDateStatus === 'overdue' ? 'destructive' : 'outline'}
-                  className={`flex items-center gap-1 ${
-                    dueDateStatus === 'today' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' : ''
-                  }`}
-                >
-                  <span>{formatDate(task.dueDate)}</span>
-                </Badge>
-              )}
             </div>
           </div>
         </div>

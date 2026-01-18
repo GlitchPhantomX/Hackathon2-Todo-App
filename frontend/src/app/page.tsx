@@ -7,7 +7,7 @@ import CTASection from '@/components/NewCTASection'
 import { NewFooter } from '@/components/layout/NewFooter'
 import TimeLineDemo from '@/components/TimelineDemo'
 import TestimonialsSection from '@/components/NewTestimonialsSection'
-import ChatbotCommandsSection from '@/components/Chatbotcommandssection'
+import ChatbotCommandsSection from '@/components/ChatbotCommandsSection'
 
 const HomePage = () => {
   return (

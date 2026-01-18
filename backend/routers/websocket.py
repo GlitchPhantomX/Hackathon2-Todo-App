@@ -20,6 +20,12 @@ class WebSocketEventType:
     SYNC_REQUEST = "sync_request"
     SYNC_RESPONSE = "sync_response"
 
+    # New events for recurring tasks and reminders
+    TASK_COMPLETED = "task_completed"
+    RECURRING_TASK_CREATED = "recurring_task_created"
+    REMINDER_SENT = "reminder_sent"
+    NOTIFICATION_CREATED = "notification_created"
+
 router = APIRouter(prefix="/ws", tags=["WebSocket"])
 
 # Store active connections
@@ -141,6 +147,42 @@ class ConnectionManager:
             # Remove disconnected websockets
             for websocket in disconnected_websockets:
                 self.disconnect(websocket)
+
+    async def send_task_completed(self, task_data: dict, user_id: int):
+        """Send task completed event to user"""
+        message = {
+            "type": WebSocketEventType.TASK_COMPLETED,
+            "task": task_data,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        await self.broadcast_to_user(json.dumps(message), user_id)
+
+    async def send_recurring_task_created(self, task_data: dict, user_id: int):
+        """Send recurring task created event to user"""
+        message = {
+            "type": WebSocketEventType.RECURRING_TASK_CREATED,
+            "task": task_data,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        await self.broadcast_to_user(json.dumps(message), user_id)
+
+    async def send_reminder_sent(self, reminder_data: dict, user_id: int):
+        """Send reminder sent event to user"""
+        message = {
+            "type": WebSocketEventType.REMINDER_SENT,
+            "reminder": reminder_data,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        await self.broadcast_to_user(json.dumps(message), user_id)
+
+    async def send_notification_created(self, notification_data: dict, user_id: int):
+        """Send notification created event to user"""
+        message = {
+            "type": WebSocketEventType.NOTIFICATION_CREATED,
+            "notification": notification_data,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        await self.broadcast_to_user(json.dumps(message), user_id)
 
 
 manager = ConnectionManager()

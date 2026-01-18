@@ -1,6 +1,8 @@
 from sqlmodel import SQLModel, Field, Relationship
 from datetime import datetime
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, Dict, Any
+from sqlalchemy import Column, JSON as SQLALCHEMY_JSON
+from sqlalchemy.sql import expression
 
 if TYPE_CHECKING:
     from models import Task, Tag
@@ -60,21 +62,51 @@ class Task(TaskBase, table=True):
 
     id: Optional[int] = Field(default=None, primary_key=True)
     title: str = Field(min_length=1, max_length=200, nullable=False)
-    description: str = Field(default="", max_length=1000)
+    description: Optional[str] = Field(default="", max_length=1000)
     completed: bool = Field(default=False)
     due_date: Optional[datetime] = Field(default=None)
     priority: str = Field(default="medium", max_length=10, nullable=False)
-    # status: str = Field(default="pending", max_length=20, nullable=False)  # ❌ REMOVE THIS LINE
     project_id: Optional[int] = Field(foreign_key="projects.id", nullable=True, index=True)
     user_id: int = Field(foreign_key="users.id", nullable=False, index=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
-    # Relationships
+    # Recurring task fields
+    is_recurring: bool = Field(default=False)
+    frequency: Optional[str] = Field(default=None, max_length=20)
+    recurrence_end_date: Optional[datetime] = Field(default=None)
+    parent_task_id: Optional[int] = Field(foreign_key="tasks.id", nullable=True, index=True)
+    
+    # ✅ FIXED: JSON field
+    recurrence_pattern: Optional[Dict[str, Any]] = Field(
+        default=None, 
+        sa_column=Column(SQLALCHEMY_JSON)
+    )
+
+    # Reminder fields
+    reminder_enabled: bool = Field(default=False)
+    reminder_timing: Optional[str] = Field(default=None, max_length=10)
+    reminder_sent: bool = Field(default=False)
+
+    # Timezone field
+    timezone: str = Field(default="UTC", max_length=50)
+
+    # ✅ FIXED: Relationships
     user: Optional[User] = Relationship(back_populates="tasks")
     project: Optional["Project"] = Relationship(back_populates="tasks")
     notifications: list["Notification"] = Relationship(back_populates="task")
     tags: list["Tag"] = Relationship(back_populates="tasks", link_model=TaskTagLink)
+    
+    # ✅ FIXED: Self-referential relationships
+    parent_task: Optional["Task"] = Relationship(
+        back_populates="child_tasks",
+        sa_relationship_kwargs={
+            "remote_side": "Task.id"
+        }
+    )
+    child_tasks: list["Task"] = Relationship(
+        back_populates="parent_task"
+    )
 
 
 class Notification(SQLModel, table=True):
@@ -171,6 +203,13 @@ class UserSettings(SQLModel, table=True):
     notifications_task_reminders: bool = Field(default=True)
     notifications_daily_digest: bool = Field(default=False)
 
+    # Reminder preferences
+    reminder_default_timing: str = Field(default="1hr", max_length=10)
+    reminder_allow_overdue: bool = Field(default=True)
+    reminder_allow_15min: bool = Field(default=True)
+    reminder_allow_1hr: bool = Field(default=True)
+    reminder_allow_1day: bool = Field(default=True)
+
     # Task defaults
     task_defaults_default_priority: str = Field(default="medium", max_length=10, nullable=False)
     task_defaults_default_project_id: Optional[int] = Field(foreign_key="projects.id", nullable=True)
@@ -223,7 +262,7 @@ class Conversation(SQLModel, table=True):
     user: Optional[User] = Relationship(back_populates="conversations")
     messages: list["ChatMessage"] = Relationship(
         back_populates="conversation",
-        sa_relationship_kwargs={"cascade": "all, delete-orphan"}  # ✅ CASCADE DELETE
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"}
     )
 
 

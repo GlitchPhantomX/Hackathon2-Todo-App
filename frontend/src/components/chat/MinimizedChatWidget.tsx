@@ -95,9 +95,48 @@ export default function MinimizedChatWidget({ onClose }: MinimizedChatWidgetProp
   }, [input]);
 
   const handleSend = async () => {
-    if (!input.trim() || isSending) return;
-    await sendMessage(input, false);
-    setInput('');
+    const trimmedInput = input.trim();
+    
+    // Validation check
+    if (!trimmedInput || isSending) {
+      console.log('Cannot send: empty input or already sending');
+      return;
+    }
+
+    console.log('🚀 Sending message:', trimmedInput);
+
+    try {
+      // Optimistically add user message to UI
+      const userMessage: Message = {
+        id: Date.now().toString(),
+        role: 'user',
+        content: trimmedInput,
+        created_at: new Date().toISOString()
+      };
+
+      const updatedMessages = [...localMessages, userMessage];
+      setLocalMessages(updatedMessages);
+      localStorage.setItem('chatMessages', JSON.stringify(updatedMessages));
+
+      // Clear input immediately for better UX
+      setInput('');
+
+      // Send message to backend
+      const response = await sendMessage(trimmedInput, false);
+      
+      console.log('✅ Message sent successfully:', response);
+
+    } catch (error) {
+      console.error('❌ Error sending message:', error);
+      
+      // Show error to user
+      alert(language === 'ur' 
+        ? 'پیغام بھیجنے میں خرابی۔ براہ کرم دوبارہ کوشش کریں۔'
+        : 'Failed to send message. Please try again.');
+      
+      // Restore input on error
+      setInput(trimmedInput);
+    }
   };
 
   const handleVoiceTranscript = async (transcript: string) => {
@@ -105,8 +144,29 @@ export default function MinimizedChatWidget({ onClose }: MinimizedChatWidgetProp
     setInput(transcript);
     
     if (transcript.trim()) {
-      await sendMessage(transcript, true);
-      setInput('');
+      try {
+        // Optimistically add user message
+        const userMessage: Message = {
+          id: Date.now().toString(),
+          role: 'user',
+          content: transcript,
+          created_at: new Date().toISOString()
+        };
+
+        const updatedMessages = [...localMessages, userMessage];
+        setLocalMessages(updatedMessages);
+        localStorage.setItem('chatMessages', JSON.stringify(updatedMessages));
+
+        // Clear input
+        setInput('');
+
+        // Send message
+        await sendMessage(transcript, true);
+        
+      } catch (error) {
+        console.error('❌ Error sending voice message:', error);
+        setInput(transcript);
+      }
     }
   };
 
@@ -116,16 +176,28 @@ export default function MinimizedChatWidget({ onClose }: MinimizedChatWidgetProp
   };
 
   const handleClearConversation = () => {
-    if (window.confirm('Are you sure you want to clear this conversation?')) {
+    const confirmMessage = language === 'ur' 
+      ? 'کیا آپ واقعی یہ بات چیت صاف کرنا چاہتے ہیں؟'
+      : 'Are you sure you want to clear this conversation?';
+      
+    if (window.confirm(confirmMessage)) {
       localStorage.removeItem('chatMessages');
       setLocalMessages([]);
-      window.location.reload();
+      // Don't reload - just clear state
+      console.log('Conversation cleared');
     }
   };
 
   const handleLanguageChange = (langCode: string) => {
     setLanguage(langCode);
     setShowLanguageMenu(false);
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
   };
 
   if (!isVisible) {
@@ -480,12 +552,7 @@ export default function MinimizedChatWidget({ onClose }: MinimizedChatWidgetProp
               ref={textareaRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSend();
-                }
-              }}
+              onKeyDown={handleKeyPress}
               placeholder={language === 'ur' ? 'اپنا پیغام ٹائپ کریں...' : 'Type your message...'}
               className="min-h-[48px] max-h-[120px] resize-none rounded-xl border-2 focus:ring-0 px-4 py-3 text-sm transition-colors"
               style={{

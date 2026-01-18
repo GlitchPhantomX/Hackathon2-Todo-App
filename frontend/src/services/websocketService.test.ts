@@ -38,7 +38,11 @@ describe('WebSocketService', () => {
 
     websocketService.send(message);
 
-    expect(mockSend).toHaveBeenCalledWith(JSON.stringify(message));
+    // The send method now adds a timestamp, so we need to check for the extended message
+    const sentMessage = JSON.parse(mockSend.mock.calls[0][0]);
+    expect(sentMessage.type).toBe('test');
+    expect(sentMessage.data).toEqual({});
+    expect(sentMessage.timestamp).toBeDefined();
   });
 
   test('should not send message when not connected', () => {
@@ -55,10 +59,12 @@ describe('WebSocketService', () => {
     const callback = jest.fn();
 
     const unsubscribe = websocketService.subscribe(eventType, callback);
-    expect((websocketService as any).listeners.get(eventType).size).toBe(1);
+    expect((websocketService as any).listeners.get(eventType)?.size).toBe(1);
 
     unsubscribe();
-    expect((websocketService as any).listeners.get(eventType)?.size).toBe(0);
+    // After unsubscribe, the listeners map might delete the entry if it's empty
+    const listeners = (websocketService as any).listeners.get(eventType);
+    expect(listeners?.size || 0).toBe(0);
   });
 
   test('should handle incoming messages', () => {
@@ -72,10 +78,34 @@ describe('WebSocketService', () => {
     // Simulate receiving a message
     (websocketService as any).handleMessage(message);
 
+    // Callback should be called with the data
     expect(callback).toHaveBeenCalledWith(testData);
   });
 
+  test('should handle notification_created messages', () => {
+    const eventType = 'notification_created';
+    const callback = jest.fn();
+    const notificationData = {
+      notification: { id: 'notif_1', title: 'Test Notification', message: 'Test message' },
+      task: { id: '1', title: 'Test Task' },
+      timestamp: new Date().toISOString()
+    };
+    const message = { type: eventType, ...notificationData };
+
+    websocketService.subscribe(eventType, callback);
+
+    // Simulate receiving a notification message
+    (websocketService as any).handleMessage(message);
+
+    // Callback should be called with the notification data
+    expect(callback).toHaveBeenCalledWith(notificationData);
+  });
+
   test('should disconnect properly', () => {
+    // Set up a mock WebSocket instance for the service
+    const mockWs = new WebSocket('ws://test');
+    (websocketService as any).ws = mockWs;
+
     websocketService.disconnect();
 
     expect(mockClose).toHaveBeenCalled();

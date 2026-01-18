@@ -17,7 +17,8 @@ import {
 import { CalendarIcon, PlusIcon } from 'lucide-react';
 import { useTaskSync } from '@/contexts/TaskSyncContext';
 import { useTags } from '@/contexts/TagsContext';
-import { Task } from '@/types/types';
+import { Task } from '@/types/task.types';
+import RecurringTaskForm from './Task/RecurringTaskForm';
 
 interface EditTaskModalProps {
   isOpen: boolean;
@@ -36,8 +37,16 @@ const EditTaskModal = ({ isOpen, onClose, task }: EditTaskModalProps) => {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedProject, setSelectedProject] = useState<string>('');
   const [newTag, setNewTag] = useState('');
-  const [recurrence, setRecurrence] = useState<string>('none');
   const [errors, setErrors] = useState<{ title?: string; description?: string }>({});
+
+  // State for advanced features
+  const [isRecurring, setIsRecurring] = useState<boolean>(false);
+  const [frequency, setFrequency] = useState<'daily' | 'weekly' | 'monthly' | 'custom'>('daily');
+  const [recurrenceEndDate, setRecurrenceEndDate] = useState<string>('');
+  const [recurrencePattern, setRecurrencePattern] = useState<Record<string, any>>({});
+  const [reminderEnabled, setReminderEnabled] = useState<boolean>(false);
+  const [reminderTiming, setReminderTiming] = useState<'15min' | '1hr' | '1day'>('1hr');
+  const [timezone, setTimezone] = useState<string>('UTC');
 
   const resetForm = () => {
     setTitle('');
@@ -48,8 +57,16 @@ const EditTaskModal = ({ isOpen, onClose, task }: EditTaskModalProps) => {
     setSelectedTags([]);
     setSelectedProject('');
     setNewTag('');
-    setRecurrence('none');
     setErrors({});
+
+    // Reset advanced features
+    setIsRecurring(false);
+    setFrequency('daily');
+    setRecurrenceEndDate('');
+    setRecurrencePattern({});
+    setReminderEnabled(false);
+    setReminderTiming('1hr');
+    setTimezone('UTC');
   };
 
   // Pre-populate form when task changes
@@ -62,7 +79,15 @@ const EditTaskModal = ({ isOpen, onClose, task }: EditTaskModalProps) => {
       setStatus(task.status as 'pending' | 'completed');
       setSelectedTags(task.tags || []);
       setSelectedProject(task.projectId || '');
-      setRecurrence(task.recurrencePattern || 'none');
+
+      // Populate advanced features
+      setIsRecurring(task.isRecurring || false);
+      setFrequency(task.frequency || 'daily');
+      setRecurrenceEndDate(task.recurrenceEndDate || '');
+      setRecurrencePattern(task.recurrencePattern || {});
+      setReminderEnabled(task.reminderEnabled || false);
+      setReminderTiming(task.reminderTiming || '1hr');
+      setTimezone(task.timezone || 'UTC');
     } else {
       resetForm();
     }
@@ -113,6 +138,15 @@ const EditTaskModal = ({ isOpen, onClose, task }: EditTaskModalProps) => {
         priority,
         status,
         tags: selectedTags,
+
+        // Advanced features
+        isRecurring: isRecurring,
+        frequency: isRecurring ? frequency : undefined,
+        recurrenceEndDate: recurrenceEndDate || undefined,
+        recurrencePattern: recurrencePattern || undefined,
+        reminderEnabled: reminderEnabled,
+        reminderTiming: reminderEnabled ? reminderTiming : undefined,
+        timezone: timezone,
       };
 
       if (dueDate) {
@@ -121,12 +155,6 @@ const EditTaskModal = ({ isOpen, onClose, task }: EditTaskModalProps) => {
 
       if (selectedProject && selectedProject !== 'none') {
         updateData.projectId = selectedProject;
-      }
-
-      if (recurrence && recurrence !== 'none') {
-        updateData.recurrencePattern = recurrence;
-      } else {
-        updateData.recurrencePattern = undefined;
       }
 
       await updateTaskSync(task.id, updateData);
@@ -303,24 +331,49 @@ const EditTaskModal = ({ isOpen, onClose, task }: EditTaskModalProps) => {
             </div>
           </div>
 
-          {/* Recurrence */}
-          <div>
-            <Label htmlFor="recurrence">Recurrence</Label>
-            <Select
-              value={recurrence}
-              onValueChange={setRecurrence}
-            >
-              <SelectTrigger id="recurrence">
-                <SelectValue placeholder="Select recurrence pattern" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">No Recurrence</SelectItem>
-                <SelectItem value="daily">Daily</SelectItem>
-                <SelectItem value="weekly">Weekly</SelectItem>
-                <SelectItem value="monthly">Monthly</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Advanced Task Options */}
+          <RecurringTaskForm
+            formState={{
+              title,
+              description,
+              dueDate: dueDate || '',
+              priority,
+              projectId: selectedProject || undefined,
+              tagIds: [],
+              isRecurring,
+              frequency,
+              recurrenceEndDate,
+              recurrencePattern,
+              reminderEnabled,
+              reminderTiming,
+              timezone,
+            }}
+            onChange={(field, value) => {
+              switch(field) {
+                case 'isRecurring':
+                  setIsRecurring(value);
+                  break;
+                case 'frequency':
+                  setFrequency(value);
+                  break;
+                case 'recurrenceEndDate':
+                  setRecurrenceEndDate(value);
+                  break;
+                case 'recurrencePattern':
+                  setRecurrencePattern(value);
+                  break;
+                case 'reminderEnabled':
+                  setReminderEnabled(value);
+                  break;
+                case 'reminderTiming':
+                  setReminderTiming(value);
+                  break;
+                case 'timezone':
+                  setTimezone(value);
+                  break;
+              }
+            }}
+          />
 
           <div>
             <Label htmlFor="project">Project</Label>

@@ -26,12 +26,13 @@ function ChatContent() {
     messages,
     isLoading,
     isSending,
+    language,
     createConversation,
     loadConversation,
     deleteConversation,
     updateConversationTitle,
     sendMessage,
-    setMessages // ✅ Make sure this exists in your ChatContext
+    setMessages
   } = useChat();
 
   const [hasRestoredFromWidget, setHasRestoredFromWidget] = useState(false);
@@ -53,7 +54,7 @@ function ChatContent() {
           if (parsed.length > 0) {
             createConversation().then(() => {
               setTimeout(() => {
-                setMessages(parsed); // Set messages in context
+                setMessages(parsed);
                 console.log('✅ Restored', parsed.length, 'messages from widget');
               }, 300);
             });
@@ -114,8 +115,13 @@ function ChatContent() {
     }
   };
 
+  const isRTL = language === 'ur';
+
   return (
-    <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-900">
+    <div 
+      className="flex flex-col h-screen bg-gray-50 dark:bg-gray-900"
+      dir={isRTL ? 'rtl' : 'ltr'}
+    >
       {/* Chat Navbar */}
       <ChatNavbar />
 

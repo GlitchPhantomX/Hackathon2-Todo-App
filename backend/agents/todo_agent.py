@@ -12,9 +12,10 @@ class TodoAgent:
     def __init__(self, user_id: int, session: Session):
         self.user_id = user_id
         self.session = session
+        self.language = 'en'  # ✅ Default language
         
         # OpenRouter Configuration
-        self.api_key = os.getenv("OPENROUTER_API_KEY", "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")
+        self.api_key = os.getenv("OPENROUTER_API_KEY", "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")
         self.base_url = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
         self.model = os.getenv("OPENROUTER_MODEL", "mistralai/devstral-2512:free")
         
@@ -86,9 +87,15 @@ class TodoAgent:
     async def process_message(
         self,
         message: str,
-        conversation_history: List[Dict[str, str]]
+        conversation_history: List[Dict[str, str]],
+        language: str = 'en'  # ✅ ADD LANGUAGE PARAMETER
     ) -> Dict[str, Any]:
         """Process user message and determine intent"""
+        
+        # ✅ STORE LANGUAGE PREFERENCE
+        self.language = language
+        print(f"🌍 Processing in language: {language}")
+        
         message_lower = message.lower()
 
         # ✅ DETECT DELETE INTENT FIRST - HIGHEST PRIORITY
@@ -171,64 +178,95 @@ class TodoAgent:
     def _task_to_dict(self, task: Task) -> Dict[str, Any]:
         """Convert task to dictionary"""
         return {
-        "id": task.id,
-        "title": task.title,
-        "description": task.description or "",
-        "status": "completed" if task.completed else "pending",  # ✅ Derive from completed
-        "priority": task.priority,
-        "completed": task.completed,
-        "due_date": task.due_date.isoformat() if task.due_date else None,
-        "created_at": task.created_at.isoformat() if task.created_at else None
-    }
+            "id": task.id,
+            "title": task.title,
+            "description": task.description or "",
+            "status": "completed" if task.completed else "pending",
+            "priority": task.priority,
+            "completed": task.completed,
+            "due_date": task.due_date.isoformat() if task.due_date else None,
+            "created_at": task.created_at.isoformat() if task.created_at else None
+        }
 
     def format_tasks_response(self, tasks: list) -> str:
         """
-        Format tasks in a concise, readable way
-
+        Format tasks in a concise, readable way with language support
+        
         Args:
             tasks: List of Task objects
-
+        
         Returns:
-            str: Formatted task list
+            str: Formatted task list in selected language
         """
+        
+        # ✅ LANGUAGE TRANSLATIONS
+        translations = {
+            'en': {
+                'no_tasks': "You don't have any tasks yet. Want to add one? 😊",
+                'you_have': "You have",
+                'task': 'task',
+                'tasks': 'tasks',
+                'high_priority': '**High Priority** 🔴',
+                'medium_priority': '**Medium Priority** 🟡',
+                'low_priority': '**Low Priority** 🟢',
+                'completed': '**Completed** ✓',
+                'due': 'Due'
+            },
+            'ur': {
+                'no_tasks': "آپ کے پاس ابھی کوئی کام نہیں ہے۔ کیا آپ شامل کرنا چاہتے ہیں؟ 😊",
+                'you_have': "آپ کے پاس",
+                'task': 'کام',
+                'tasks': 'کام',
+                'high_priority': '**اعلیٰ ترجیح** 🔴',
+                'medium_priority': '**درمیانی ترجیح** 🟡',
+                'low_priority': '**کم ترجیح** 🟢',
+                'completed': '**مکمل** ✓',
+                'due': 'آخری تاریخ'
+            }
+        }
+        
+        # Get current language translations (default to English)
+        t = translations.get(self.language, translations['en'])
+        
         if not tasks:
-            return "You don't have any tasks yet. Want to add one? 😊"
+            return t['no_tasks']
 
         # Group by priority
-        high_priority = [t for t in tasks if t.priority == 'high' and not t.completed]
-        medium_priority = [t for t in tasks if t.priority == 'medium' and not t.completed]
-        low_priority = [t for t in tasks if t.priority == 'low' and not t.completed]
-        completed = [t for t in tasks if t.completed]
+        high_priority = [task for task in tasks if task.priority == 'high' and not task.completed]
+        medium_priority = [task for task in tasks if task.priority == 'medium' and not task.completed]
+        low_priority = [task for task in tasks if task.priority == 'low' and not task.completed]
+        completed = [task for task in tasks if task.completed]
 
-        response = f"You have {len(tasks)} task{'s' if len(tasks) != 1 else ''}:\n\n"
+        task_word = t['task'] if len(tasks) == 1 else t['tasks']
+        response = f"{t['you_have']} {len(tasks)} {task_word}:\n\n"
 
         # High priority
         if high_priority:
-            response += "**High Priority** 🔴\n"
+            response += f"{t['high_priority']}\n"
             for i, task in enumerate(high_priority, 1):
-                due = f" (Due: {task.due_date.strftime('%b %d')})" if task.due_date else ""
+                due = f" ({t['due']}: {task.due_date.strftime('%b %d')})" if task.due_date else ""
                 response += f"{i}. {task.title}{due}\n"
             response += "\n"
 
         # Medium priority
         if medium_priority:
-            response += "**Medium Priority** 🟡\n"
+            response += f"{t['medium_priority']}\n"
             for i, task in enumerate(medium_priority, 1):
-                due = f" (Due: {task.due_date.strftime('%b %d')})" if task.due_date else ""
+                due = f" ({t['due']}: {task.due_date.strftime('%b %d')})" if task.due_date else ""
                 response += f"{i}. {task.title}{due}\n"
             response += "\n"
 
         # Low priority
         if low_priority:
-            response += "**Low Priority** 🟢\n"
+            response += f"{t['low_priority']}\n"
             for i, task in enumerate(low_priority, 1):
-                due = f" (Due: {task.due_date.strftime('%b %d')})" if task.due_date else ""
+                due = f" ({t['due']}: {task.due_date.strftime('%b %d')})" if task.due_date else ""
                 response += f"{i}. {task.title}{due}\n"
             response += "\n"
 
         # Completed
         if completed:
-            response += f"**Completed** ✓ ({len(completed)} tasks)\n\n"
+            response += f"{t['completed']} ({len(completed)} {t['tasks']})\n\n"
 
         return response.strip()
     
@@ -343,19 +381,26 @@ Output: {"title": "Call doctor", "priority": "high", "description": ""}
             description = ""
         
         if not title or len(title) < 2:
-            return {
-                "response": "Please tell me what task you want to add. For example: 'add task buy milk'",
-                "metadata": {"action": "create_task", "success": False}
-            }
+            # ✅ Language-aware error message
+            if self.language == 'ur':
+                return {
+                    "response": "براہ کرم مجھے بتائیں کہ آپ کون سا کام شامل کرنا چاہتے ہیں۔ مثال: 'دودھ خریدنے کا کام شامل کریں'",
+                    "metadata": {"action": "create_task", "success": False}
+                }
+            else:
+                return {
+                    "response": "Please tell me what task you want to add. For example: 'add task buy milk'",
+                    "metadata": {"action": "create_task", "success": False}
+                }
         
         # Create task in database
         new_task = Task(
-    user_id=self.user_id,
-    title=title.capitalize(),
-    description=description,
-    priority=priority,
-    completed=False  # ✅ Use completed field instead
-)
+            user_id=self.user_id,
+            title=title.capitalize(),
+            description=description,
+            priority=priority,
+            completed=False
+        )
         
         self.session.add(new_task)
         self.session.commit()
@@ -364,15 +409,27 @@ Output: {"title": "Call doctor", "priority": "high", "description": ""}
         # Broadcast task creation event
         await self._broadcast_task_created(new_task)
 
-        return {
-            "response": f"✅ Task '{new_task.title}' added successfully!",
-            "metadata": {
-                "action": "create_task",
-                "success": True,
-                "task_id": new_task.id,
-                "task_title": new_task.title
+        # ✅ Language-aware success message
+        if self.language == 'ur':
+            return {
+                "response": f"✅ کام '{new_task.title}' کامیابی سے شامل ہو گیا!",
+                "metadata": {
+                    "action": "create_task",
+                    "success": True,
+                    "task_id": new_task.id,
+                    "task_title": new_task.title
+                }
             }
-        }
+        else:
+            return {
+                "response": f"✅ Task '{new_task.title}' added successfully!",
+                "metadata": {
+                    "action": "create_task",
+                    "success": True,
+                    "task_id": new_task.id,
+                    "task_title": new_task.title
+                }
+            }
     
     async def _complete_task(self, message: str, context: Dict[str, Any]) -> Dict[str, Any]:
         """Mark task as complete"""
@@ -384,10 +441,17 @@ Output: {"title": "Call doctor", "priority": "high", "description": ""}
         task_name = task_name.replace('the task', '').replace('task', '').strip().strip('"').strip("'")
         
         if not task_name or len(task_name) < 2:
-            return {
-                "response": "Please specify which task you want to mark as complete.",
-                "metadata": {"action": "complete_task", "success": False}
-            }
+            # ✅ Language-aware error message
+            if self.language == 'ur':
+                return {
+                    "response": "براہ کرم بتائیں کہ آپ کون سا کام مکمل کرنا چاہتے ہیں۔",
+                    "metadata": {"action": "complete_task", "success": False}
+                }
+            else:
+                return {
+                    "response": "Please specify which task you want to mark as complete.",
+                    "metadata": {"action": "complete_task", "success": False}
+                }
         
         # Find matching task
         tasks = self.session.exec(
@@ -411,13 +475,19 @@ Output: {"title": "Call doctor", "priority": "high", "description": ""}
                     break
         
         if not matched_task:
-            return {
-                "response": f"I couldn't find a task matching '{task_name}'. Please check the task name.",
-                "metadata": {"action": "complete_task", "success": False}
-            }
+            # ✅ Language-aware error message
+            if self.language == 'ur':
+                return {
+                    "response": f"مجھے '{task_name}' سے مماثل کوئی کام نہیں ملا۔ براہ کرم کام کا نام چیک کریں۔",
+                    "metadata": {"action": "complete_task", "success": False}
+                }
+            else:
+                return {
+                    "response": f"I couldn't find a task matching '{task_name}'. Please check the task name.",
+                    "metadata": {"action": "complete_task", "success": False}
+                }
         
         # Mark as complete
-        # matched_task.status = "completed"
         matched_task.completed = True
         self.session.add(matched_task)
         self.session.commit()
@@ -425,15 +495,27 @@ Output: {"title": "Call doctor", "priority": "high", "description": ""}
         # Broadcast task update event
         await self._broadcast_task_updated(matched_task)
 
-        return {
-            "response": f"🎉 Great job! '{matched_task.title}' is now complete!",
-            "metadata": {
-                "action": "complete_task",
-                "success": True,
-                "task_id": matched_task.id,
-                "task_title": matched_task.title
+        # ✅ Language-aware success message
+        if self.language == 'ur':
+            return {
+                "response": f"🎉 بہترین کام! '{matched_task.title}' اب مکمل ہو گیا ہے!",
+                "metadata": {
+                    "action": "complete_task",
+                    "success": True,
+                    "task_id": matched_task.id,
+                    "task_title": matched_task.title
+                }
             }
-        }
+        else:
+            return {
+                "response": f"🎉 Great job! '{matched_task.title}' is now complete!",
+                "metadata": {
+                    "action": "complete_task",
+                    "success": True,
+                    "task_id": matched_task.id,
+                    "task_title": matched_task.title
+                }
+            }
     
     async def _general_response(
         self,
@@ -443,7 +525,21 @@ Output: {"title": "Call doctor", "priority": "high", "description": ""}
     ) -> Dict[str, Any]:
         """General conversational response"""
 
-        system_prompt = """You are Task Buddy, a friendly and professional AI task assistant.
+        # ✅ Language-aware system prompt
+        if self.language == 'ur':
+            system_prompt = """آپ ٹاسک بڈی ہیں، ایک دوستانہ اور پیشہ ورانہ AI ٹاسک اسسٹنٹ۔
+
+جوابات مختصر (100 الفاظ سے کم)، مددگار اور قدرتی رکھیں۔
+
+آپ کی صلاحیتیں:
+- کام بنائیں: "کام شامل کریں [نام]"
+- کام دکھائیں: "میرے کام دکھائیں"
+- کام حذف کریں: "[کام کا نام] ہٹائیں"
+- کام مکمل کریں: "[کام کا نام] مکمل کریں"
+
+دوستانہ لیکن پیشہ ورانہ رہیں۔ زیادہ ایموجی یا حوصلہ افزائی نہیں۔"""
+        else:
+            system_prompt = """You are Task Buddy, a friendly and professional AI task assistant.
 
 Keep responses SHORT (under 100 words), HELPFUL, and NATURAL.
 
@@ -506,10 +602,17 @@ Be friendly but professional. No excessive emojis or encouragement."""
         """
         try:
             if not title or len(title) < 2:
-                return {
-                    "success": False,
-                    "message": "Please specify which task you want to delete."
-                }
+                # ✅ Language-aware error message
+                if self.language == 'ur':
+                    return {
+                        "success": False,
+                        "message": "براہ کرم بتائیں کہ آپ کون سا کام حذف کرنا چاہتے ہیں۔"
+                    }
+                else:
+                    return {
+                        "success": False,
+                        "message": "Please specify which task you want to delete."
+                    }
             
             # Get all user tasks
             all_tasks = self.session.exec(
@@ -517,10 +620,17 @@ Be friendly but professional. No excessive emojis or encouragement."""
             ).all()
             
             if not all_tasks:
-                return {
-                    "success": False,
-                    "message": "You don't have any tasks to delete."
-                }
+                # ✅ Language-aware error message
+                if self.language == 'ur':
+                    return {
+                        "success": False,
+                        "message": "آپ کے پاس حذف کرنے کے لیے کوئی کام نہیں ہے۔"
+                    }
+                else:
+                    return {
+                        "success": False,
+                        "message": "You don't have any tasks to delete."
+                    }
             
             # Try exact match first (case-insensitive)
             matched_task = None
@@ -567,10 +677,18 @@ Be friendly but professional. No excessive emojis or encouragement."""
             if not matched_task:
                 # List available tasks for user
                 task_list = "\n".join([f"- {t.title}" for t in all_tasks[:5]])
-                return {
-                    "success": False,
-                    "message": f"Task '{title}' not found. Your tasks:\n{task_list}"
-                }
+                
+                # ✅ Language-aware error message
+                if self.language == 'ur':
+                    return {
+                        "success": False,
+                        "message": f"کام '{title}' نہیں ملا۔ آپ کے کام:\n{task_list}"
+                    }
+                else:
+                    return {
+                        "success": False,
+                        "message": f"Task '{title}' not found. Your tasks:\n{task_list}"
+                    }
             
             # Delete the task
             task_title = matched_task.title
@@ -584,19 +702,34 @@ Be friendly but professional. No excessive emojis or encouragement."""
             # Broadcast WebSocket event
             await self._broadcast_task_deleted(task_id)
             
-            return {
-                "success": True,
-                "message": f"✅ Task '{task_title}' has been deleted."
-            }
+            # ✅ Language-aware success message
+            if self.language == 'ur':
+                return {
+                    "success": True,
+                    "message": f"✅ کام '{task_title}' حذف کر دیا گیا ہے۔"
+                }
+            else:
+                return {
+                    "success": True,
+                    "message": f"✅ Task '{task_title}' has been deleted."
+                }
             
         except Exception as e:
             print(f"❌ Error deleting task: {e}")
             import traceback
             traceback.print_exc()
-            return {
-                "success": False,
-                "message": f"Failed to delete task: {str(e)}"
-            }
+            
+            # ✅ Language-aware error message
+            if self.language == 'ur':
+                return {
+                    "success": False,
+                    "message": f"کام حذف کرنے میں ناکامی: {str(e)}"
+                }
+            else:
+                return {
+                    "success": False,
+                    "message": f"Failed to delete task: {str(e)}"
+                }
 
     async def _broadcast_task_deleted(self, task_id: int):
         """Broadcast task deletion event"""

@@ -5,7 +5,7 @@ import { notificationService } from '@/services/apiService';
 import type { Notification as NotificationType } from '../types/types';
 import { useAuth } from './AuthContext';
 import { useUserPreferences } from './UserPreferencesContext';
-import { webSocketNotificationService } from '@/services/notificationService';
+import { websocketService } from '@/services/websocketService';
 import { notificationSoundService } from '../services/notificationSoundService';
 
 interface NotificationState {
@@ -332,47 +332,35 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     return () => clearInterval(interval);
   }, [user?.id, fetchNotifications]);
 
-  // Try WebSocket connection (optional)
+  // ✅ FIXED: WebSocket connection for notifications
   useEffect(() => {
     if (!user?.id) return;
-    
-    const wsEnabled = process.env.NEXT_PUBLIC_ENABLE_WEBSOCKET === 'true';
-    if (!wsEnabled) {
-      console.log('ℹ️ WebSocket disabled, using polling only');
+
+    const token = localStorage.getItem('token') ||
+      document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
+
+    if (!token) {
+      console.log('⚠️ No token found, cannot connect WebSocket');
       return;
     }
 
-    const connectWebSocket = async () => {
-      try {
-        const token = localStorage.getItem('token') ||
-          document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
+    console.log('🔌 Connecting to WebSocket for notifications...');
 
-        if (!token) return;
+    // Connect to WebSocket
+    websocketService.connect(token);
 
-        await webSocketNotificationService.connect(user.id, token);
-
-        webSocketNotificationService.on('new_notification', (data) => {
-          if (data.notification) addNotification(data.notification);
-        });
-
-        webSocketNotificationService.on('unread_count', (data) => {
-          console.log('Unread count:', data.count);
-        });
-
-      } catch (error) {
-        console.log('ℹ️ WebSocket not available, using polling fallback');
+    // ✅ Listen for notification_created event (correct event name!)
+    const unsubscribeNotification = websocketService.subscribe('notification_created', (data) => {
+      console.log('🔔 Notification event received:', data);
+      if (data.notification) {
+        addNotification(data.notification);
       }
-    };
-
-    connectWebSocket();
+    });
 
     return () => {
-      try {
-        webSocketNotificationService.disconnect();
-      } catch (error) {
-        // Ignore
-      }
-      
+      console.log('🔌 Cleaning up WebSocket notification listener');
+      unsubscribeNotification();
+
       if (toastTimeoutRef.current) {
         clearTimeout(toastTimeoutRef.current);
       }

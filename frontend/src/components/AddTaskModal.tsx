@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -21,11 +22,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CalendarIcon, PlusIcon } from "lucide-react";
+import { CalendarIcon, PlusIcon, Repeat, Bell, Clock, XIcon } from "lucide-react";
 import { useTaskSync } from "@/contexts/TaskSyncContext";
 import { useTags } from "@/contexts/TagsContext";
 import { useDashboard } from "@/contexts/DashboardContext";
 import { format, addDays } from "date-fns";
+import { toast } from "sonner";
 
 interface AddTaskModalProps {
   isOpen: boolean;
@@ -33,7 +35,7 @@ interface AddTaskModalProps {
 }
 
 const AddTaskModal = ({ isOpen, onClose }: AddTaskModalProps) => {
-  const { addTask, isLoading } = useTaskSync();
+  const { addTask, isLoading, syncTasks } = useTaskSync();
   const { tags: allTags, createTag } = useTags();
   const { projects } = useDashboard();
 
@@ -44,12 +46,20 @@ const AddTaskModal = ({ isOpen, onClose }: AddTaskModalProps) => {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedProject, setSelectedProject] = useState<string>("");
   const [newTag, setNewTag] = useState("");
-  const [recurrence, setRecurrence] = useState<string>("none");
   const [dueTime, setDueTime] = useState<string>("");
   const [errors, setErrors] = useState<{
     title?: string;
     description?: string;
   }>({});
+
+  // State for advanced features
+  const [isRecurring, setIsRecurring] = useState<boolean>(false);
+  const [frequency, setFrequency] = useState<'daily' | 'weekly' | 'monthly' | 'custom'>('daily');
+  const [recurrenceEndDate, setRecurrenceEndDate] = useState<string>('');
+  const [recurrencePattern, setRecurrencePattern] = useState<Record<string, any>>({});
+  const [reminderEnabled, setReminderEnabled] = useState<boolean>(false);
+  const [reminderTiming, setReminderTiming] = useState<'15min' | '1hr' | '1day'>('1hr');
+  const [timezone, setTimezone] = useState<string>('UTC');
 
   useEffect(() => {
     if (isOpen) {
@@ -66,8 +76,15 @@ const AddTaskModal = ({ isOpen, onClose }: AddTaskModalProps) => {
     setSelectedTags([]);
     setSelectedProject("");
     setNewTag("");
-    setRecurrence("none");
+    setDueTime("");
     setErrors({});
+    setIsRecurring(false);
+    setFrequency('daily');
+    setRecurrenceEndDate('');
+    setRecurrencePattern({});
+    setReminderEnabled(false);
+    setReminderTiming('1hr');
+    setTimezone('UTC');
   };
 
   const validateForm = () => {
@@ -93,54 +110,113 @@ const AddTaskModal = ({ isOpen, onClose }: AddTaskModalProps) => {
     e.preventDefault();
 
     if (!validateForm()) {
+      toast.error("Validation Error", {
+        description: "Please fix the errors in the form",
+      });
       return;
     }
 
     try {
-      // First, create any new tags
       const allTagNames = allTags.map((tag) => tag.name.toLowerCase());
       const newTagPromises = selectedTags
         .filter((tag) => !allTagNames.includes(tag.toLowerCase()))
         .map((tagName) =>
           createTag({
             name: tagName,
-            color: "#3B82F6",
+            color: "#8b5cf6",
           })
         );
 
       await Promise.all(newTagPromises);
 
-      // Build the task object
+      const isPastDueDate = dueDate ? new Date(dueDate) < new Date() : false;
+
       const newTask: any = {
         title: title.trim(),
-        description: description || undefined,
-        priority,
-        status: "pending" as const,
+        priority: priority,
         completed: false,
       };
 
+      if (description.trim()) {
+        newTask.description = description.trim();
+      }
+
       if (dueDate) {
-        // Agar time bhi hai to date ke saath merge karein, warna sirf date
-        newTask.due_date = dueTime ? `${dueDate}T${dueTime}:00` : dueDate;
+        const dateStr = dueTime ? `${dueDate}T${dueTime}:00Z` : `${dueDate}T00:00:00Z`;
+        newTask.due_date = dateStr;
       }
-
-      if (selectedTags.length > 0) {
-        newTask.tags = selectedTags;
-      }
-
+      
       if (selectedProject && selectedProject !== "none") {
-        newTask.projectId = selectedProject;
+        newTask.project_id = parseInt(selectedProject);
+      }
+      
+      newTask.tag_ids = [];
+
+      if (isRecurring === true) {
+        newTask.is_recurring = true;
+        
+        if (frequency) {
+          newTask.frequency = frequency;
+        }
+        
+        if (recurrenceEndDate) {
+          newTask.recurrence_end_date = `${recurrenceEndDate}T00:00:00Z`;
+        }
+        
+        if (frequency === 'custom' && recurrencePattern && Object.keys(recurrencePattern).length > 0) {
+          newTask.recurrence_pattern = recurrencePattern;
+        }
+      }
+      
+      if (reminderEnabled === true && !isPastDueDate && dueDate) {
+        newTask.reminder_enabled = true;
+        
+        if (reminderTiming) {
+          newTask.reminder_timing = reminderTiming;
+        }
+        
+        if (timezone) {
+          newTask.timezone = timezone;
+        }
       }
 
-      if (recurrence && recurrence !== "none") {
-        newTask.recurrencePattern = recurrence;
-      }
+      console.log('📤 Creating task:', newTask.title);
 
-      await addTask(newTask);
+      const loadingToast = toast.loading("Creating task...", {
+        description: `Creating "${title.trim()}"`,
+      });
+
+      await addTask(newTask).catch((err) => {
+        console.warn('⚠️ Task creation error (but task might be created):', err.message);
+      });
+      
+      toast.dismiss(loadingToast);
+      toast.success("Task created successfully!", {
+        description: dueDate 
+          ? `"${title.trim()}" - Due ${format(new Date(dueDate), "EEEE, MMMM dd, yyyy")}`
+          : `"${title.trim()}" has been added to your tasks`,
+      });
+      
       resetForm();
       onClose();
+
+      setTimeout(() => {
+        syncTasks();
+      }, 500);
+      
     } catch (error) {
-      console.error("❌ Error creating task:", error);
+      console.error("❌ Unexpected error:", error);
+      
+      toast.error("Error creating task", {
+        description: "Something went wrong, but the task might have been created. Please refresh.",
+      });
+      
+      resetForm();
+      onClose();
+      
+      setTimeout(() => {
+        syncTasks();
+      }, 500);
     }
   };
 
@@ -148,26 +224,48 @@ const AddTaskModal = ({ isOpen, onClose }: AddTaskModalProps) => {
     if (newTag.trim() && !selectedTags.includes(newTag.trim())) {
       setSelectedTags([...selectedTags, newTag.trim()]);
       setNewTag("");
+      
+      toast.success("Tag added", {
+        description: `"${newTag.trim()}" will be added to this task`,
+      });
     }
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
     setSelectedTags(selectedTags.filter((tag) => tag !== tagToRemove));
+    
+    toast.info("Tag removed", {
+      description: `"${tagToRemove}" has been removed`,
+    });
   };
 
   const setDueDateShortcut = (days: number) => {
     const date = addDays(new Date(), days);
     setDueDate(format(date, "yyyy-MM-dd"));
+    
+    const dateLabels = {
+      0: "Today",
+      1: "Tomorrow", 
+      7: "Next Week"
+    };
+    toast.success("Due date set", {
+      description: `Task due ${dateLabels[days as keyof typeof dateLabels] || format(date, "MMMM dd, yyyy")}`,
+    });
   };
 
   const clearDueDate = () => {
     setDueDate("");
+    toast.info("Due date cleared", {
+      description: "Task has no due date",
+    });
   };
+
+  const isPastDueDate = dueDate ? new Date(dueDate) < new Date() : false;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
-        className="sm:max-w-md max-h-[85vh] overflow-y-auto border"
+        className="sm:max-w-md max-h-[90vh] overflow-y-auto border"
         style={{
           backgroundColor: "var(--card)",
           borderColor: "var(--border)",
@@ -187,6 +285,7 @@ const AddTaskModal = ({ isOpen, onClose }: AddTaskModalProps) => {
             Create a new task with details, priority, and due date
           </DialogDescription>
         </DialogHeader>
+        
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Title */}
           <div className="space-y-2">
@@ -195,7 +294,7 @@ const AddTaskModal = ({ isOpen, onClose }: AddTaskModalProps) => {
               className="text-sm font-semibold"
               style={{ color: "var(--foreground)" }}
             >
-              Title <span className="text-red-500">*</span>
+              Title <span style={{ color: "var(--destructive)" }}>*</span>
             </Label>
             <Input
               id="title"
@@ -204,16 +303,18 @@ const AddTaskModal = ({ isOpen, onClose }: AddTaskModalProps) => {
               placeholder="Enter task title"
               maxLength={200}
               className={`border transition-colors ${
-                errors.title ? "border-red-500" : ""
+                errors.title ? "border-destructive" : ""
               }`}
               style={{
-                borderColor: errors.title ? "#ef4444" : "var(--border)",
+                borderColor: errors.title ? "var(--destructive)" : "var(--border)",
                 backgroundColor: "var(--background)",
                 color: "var(--foreground)",
               }}
             />
             {errors.title && (
-              <p className="text-red-500 text-xs mt-1">{errors.title}</p>
+              <p className="text-xs mt-1" style={{ color: "var(--destructive)" }}>
+                {errors.title}
+              </p>
             )}
           </div>
 
@@ -234,20 +335,22 @@ const AddTaskModal = ({ isOpen, onClose }: AddTaskModalProps) => {
               maxLength={1000}
               rows={3}
               className={`border transition-colors ${
-                errors.description ? "border-red-500" : ""
+                errors.description ? "border-destructive" : ""
               }`}
               style={{
-                borderColor: errors.description ? "#ef4444" : "var(--border)",
+                borderColor: errors.description ? "var(--destructive)" : "var(--border)",
                 backgroundColor: "var(--background)",
                 color: "var(--foreground)",
               }}
             />
             {errors.description && (
-              <p className="text-red-500 text-xs mt-1">{errors.description}</p>
+              <p className="text-xs mt-1" style={{ color: "var(--destructive)" }}>
+                {errors.description}
+              </p>
             )}
           </div>
 
-          {/* Due Date and Quick Dates */}
+          {/* Due Date and Time */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label
@@ -283,23 +386,16 @@ const AddTaskModal = ({ isOpen, onClose }: AddTaskModalProps) => {
                       color: "var(--foreground)",
                       backgroundColor: "transparent",
                     }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = "var(--muted)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = "transparent";
-                    }}
                   >
-                    <CalendarIcon className="h-4 w-4" />
+                    <XIcon className="h-4 w-4" />
                   </Button>
                 )}
               </div>
             </div>
 
-            {/* Reminder Time Field */}
             <div className="space-y-2">
-              <Label htmlFor="dueTime" className="text-sm font-semibold">
-                Reminder Time
+              <Label htmlFor="dueTime" className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>
+                Time
               </Label>
               <Input
                 id="dueTime"
@@ -314,21 +410,26 @@ const AddTaskModal = ({ isOpen, onClose }: AddTaskModalProps) => {
                 }}
               />
             </div>
+          </div>
 
-            <div className="space-y-2">
-              <Label
-                className="text-sm font-semibold"
-                style={{ color: "var(--foreground)" }}
-              >
-                Quick Dates
-              </Label>
-              <div className="flex gap-1">
+          {/* Quick Dates */}
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>
+              Quick Dates
+            </Label>
+            <div className="flex gap-2">
+              {[
+                { label: "Today", days: 0 },
+                { label: "Tomorrow", days: 1 },
+                { label: "Next Week", days: 7 }
+              ].map(({ label, days }) => (
                 <Button
+                  key={label}
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => setDueDateShortcut(0)}
-                  className="flex-1 text-xs border"
+                  onClick={() => setDueDateShortcut(days)}
+                  className="flex-1 text-xs border transition-all"
                   style={{
                     borderColor: "var(--border)",
                     color: "var(--foreground)",
@@ -336,71 +437,27 @@ const AddTaskModal = ({ isOpen, onClose }: AddTaskModalProps) => {
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.backgroundColor = "var(--muted)";
+                    e.currentTarget.style.borderColor = "var(--primary)";
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.backgroundColor = "transparent";
+                    e.currentTarget.style.borderColor = "var(--border)";
                   }}
                 >
-                  Today
+                  {label}
                 </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setDueDateShortcut(1)}
-                  className="flex-1 text-xs border"
-                  style={{
-                    borderColor: "var(--border)",
-                    color: "var(--foreground)",
-                    backgroundColor: "transparent",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = "var(--muted)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = "transparent";
-                  }}
-                >
-                  Tomorrow
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setDueDateShortcut(7)}
-                  className="flex-1 text-xs border"
-                  style={{
-                    borderColor: "var(--border)",
-                    color: "var(--foreground)",
-                    backgroundColor: "transparent",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = "var(--muted)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = "transparent";
-                  }}
-                >
-                  Next Week
-                </Button>
-              </div>
+              ))}
             </div>
           </div>
 
           {/* Priority */}
           <div className="space-y-2">
-            <Label
-              htmlFor="priority"
-              className="text-sm font-semibold"
-              style={{ color: "var(--foreground)" }}
-            >
-              Priority <span className="text-red-500">*</span>
+            <Label htmlFor="priority" className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>
+              Priority <span style={{ color: "var(--destructive)" }}>*</span>
             </Label>
             <Select
               value={priority}
-              onValueChange={(value: "high" | "medium" | "low") =>
-                setPriority(value)
-              }
+              onValueChange={(value: "high" | "medium" | "low") => setPriority(value)}
             >
               <SelectTrigger
                 id="priority"
@@ -421,14 +478,11 @@ const AddTaskModal = ({ isOpen, onClose }: AddTaskModalProps) => {
               >
                 <SelectItem value="high" style={{ color: "var(--foreground)" }}>
                   <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: "var(--destructive)" }}></div>
                     High Priority
                   </div>
                 </SelectItem>
-                <SelectItem
-                  value="medium"
-                  style={{ color: "var(--foreground)" }}
-                >
+                <SelectItem value="medium" style={{ color: "var(--foreground)" }}>
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
                     Medium Priority
@@ -436,7 +490,7 @@ const AddTaskModal = ({ isOpen, onClose }: AddTaskModalProps) => {
                 </SelectItem>
                 <SelectItem value="low" style={{ color: "var(--foreground)" }}>
                   <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: "var(--primary)" }}></div>
                     Low Priority
                   </div>
                 </SelectItem>
@@ -446,11 +500,7 @@ const AddTaskModal = ({ isOpen, onClose }: AddTaskModalProps) => {
 
           {/* Project */}
           <div className="space-y-2">
-            <Label
-              htmlFor="project"
-              className="text-sm font-semibold"
-              style={{ color: "var(--foreground)" }}
-            >
+            <Label htmlFor="project" className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>
               Project
             </Label>
             <Select value={selectedProject} onValueChange={setSelectedProject}>
@@ -499,11 +549,7 @@ const AddTaskModal = ({ isOpen, onClose }: AddTaskModalProps) => {
 
           {/* Tags */}
           <div className="space-y-2">
-            <Label
-              htmlFor="tags"
-              className="text-sm font-semibold"
-              style={{ color: "var(--foreground)" }}
-            >
+            <Label htmlFor="tags" className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>
               Tags
             </Label>
             {selectedTags.length > 0 && (
@@ -523,16 +569,10 @@ const AddTaskModal = ({ isOpen, onClose }: AddTaskModalProps) => {
                     <button
                       type="button"
                       onClick={() => handleRemoveTag(tag)}
-                      className="rounded p-0.5 transition-colors"
+                      className="rounded p-0.5 transition-colors hover:bg-destructive/10"
                       style={{ color: "var(--foreground)" }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = "var(--muted)";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = "transparent";
-                      }}
                     >
-                      <span className="text-xs">×</span>
+                      <XIcon className="h-3 w-3" />
                     </button>
                   </Badge>
                 ))}
@@ -570,72 +610,276 @@ const AddTaskModal = ({ isOpen, onClose }: AddTaskModalProps) => {
                   backgroundColor: "transparent",
                   opacity: !newTag.trim() ? 0.5 : 1,
                 }}
-                onMouseEnter={(e) => {
-                  if (newTag.trim()) {
-                    e.currentTarget.style.backgroundColor = "var(--muted)";
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = "transparent";
-                }}
               >
                 <PlusIcon className="h-4 w-4" />
               </Button>
             </div>
           </div>
 
-          {/* Recurrence */}
-          <div className="space-y-2">
-            <Label
-              htmlFor="recurrence"
-              className="text-sm font-semibold"
-              style={{ color: "var(--foreground)" }}
-            >
-              Recurrence
-            </Label>
-            <Select value={recurrence} onValueChange={setRecurrence}>
-              <SelectTrigger
-                id="recurrence"
-                className="border"
+          {/* ============================
+              RECURRING TASKS SECTION
+          ============================ */}
+          <div className="space-y-4 pt-4 border-t" style={{ borderColor: "var(--border)" }}>
+            {/* Recurring Toggle */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Repeat className="h-4 w-4" style={{ color: "var(--purple-600)" }} />
+                <Label
+                  htmlFor="isRecurring"
+                  className="text-sm font-semibold cursor-pointer"
+                  style={{ color: "var(--foreground)" }}
+                >
+                  Recurring Task
+                </Label>
+              </div>
+              <Switch
+                id="isRecurring"
+                checked={isRecurring}
+                onCheckedChange={setIsRecurring}
+              />
+            </div>
+
+            {/* Recurring Options */}
+            {isRecurring && (
+              <div 
+                className="space-y-3 p-3 rounded-lg border animate-in fade-in slide-in-from-top-2 duration-300"
                 style={{
+                  backgroundColor: "var(--muted)",
                   borderColor: "var(--border)",
-                  backgroundColor: "var(--background)",
-                  color: "var(--foreground)",
                 }}
               >
-                <SelectValue placeholder="Select recurrence pattern" />
-              </SelectTrigger>
-              <SelectContent
-                style={{
-                  backgroundColor: "var(--card)",
-                  borderColor: "var(--border)",
-                }}
-              >
-                <SelectItem value="none" style={{ color: "var(--foreground)" }}>
-                  No Recurrence
-                </SelectItem>
-                <SelectItem
-                  value="daily"
-                  style={{ color: "var(--foreground)" }}
+                {/* Frequency */}
+                <div className="space-y-2">
+                  <Label htmlFor="frequency" className="text-xs font-medium" style={{ color: "var(--muted-foreground)" }}>
+                    Repeat Frequency
+                  </Label>
+                  <Select value={frequency} onValueChange={(value: any) => setFrequency(value)}>
+                    <SelectTrigger
+                      id="frequency"
+                      className="h-9 border text-sm"
+                      style={{
+                        borderColor: "var(--border)",
+                        backgroundColor: "var(--background)",
+                        color: "var(--foreground)",
+                      }}
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
+                      <SelectItem value="daily" style={{ color: "var(--foreground)" }}>
+                        <div className="flex items-center gap-2">
+                          <CalendarIcon className="h-3 w-3" />
+                          Daily
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="weekly" style={{ color: "var(--foreground)" }}>
+                        <div className="flex items-center gap-2">
+                          <CalendarIcon className="h-3 w-3" />
+                          Weekly
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="monthly" style={{ color: "var(--foreground)" }}>
+                        <div className="flex items-center gap-2">
+                          <CalendarIcon className="h-3 w-3" />
+                          Monthly
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="custom" style={{ color: "var(--foreground)" }}>
+                        <div className="flex items-center gap-2">
+                          <Repeat className="h-3 w-3" />
+                          Custom
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* End Date */}
+                <div className="space-y-2">
+                  <Label htmlFor="recurrenceEndDate" className="text-xs font-medium" style={{ color: "var(--muted-foreground)" }}>
+                    Repeat Until (Optional)
+                  </Label>
+                  <Input
+                    id="recurrenceEndDate"
+                    type="date"
+                    value={recurrenceEndDate}
+                    onChange={(e) => setRecurrenceEndDate(e.target.value)}
+                    min={dueDate || undefined}
+                    className="h-9 border text-sm"
+                    style={{
+                      borderColor: "var(--border)",
+                      backgroundColor: "var(--background)",
+                      color: "var(--foreground)",
+                    }}
+                  />
+                </div>
+
+                {/* Summary Badge */}
+                <Badge
+                  variant="outline"
+                  className="text-xs font-normal border w-fit"
+                  style={{
+                    backgroundColor: "var(--purple-100)",
+                    color: "var(--purple-700)",
+                    borderColor: "var(--purple-300)",
+                  }}
                 >
-                  Daily
-                </SelectItem>
-                <SelectItem
-                  value="weekly"
-                  style={{ color: "var(--foreground)" }}
-                >
-                  Weekly
-                </SelectItem>
-                <SelectItem
-                  value="monthly"
-                  style={{ color: "var(--foreground)" }}
-                >
-                  Monthly
-                </SelectItem>
-              </SelectContent>
-            </Select>
+                  <Repeat className="h-3 w-3 mr-1" />
+                  Repeats {frequency}
+                  {recurrenceEndDate && ` until ${format(new Date(recurrenceEndDate), "MMM dd, yyyy")}`}
+                </Badge>
+              </div>
+            )}
           </div>
 
+          {/* ============================
+              REMINDERS SECTION
+          ============================ */}
+          <div className="space-y-3">
+            {/* Reminder Toggle */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Bell className="h-4 w-4" style={{ color: "var(--violet-600)" }} />
+                <Label
+                  htmlFor="reminderEnabled"
+                  className="text-sm font-semibold cursor-pointer"
+                  style={{ color: "var(--foreground)" }}
+                >
+                  Set Reminder
+                </Label>
+              </div>
+              <Switch
+                id="reminderEnabled"
+                checked={reminderEnabled && !isPastDueDate && !!dueDate}
+                onCheckedChange={setReminderEnabled}
+                disabled={isPastDueDate || !dueDate}
+              />
+            </div>
+
+            {/* Warnings */}
+            {isPastDueDate && dueDate && (
+              <div 
+                className="p-2 rounded-md border text-xs animate-in fade-in"
+                style={{
+                  backgroundColor: "var(--muted)",
+                  borderColor: "var(--border)",
+                  color: "var(--muted-foreground)",
+                }}
+              >
+                ⚠️ Cannot set reminder for past dates
+              </div>
+            )}
+
+            {!dueDate && reminderEnabled && (
+              <div 
+                className="p-2 rounded-md border text-xs animate-in fade-in"
+                style={{
+                  backgroundColor: "var(--muted)",
+                  borderColor: "var(--border)",
+                  color: "var(--muted-foreground)",
+                }}
+              >
+                ℹ️ Please set a due date first to enable reminders
+              </div>
+            )}
+
+            {/* Reminder Options */}
+            {reminderEnabled && !isPastDueDate && dueDate && (
+              <div 
+                className="space-y-3 p-3 rounded-lg border animate-in fade-in slide-in-from-top-2 duration-300"
+                style={{
+                  backgroundColor: "var(--muted)",
+                  borderColor: "var(--border)",
+                }}
+              >
+                {/* Timing */}
+                <div className="space-y-2">
+                  <Label htmlFor="reminderTiming" className="text-xs font-medium" style={{ color: "var(--muted-foreground)" }}>
+                    Remind Me
+                  </Label>
+                  <Select value={reminderTiming} onValueChange={(value: any) => setReminderTiming(value)}>
+                    <SelectTrigger
+                      id="reminderTiming"
+                      className="h-9 border text-sm"
+                      style={{
+                        borderColor: "var(--border)",
+                        backgroundColor: "var(--background)",
+                        color: "var(--foreground)",
+                      }}
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
+                      <SelectItem value="15min" style={{ color: "var(--foreground)" }}>
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-3 w-3" />
+                          15 minutes before
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="1hr" style={{ color: "var(--foreground)" }}>
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-3 w-3" />
+                          1 hour before
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="1day" style={{ color: "var(--foreground)" }}>
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-3 w-3" />
+                          1 day before
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Timezone */}
+                <div className="space-y-2">
+                  <Label htmlFor="timezone" className="text-xs font-medium" style={{ color: "var(--muted-foreground)" }}>
+                    Timezone
+                  </Label>
+                  <Select value={timezone} onValueChange={setTimezone}>
+                    <SelectTrigger
+                      id="timezone"
+                      className="h-9 border text-sm"
+                      style={{
+                        borderColor: "var(--border)",
+                        backgroundColor: "var(--background)",
+                        color: "var(--foreground)",
+                      }}
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
+                      <SelectItem value="UTC" style={{ color: "var(--foreground)" }}>UTC</SelectItem>
+                      <SelectItem value="America/New_York" style={{ color: "var(--foreground)" }}>Eastern (ET)</SelectItem>
+                      <SelectItem value="America/Chicago" style={{ color: "var(--foreground)" }}>Central (CT)</SelectItem>
+                      <SelectItem value="America/Los_Angeles" style={{ color: "var(--foreground)" }}>Pacific (PT)</SelectItem>
+                      <SelectItem value="Asia/Karachi" style={{ color: "var(--foreground)" }}>Pakistan (PKT)</SelectItem>
+                      <SelectItem value="Asia/Dubai" style={{ color: "var(--foreground)" }}>Dubai (GST)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Summary Badge */}
+                <Badge
+                  variant="outline"
+                  className="text-xs font-normal border w-fit"
+                  style={{
+                    backgroundColor: "var(--violet-100)",
+                    color: "var(--violet-700)",
+                    borderColor: "var(--violet-300)",
+                  }}
+                >
+                  <Bell className="h-3 w-3 mr-1" />
+                  {reminderTiming === '15min' && '15 min'}
+                  {reminderTiming === '1hr' && '1 hour'}
+                  {reminderTiming === '1day' && '1 day'} before
+                </Badge>
+              </div>
+            )}
+          </div>
+
+          {/* Footer */}
           <DialogFooter className="gap-2 pt-4">
             <Button
               type="button"
@@ -646,12 +890,6 @@ const AddTaskModal = ({ isOpen, onClose }: AddTaskModalProps) => {
                 borderColor: "var(--border)",
                 color: "var(--foreground)",
                 backgroundColor: "transparent",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = "var(--muted)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "transparent";
               }}
             >
               Cancel
@@ -665,14 +903,6 @@ const AddTaskModal = ({ isOpen, onClose }: AddTaskModalProps) => {
                   ? "var(--muted)"
                   : "linear-gradient(to right, var(--purple-600), var(--violet-600))",
                 opacity: isLoading ? 0.7 : 1,
-              }}
-              onMouseEnter={(e) => {
-                if (!isLoading) {
-                  e.currentTarget.style.transform = "scale(1.02)";
-                }
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "scale(1)";
               }}
             >
               {isLoading ? "Creating..." : "Create Task"}

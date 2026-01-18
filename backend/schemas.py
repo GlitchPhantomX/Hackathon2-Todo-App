@@ -114,7 +114,7 @@ class TaskCreate(BaseModel):
         max_length=100,
         description="Task title (3-100 characters)"
     )
-    description: str = Field(
+    description: Optional[str] = Field(
         default="",
         max_length=1000,
         description="Task description (optional, max 1000 characters)"
@@ -124,6 +124,19 @@ class TaskCreate(BaseModel):
     project_id: Optional[int] = Field(None, description="Project ID to associate with task")
     tag_ids: Optional[List[int]] = Field(None, description="List of tag IDs to associate with the task")
 
+    # Recurring task fields
+    is_recurring: bool = Field(default=False, description="Whether this task is recurring")
+    frequency: Optional[str] = Field(None, description="Recurrence frequency (daily, weekly, monthly, custom)")
+    recurrence_end_date: Optional[datetime] = Field(None, description="End date for recurrence")
+    recurrence_pattern: Optional[dict] = Field(None, description="Complex recurrence pattern (for custom frequency)")
+
+    # Reminder fields
+    reminder_enabled: bool = Field(default=False, description="Whether to send reminders")
+    reminder_timing: Optional[str] = Field(None, description="When to send reminder (15min, 1hr, 1day)")
+
+    # Timezone field
+    timezone: str = Field(default="UTC", description="Timezone for the task")
+
     model_config = {
         "json_schema_extra": {
             "example": {
@@ -132,7 +145,13 @@ class TaskCreate(BaseModel):
                 "due_date": "2025-12-31T23:59:59Z",
                 "priority": "high",
                 "project_id": 1,
-                "tag_ids": [1, 2]
+                "tag_ids": [1, 2],
+                "is_recurring": True,
+                "frequency": "weekly",
+                "recurrence_end_date": "2026-12-31T23:59:59Z",
+                "reminder_enabled": True,
+                "reminder_timing": "1hr",
+                "timezone": "America/New_York"
             }
         }
     }
@@ -160,12 +179,29 @@ class TaskUpdate(BaseModel):
     project_id: Optional[int] = Field(None, description="Project ID to associate with task")
     tag_ids: Optional[List[int]] = Field(None, description="List of tag IDs to associate with the task")
 
+    # Recurring task fields
+    is_recurring: Optional[bool] = Field(None, description="Whether this task is recurring")
+    frequency: Optional[str] = Field(None, description="Recurrence frequency (daily, weekly, monthly, custom)")
+    recurrence_end_date: Optional[datetime] = Field(None, description="End date for recurrence")
+    recurrence_pattern: Optional[dict] = Field(None, description="Complex recurrence pattern (for custom frequency)")
+
+    # Reminder fields
+    reminder_enabled: Optional[bool] = Field(None, description="Whether to send reminders")
+    reminder_timing: Optional[str] = Field(None, description="When to send reminder (15min, 1hr, 1day)")
+
+    # Timezone field
+    timezone: Optional[str] = Field(None, description="Timezone for the task")
+
     model_config = {
         "json_schema_extra": {
             "example": {
                 "completed": True,
                 "priority": "high",
-                "tag_ids": [1, 2, 3]
+                "tag_ids": [1, 2, 3],
+                "is_recurring": True,
+                "frequency": "weekly",
+                "reminder_enabled": False,
+                "timezone": "Europe/London"
             }
         }
     }
@@ -185,6 +221,21 @@ class TaskResponse(BaseModel):
     updated_at: datetime
     tags: Optional[List["TagResponse"]] = None
 
+    # Recurring task fields
+    is_recurring: bool
+    frequency: Optional[str]
+    recurrence_end_date: Optional[datetime]
+    parent_task_id: Optional[int]
+    recurrence_pattern: Optional[dict]
+
+    # Reminder fields
+    reminder_enabled: bool
+    reminder_timing: str
+    reminder_sent: bool
+
+    # Timezone field
+    timezone: str
+
     model_config = {
         "from_attributes": True,
         "json_schema_extra": {
@@ -199,6 +250,15 @@ class TaskResponse(BaseModel):
                 "priority": "high",
                 "created_at": "2025-12-09T11:00:00Z",
                 "updated_at": "2025-12-09T11:00:00Z",
+                "is_recurring": True,
+                "frequency": "weekly",
+                "recurrence_end_date": "2026-12-31T23:59:59Z",
+                "parent_task_id": None,
+                "recurrence_pattern": {"days_of_week": [1, 3, 5]},
+                "reminder_enabled": True,
+                "reminder_timing": "1hr",
+                "reminder_sent": False,
+                "timezone": "America/New_York",
                 "tags": [
                     {
                         "id": 1,
@@ -650,6 +710,13 @@ class UserSettingsResponse(BaseModel):
     notifications_task_reminders: bool
     notifications_daily_digest: bool
 
+    # Reminder preferences
+    reminder_default_timing: str
+    reminder_allow_overdue: bool
+    reminder_allow_15min: bool
+    reminder_allow_1hr: bool
+    reminder_allow_1day: bool
+
     # Task default settings
     task_defaults_default_priority: str
     task_defaults_default_project_id: Optional[int]
@@ -689,6 +756,11 @@ class UserSettingsResponse(BaseModel):
                 "notifications_push_notifications": False,
                 "notifications_task_reminders": True,
                 "notifications_daily_digest": False,
+                "reminder_default_timing": "1hr",
+                "reminder_allow_overdue": True,
+                "reminder_allow_15min": True,
+                "reminder_allow_1hr": True,
+                "reminder_allow_1day": True,
                 "task_defaults_default_priority": "medium",
                 "task_defaults_default_project_id": None,
                 "task_defaults_default_view": "list",
@@ -726,6 +798,13 @@ class UserSettingsUpdate(BaseModel):
     notifications_task_reminders: Optional[bool] = Field(None, description="Enable task reminders")
     notifications_daily_digest: Optional[bool] = Field(None, description="Enable daily digest")
 
+    # Reminder preferences
+    reminder_default_timing: Optional[str] = Field(None, description="Default reminder timing (15min, 1hr, 1day)")
+    reminder_allow_overdue: Optional[bool] = Field(None, description="Allow overdue reminders")
+    reminder_allow_15min: Optional[bool] = Field(None, description="Allow 15-minute reminders")
+    reminder_allow_1hr: Optional[bool] = Field(None, description="Allow 1-hour reminders")
+    reminder_allow_1day: Optional[bool] = Field(None, description="Allow 1-day reminders")
+
     # Task default settings
     task_defaults_default_priority: Optional[str] = Field(None, description="Default task priority (low, medium, high)")
     task_defaults_default_project_id: Optional[int] = Field(None, description="Default project ID")
@@ -750,7 +829,9 @@ class UserSettingsUpdate(BaseModel):
             "example": {
                 "appearance_theme": "dark",
                 "appearance_accent_color": "#8b5cf6",
-                "notifications_enabled": False
+                "notifications_enabled": False,
+                "reminder_default_timing": "15min",
+                "reminder_allow_overdue": True
             }
         }
     }

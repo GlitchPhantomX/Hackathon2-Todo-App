@@ -1,4 +1,5 @@
 import os
+import logging
 from fastapi import FastAPI, Response, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -13,6 +14,7 @@ from routers.notifications import router as notifications_router
 from routers.bulk_operations import router as bulk_operations_router
 from routers.import_export import router as import_export_router
 from routers.user_preferences import router as user_preferences_router
+from routers.user_settings import router as user_settings_router
 from routers.projects import router as projects_router
 from routers.websocket import router as websocket_router
 from routers.profile import router as profile_router
@@ -30,6 +32,17 @@ from db import create_tables, test_connection
 from sqlmodel import Session, select
 from models import User
 import bcrypt
+
+# Import services for Kafka and Dapr initialization
+from services.event_producer import event_producer
+from services.dapr_service import dapr_service
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 create_tables()
 
@@ -58,11 +71,76 @@ def create_demo_user():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    print("Starting up Todo API...")
+    logger.info("Starting up Todo API...")
+    # Initialize Kafka and Dapr services
+    try:
+        # Initialize Kafka producer
+        event_producer._initialize_producer()
+        logger.info("✅ Kafka producer initialized")
+    except Exception as e:
+        logger.error(f"⚠️  Failed to initialize Kafka producer: {e}", exc_info=True)
+
+    try:
+        # Initialize Dapr service
+        dapr_service.client = None  # Will be initialized via context manager when needed
+        logger.info("✅ Dapr service prepared")
+    except Exception as e:
+        logger.error(f"⚠️  Failed to prepare Dapr service: {e}", exc_info=True)
+
     # Create demo user on startup
-    create_demo_user()
+    try:
+        create_demo_user()
+    except Exception as e:
+        logger.error(f"⚠️  Failed to create demo user: {e}", exc_info=True)
+
+    # Start the reminder scheduler
+    try:
+        from services.reminder_scheduler import get_scheduler, ReminderScheduler
+        from db import engine
+        from sqlmodel import Session
+
+        # Create a session that will be used throughout the app lifecycle
+        scheduler_session = Session(engine)
+        scheduler = ReminderScheduler(scheduler_session)
+
+        # Start the continuous scheduler as a background task
+        import asyncio
+        reminder_task = asyncio.create_task(scheduler.schedule_continuous_reminders(interval_minutes=1))
+        logger.info("✅ Reminder scheduler started")
+
+        # Store the scheduler and task in the app state for potential cleanup
+        app.state.reminder_scheduler = scheduler
+        app.state.reminder_task = reminder_task
+    except Exception as e:
+        logger.error(f"⚠️  Failed to start reminder scheduler: {e}", exc_info=True)
+
     yield
-    print("Shutting down Todo API...")
+
+    # Cleanup on shutdown
+    logger.info("Shutting down Todo API...")
+    try:
+        # Cancel the reminder scheduler task
+        if hasattr(app.state, 'reminder_task'):
+            app.state.reminder_task.cancel()
+            try:
+                # We can't use await here in the yield context, so just cancel
+                pass
+            except Exception:
+                pass  # Task might already be cancelled
+
+        # Close the scheduler session
+        if hasattr(app.state, 'reminder_scheduler'):
+            scheduler_session = app.state.reminder_scheduler.db_session
+            if scheduler_session:
+                try:
+                    scheduler_session.close()
+                except Exception as session_close_error:
+                    logger.error(f"⚠️  Error closing scheduler session: {session_close_error}")
+
+        event_producer.close()
+        logger.info("✅ Kafka producer closed")
+    except Exception as e:
+        logger.error(f"⚠️  Error during shutdown: {e}", exc_info=True)
 
 # Create app
 app = FastAPI(
@@ -162,14 +240,14 @@ else:
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=settings.cors_origins,  # ✅ Use property from config
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
     expose_headers=["*"],
 )
 
-print(f"CORS enabled for origins: {origins}")
+print(f"CORS enabled for origins: {settings.cors_origins}")
 
 # ==================== GLOBAL EXCEPTION HANDLER ====================
 @app.exception_handler(Exception)
@@ -188,10 +266,10 @@ async def global_exception_handler(request: Request, exc: Exception):
     print("-"*80)
     traceback.print_exc()
     print("="*80 + "\n")
-    
-    # Get the origin from request
-    origin = request.headers.get("origin", "http://localhost:3000")
-    
+
+    # Get the origin from request - handle both origin and referer
+    origin = request.headers.get("origin") or request.headers.get("referer") or "http://localhost:3000"
+
     # Determine status code and message
     from fastapi import HTTPException
     if isinstance(exc, HTTPException):
@@ -200,7 +278,7 @@ async def global_exception_handler(request: Request, exc: Exception):
     else:
         status_code = 500
         detail = f"Internal server error: {str(exc)}"
-    
+
     return JSONResponse(
         status_code=status_code,
         content={"detail": detail},
@@ -235,6 +313,7 @@ app.include_router(notifications_router, prefix=settings.API_V1_PREFIX)
 app.include_router(bulk_operations_router, prefix=settings.API_V1_PREFIX)
 app.include_router(import_export_router, prefix=settings.API_V1_PREFIX)
 app.include_router(user_preferences_router, prefix=settings.API_V1_PREFIX)
+app.include_router(user_settings_router, prefix=settings.API_V1_PREFIX)
 app.include_router(projects_router, prefix=settings.API_V1_PREFIX)
 app.include_router(profile_router, prefix=settings.API_V1_PREFIX)
 app.include_router(settings_router, prefix=settings.API_V1_PREFIX)
@@ -258,9 +337,20 @@ def health_check():
 
 # ✅ CORS Preflight handler for all OPTIONS requests
 @app.options("/{full_path:path}")
-async def options_handler(full_path: str):
+async def options_handler(request: Request, full_path: str):
     """Handle OPTIONS requests for CORS preflight"""
-    return Response(status_code=200)
+    # Get origin from request
+    origin = request.headers.get("origin", "http://localhost:3000")
+
+    return Response(
+        status_code=200,
+        headers={
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
+        }
+    )
 
 @app.get("/metrics")
 def metrics():

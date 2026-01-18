@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { MoreVertical, Archive, Trash2 } from 'lucide-react';
 import { Conversation } from '../../types/chat.types';
+import { useChat } from '@/contexts/ChatContext';
 
 interface ChatHeaderProps {
   conversation: Conversation | null;
@@ -17,6 +18,10 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [title, setTitle] = useState(conversation?.title || '');
+  
+  // ✅ Get language from context
+  const { language } = useChat();
+  const isRTL = language === 'ur';
 
   const handleSave = () => {
     if (title.trim() && conversation) {
@@ -39,6 +44,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
         borderColor: 'var(--border)',
         backgroundColor: 'var(--card)'
       }}
+      dir={isRTL ? 'rtl' : 'ltr'}
     >
       {isEditing ? (
         <div className="flex items-center gap-2 flex-1">
@@ -51,6 +57,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
               borderColor: 'var(--border)',
               color: 'var(--foreground)'
             }}
+            dir={isRTL ? 'rtl' : 'ltr'}
             onFocus={(e) => {
               e.currentTarget.style.borderColor = 'var(--primary)';
             }}
@@ -74,7 +81,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
               e.currentTarget.style.backgroundColor = 'transparent';
             }}
           >
-            Save
+            {language === 'ur' ? 'محفوظ کریں' : 'Save'}
           </button>
           <button
             onClick={handleCancel}
@@ -87,7 +94,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
               e.currentTarget.style.backgroundColor = 'transparent';
             }}
           >
-            Cancel
+            {language === 'ur' ? 'منسوخ' : 'Cancel'}
           </button>
         </div>
       ) : (
@@ -103,7 +110,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
         <button
           onClick={onArchive}
           className="p-2 rounded-full transition-colors"
-          title="Archive conversation"
+          title={language === 'ur' ? 'محفوظ شدہ میں منتقل کریں' : 'Archive conversation'}
           style={{ color: 'var(--foreground)' }}
           onMouseEnter={(e) => {
             e.currentTarget.style.backgroundColor = 'var(--muted)';
@@ -117,7 +124,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
         <button
           onClick={onDelete}
           className="p-2 rounded-full transition-colors"
-          title="Delete conversation"
+          title={language === 'ur' ? 'بات چیت حذف کریں' : 'Delete conversation'}
           style={{ color: 'var(--foreground)' }}
           onMouseEnter={(e) => {
             e.currentTarget.style.backgroundColor = '#ef444420';

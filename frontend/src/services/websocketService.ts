@@ -116,6 +116,8 @@ class WebSocketService {
    */
   private handleMessage(message: any) {
     const { type, data, timestamp } = message;
+    // Extract notification and task separately to avoid destructuring issues
+    const { notification, task } = message;
 
     // Calculate and log latency if timestamp is provided
     if (timestamp) {
@@ -132,7 +134,11 @@ class WebSocketService {
     if (listeners) {
       // Use Promise.allSettled to handle all listeners concurrently without blocking
       const promises = Array.from(listeners).map(listener => {
-        return Promise.resolve().then(() => listener(data)).catch(error => {
+        return Promise.resolve().then(() => {
+          // Pass the entire message data including notification and task
+          const eventData = data || { notification, task, timestamp };
+          listener(eventData);
+        }).catch(error => {
           console.error(`Error in ${type} listener:`, error);
         });
       });
@@ -154,6 +160,9 @@ class WebSocketService {
       case 'task_deleted':
         this.handleTaskDeleted(data);
         break;
+      case 'notification_created':  // ✅ ADD THIS
+        this.handleNotificationCreated({ notification, task, timestamp });  // ✅ ADD THIS
+        break;  // ✅ ADD THIS
       case 'sync_response':
         this.handleSyncResponse(data);
         break;
@@ -184,6 +193,14 @@ class WebSocketService {
   private handleTaskDeleted(data: any) {
     console.log('Task deleted:', data.taskId);
     // Additional logic can be added here if needed
+  }
+
+  /**
+   * Handle notification created event
+   */
+  private handleNotificationCreated(data: any) {
+    console.log('🔔 Notification created:', data.notification);
+    // Listeners will handle this via subscribe()
   }
 
   /**
