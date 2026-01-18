@@ -1,11 +1,19 @@
 #!/bin/bash
+
+# Exit on error
 set -e
 
-# Railway provides PORT environment variable
-PORT=${PORT:-8000}
+echo "Starting Todo App Backend on Hugging Face Spaces..."
 
-echo "🚀 Starting server on port $PORT"
-echo "📍 DATABASE_URL available: ${DATABASE_URL:+YES}"
+# Run database migrations if needed
+if [ -f "migrate_add_recurring_fields.py" ]; then
+    echo "Running database migrations..."
+    python migrate_add_recurring_fields.py || echo "Migration skipped or already done"
+fi
 
-# Start uvicorn with Railway's PORT
-exec uv run uvicorn main:app --host 0.0.0.0 --port $PORT --log-level info --access-log
+# Create data directory if it doesn't exist
+mkdir -p /app/data
+
+# Start the FastAPI application on port 7860 (Hugging Face requirement)
+echo "Starting Uvicorn server on port 7860..."
+exec uvicorn main:app --host 0.0.0.0 --port 7860 --workers 1

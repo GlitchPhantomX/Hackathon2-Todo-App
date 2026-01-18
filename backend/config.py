@@ -13,8 +13,8 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30  # 30 minutes
 
-    # CORS Configuration
-    ALLOWED_ORIGINS: str = "http://localhost:3000,http://localhost:3004,http://127.0.0.1:3004,http://localhost:5173"
+    # CORS Configuration - ✅ Added Vercel URL
+    ALLOWED_ORIGINS: str = "http://localhost:3000,http://localhost:3004,http://127.0.0.1:3004,http://localhost:5173,https://todo-master-app.vercel.app"
 
     # API Configuration
     API_V1_PREFIX: str = "/api/v1"

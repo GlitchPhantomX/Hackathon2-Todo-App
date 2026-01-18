@@ -1,4 +1,4 @@
-# Backend Dockerfile for Todo AI Chatbot
+# Backend Dockerfile for Todo AI Chatbot - Hugging Face Deployment
 FROM python:3.13-slim
 
 # Install system dependencies including curl for health checks
@@ -37,7 +37,7 @@ USER appuser
 # Set Python path to include uv's virtual environment
 ENV PATH="/app/.venv/bin:$PATH"
 
-# Expose port
+# Expose port (Hugging Face requires 7860)
 EXPOSE 7860
 
 # Run startup script
