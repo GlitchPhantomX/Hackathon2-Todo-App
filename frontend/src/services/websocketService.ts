@@ -15,7 +15,7 @@ class WebSocketService {
    */
   connect(token: string) {
     this.token = token;
-    const wsUrl = `${process.env.NEXT_PUBLIC_WS_URL}/tasks?token=${token}`;
+    const wsUrl = `${process.env.NEXT_PUBLIC_WS_URL}/ws/notifications?token=${token}`;
 
     // Clear any existing connection
     this.disconnect();
